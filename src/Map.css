@@ -1,6 +1,7 @@
 .map-container {
   width: 100vw;
   height: 100vh;
+  /* height: calc(100vh - 100px); /* Use this when I want to add stuff at the bottom*/
 }
 
 .sidebar {
