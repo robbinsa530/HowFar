@@ -1,0 +1,30 @@
+.map-container {
+  width: 100vw;
+  height: 100vh;
+}
+
+.sidebar {
+  background-color: rgb(35 55 75 / 90%);
+  color: #fff;
+  padding: 6px 12px;
+  font-family: monospace;
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 12px;
+  border-radius: 4px;
+}
+
+.marker {
+  background-color: white;
+  border: 2px solid black;
+  /* color: white; */
+  padding: 5px;
+  /* text-align: center; */
+  /* text-decoration: none; */
+  display: inline-block;
+  /* font-size: 16px; */
+  /* margin: 4px 2px; */
+  border-radius: 50%;
+}
