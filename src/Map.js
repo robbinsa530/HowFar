@@ -3,7 +3,8 @@ import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-load
 import length from '@turf/length'
 import './Map.css';
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiYXJvYmJpbnM1MzAiLCJhIjoiY2x1b2xzOGNtMXhpMTJrbGQ2YnA0bDlhcSJ9.jyhalVCpoVufi45_mrB-zw';
+import publicKey from './secrets/mapbox.public';
+mapboxgl.accessToken = publicKey;
 
 /*
 marker:

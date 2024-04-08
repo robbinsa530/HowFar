@@ -23,7 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # passwords/keys
-/secrets
+src/secrets
 
 # my stuff
 .todo
