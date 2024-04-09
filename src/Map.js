@@ -1,7 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 import length from '@turf/length'
+import { v4 as uuidv4 } from 'uuid';
 import './Map.css';
+
+import { getRouteBetweenPoints } from './controllers/DirectionsController';
 
 import publicKey from './secrets/mapbox.public';
 mapboxgl.accessToken = publicKey;
@@ -13,6 +16,7 @@ marker:
   element:,
   lngLat:,
   markerObj:,
+  associatedLines,
 }
 */
 let markers = [];
@@ -22,21 +26,12 @@ const geojson = {
   'features': []
 };
 
-// Used to draw a line between points
-const linestring = {
-  'type': 'Feature',
-  'geometry': {
-      'type': 'LineString',
-      'coordinates': []
-  }
-};
-
 function Map() {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const [lng, setLng] = useState(-104.9);
-  const [lat, setLat] = useState(39.8);
-  const [zoom, setZoom] = useState(12);
+  const [lng, setLng] = useState(-104.959730  );
+  const [lat, setLat] = useState(39.765733);
+  const [zoom, setZoom] = useState(14);
   const [dist, setDist] = useState(0.0);
 
   useEffect(() => {
@@ -56,6 +51,7 @@ function Map() {
     map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}));
 
     map.current.on('load', () => {
+      console.info("Map loaded. Adding routing functionality.");
       map.current.addSource('geojson', {
         'type': 'geojson',
         'data': geojson
@@ -78,26 +74,43 @@ function Map() {
         filter: ['in', '$type', 'LineString']
       });
 
-      // Define helper function for drawing lines
-      function redrawLines() {
-        linestring.geometry.coordinates = markers.map(
-            m => m.lngLat
+      async function getDirections(lngLatStart, lngLatEnd) {
+        const jsonData = await getRouteBetweenPoints(
+          lngLatStart,
+          lngLatEnd,
+          mapboxgl.accessToken
         );
+        let newLine = { // To be returned
+          type: 'Feature',
+          properties: {
+            id: uuidv4(),
+            // distance: (Needs to be added)
+          },
+          geometry: {
+            type: 'LineString',
+            // coordinates: (Needs to be added)
+          }
+        };
+        if (jsonData.routes.length == 0) {
+          alert("Failed to calculate directions");
+          // Default to direct distance/lines
+          newLine.geometry.coordinates = [lngLatStart, lngLatEnd];
+          newLine.properties.distance = length(newLine, {units: 'miles'});
+        }
+        else {
+          const route = jsonData.routes[0]; // Will always be a single route
+          newLine.properties.distance = route.distance / 1609.344; // Convert dist from meters to miles
+          newLine.geometry.coordinates = route.geometry.coordinates;
+        }
+        return newLine;
+      }
 
-        geojson.features.push(linestring);
-
-        const distance = length(linestring, {units: 'miles'});
-        setDist(distance);
+      function updateDistanceState() {
+        setDist(geojson.features.map(line => line.properties.distance).reduce((a,b) => a+b, 0));
       }
 
       // Place a marker on click
-      map.current.on('click', e => {
-        // Remove the linestring from the group
-        // so we can redraw it based on the points collection.
-        if (geojson.features.length) {
-          geojson.features.pop();
-        }
-
+      map.current.on('click', async e => {
         // If anything but a point was clicked, add a new one
         if (!markers.map(m => m.element).includes(e.originalEvent.target)) {
           // Create a new DOM node and save it to a React ref
@@ -113,17 +126,62 @@ function Map() {
           btnRef.current.innerHTML = '<button class="marker-popup-btn">Delete point</button>';
           divRef.current.innerHTML = '<div></div>';
           divRef.current.appendChild(btnRef.current);
-          btnRef.current.addEventListener('click', (e) => {
-            markers.find(el => el.id == idToUse).markerObj.remove();
+          btnRef.current.addEventListener('click', async (e) => {
+            let markerToRemoveIndex = markers.findIndex(el => el.id == idToUse);
+            let markerToRemove = markers[markerToRemoveIndex];
+            markerToRemove.markerObj.remove();
             markers = markers.filter(
                 m => m.id !== idToUse
             );
             if (markers.length > 1) {
-              redrawLines();
+              // Marker removed. Update all associated lines
+              if (markerToRemove.associatedLines.length == 1) {
+                // End point. Remove associated line, update new end point
+                const lineToRemove = markerToRemove.associatedLines[0];
+                geojson.features = geojson.features.filter(
+                  f => f.properties.id != lineToRemove
+                );
+
+                // Remove all references to the deleted line from all markers
+                markers.forEach((m,i) => {
+                  markers[i].associatedLines = m.associatedLines.filter(
+                    l => l != lineToRemove
+                  );
+                });
+              }
+              else if (markerToRemove.associatedLines.length > 1) {
+                // Middle point. Remove associated lines, reroute, update
+                const linesToRemove = markerToRemove.associatedLines;
+                geojson.features = geojson.features.filter(
+                  f => !linesToRemove.includes(f.properties.id)
+                );
+
+                // Remove all references to the deleted line from affected markers
+                const lMarker = markers[markerToRemoveIndex - 1];
+                const rMarker = markers[markerToRemoveIndex /*+ 1*/]; // Don't need to +1 b/c marker has already been removed
+                lMarker.associatedLines = lMarker.associatedLines.filter(l => !linesToRemove.includes(l));
+                rMarker.associatedLines = rMarker.associatedLines.filter(l => !linesToRemove.includes(l));
+
+                // Calculate new route
+                const newLine = await getDirections(lMarker.lngLat, rMarker.lngLat);
+                geojson.features.push(newLine);
+
+                // Update markers at ends of new line with line's id
+                lMarker.associatedLines.push(newLine.properties.id);
+                rMarker.associatedLines.push(newLine.properties.id);
+              }
+              else if (markerToRemove.associatedLines.length == 0) {
+                // Should never happen...
+                alert("Error deleting point.");
+                console.error("Multiple markers exist after removal, but removed marker had no associated lines. Not sure how that happened...");
+              }
             } else {
               geojson.features = [];
-              setDist(0);
+              markers.forEach((_,i) => {
+                markers[i].associatedLines = [];
+              });
             }
+            updateDistanceState();
             map.current.getSource('geojson').setData(geojson);
           });
           let addedMarker = new mapboxgl.Marker({
@@ -134,27 +192,66 @@ function Map() {
             .setPopup(new mapboxgl.Popup().setDOMContent(divRef.current))
             .addTo(map.current);
 
-            addedMarker.on('dragend', (e) => {
-              markers.find(el => el.id == idToUse).lngLat = [e.target._lngLat.lng, e.target._lngLat.lat];
-              if (markers.length > 1) {
-                redrawLines();
-                map.current.getSource('geojson').setData(geojson);
+          addedMarker.on('dragend', async (e) => {
+            let draggedMarkerIndex = markers.findIndex(el => el.id == idToUse);
+            let draggedMarker = markers[draggedMarkerIndex];
+            draggedMarker.lngLat = [e.target._lngLat.lng, e.target._lngLat.lat];
+            if (markers.length > 1) {
+              if (draggedMarker.associatedLines.length >= 1) {
+                // Edit 1 or 2 associated line
+                let linesToEdit = [];
+                draggedMarker.associatedLines.forEach(l => {
+                  linesToEdit.push(geojson.features.find(f => f.properties.id == l));
+                });
+
+                for (const [i, l] of linesToEdit.entries()) { // CANNOT use .forEach here b/c async
+                  // Find other marker associated with line
+                  const otherMarkerIndex = markers.findIndex(m => m.id != idToUse && m.associatedLines.includes(l.properties.id));
+
+                  // Replace old line with new one
+                  const sIndex = Math.min(draggedMarkerIndex, otherMarkerIndex);
+                  const eIndex = Math.max(draggedMarkerIndex, otherMarkerIndex);
+                  const newLine = await getDirections(markers[sIndex].lngLat, markers[eIndex].lngLat);
+                  linesToEdit[i].properties.distance = newLine.properties.distance;
+                  linesToEdit[i].geometry.coordinates = newLine.geometry.coordinates;
+                }
               }
-            });
+              else if (draggedMarker.associatedLines.length == 0) {
+                // Should never happen...
+                alert("Error moving point.");
+                console.error("Multiple markers exist, but dragged marker had no associated lines. Not sure how that happened...");
+              }
+              updateDistanceState();
+              map.current.getSource('geojson').setData(geojson);
+            }
+          });
 
-            markers.push({
-              id: idToUse,
-              element: ref.current,
-              lngLat: [e.lngLat.lng, e.lngLat.lat],
-              markerObj: addedMarker
-            });
+          markers.push({
+            id: idToUse,
+            element: ref.current,
+            lngLat: [e.lngLat.lng, e.lngLat.lat],
+            markerObj: addedMarker,
+            associatedLines: []
+          });
+
+          // Marker has been placed. If theres multiple, calculate directions/distance
+          if (markers.length > 1) {
+            let prevPt = markers[markers.length-2];
+            const newLine = await getDirections(
+              [prevPt.lngLat[0], prevPt.lngLat[1]],
+              [e.lngLat.lng, e.lngLat.lat]
+            );
+            // Associate this new line with both of its endpoint markers
+            // This is so we can know which lines to edit on marker delete/move
+            prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-2]
+            markers[markers.length -1].associatedLines.push(newLine.properties.id);
+            geojson.features.push(newLine);
+            updateDistanceState();
+
+            // Redraw lines on map
+            map.current.getSource('geojson').setData(geojson);
+          }
         }
-
-        if (markers.length > 1) {
-          redrawLines();
-        }
-
-        map.current.getSource('geojson').setData(geojson);
 
         // Clean up on unmount
         return () => map.remove();
