@@ -6,6 +6,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import ClearIcon from '@mui/icons-material/Clear';
 import './Map.css';
 
+import AreYouSureDialog from './components/AreYouSureDialog'
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 
 import publicKey from './secrets/mapbox.public';
@@ -28,8 +29,55 @@ const geojson = {
   'features': []
 };
 
+async function getDirections(lngLatStart, lngLatEnd, calculateDirections=true) {
+  let jsonData;
+  if (calculateDirections) {
+    jsonData = await getRouteBetweenPoints(
+      lngLatStart,
+      lngLatEnd,
+      mapboxgl.accessToken
+    );
+  }
+  let newLine = { // To be returned
+    type: 'Feature',
+    properties: {
+      id: uuidv4(),
+      // distance: (Needs to be added)
+    },
+    geometry: {
+      type: 'LineString',
+      // coordinates: (Needs to be added)
+    }
+  };
+  if (!calculateDirections || jsonData.routes.length === 0) {
+    if (calculateDirections) { alert("Failed to calculate directions"); }
+    // Default to direct distance/lines
+    newLine.geometry.coordinates = [lngLatStart, lngLatEnd];
+    newLine.properties.distance = length(newLine, {units: 'miles'});
+  }
+  else {
+    const route = jsonData.routes[0]; // Will always be a single route
+    newLine.properties.distance = route.distance / 1609.344; // Convert dist from meters to miles
+    newLine.geometry.coordinates = route.geometry.coordinates;
+  }
+  return newLine;
+}
+
+function updateDistanceState() {
+  return geojson.features.map(line => line.properties.distance).reduce((a,b) => a+b, 0);
+}
+
+function handleClearMap() {
+  // Clear markers/lines
+  markers.forEach(m => m.markerObj.remove());
+  markers = [];
+  geojson.features = [];
+}
+
 function Map() {
   const [loading, setLoading] = useState(true);
+  const [clearMap, setClearMap] = useState(false);
+
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [lng, setLng] = useState(-104.959730  );
@@ -79,44 +127,6 @@ function Map() {
         },
         filter: ['in', '$type', 'LineString']
       });
-
-      async function getDirections(lngLatStart, lngLatEnd, calculateDirections=true) {
-        let jsonData;
-        if (calculateDirections) {
-          jsonData = await getRouteBetweenPoints(
-            lngLatStart,
-            lngLatEnd,
-            mapboxgl.accessToken
-          );
-        }
-        let newLine = { // To be returned
-          type: 'Feature',
-          properties: {
-            id: uuidv4(),
-            // distance: (Needs to be added)
-          },
-          geometry: {
-            type: 'LineString',
-            // coordinates: (Needs to be added)
-          }
-        };
-        if (!calculateDirections || jsonData.routes.length === 0) {
-          if (calculateDirections) { alert("Failed to calculate directions"); }
-          // Default to direct distance/lines
-          newLine.geometry.coordinates = [lngLatStart, lngLatEnd];
-          newLine.properties.distance = length(newLine, {units: 'miles'});
-        }
-        else {
-          const route = jsonData.routes[0]; // Will always be a single route
-          newLine.properties.distance = route.distance / 1609.344; // Convert dist from meters to miles
-          newLine.geometry.coordinates = route.geometry.coordinates;
-        }
-        return newLine;
-      }
-
-      function updateDistanceState() {
-        setDist(geojson.features.map(line => line.properties.distance).reduce((a,b) => a+b, 0));
-      }
 
       async function handleLeftRightClick(e, calculateDirections) {
         // If anything but a point was clicked, add a new one
@@ -189,7 +199,7 @@ function Map() {
                 markers[i].associatedLines = [];
               });
             }
-            updateDistanceState();
+            setDist(updateDistanceState());
             map.current.getSource('geojson').setData(geojson);
           });
 
@@ -224,7 +234,7 @@ function Map() {
             }
 
             geojson.features.push(newLine);
-            updateDistanceState();
+            setDist(updateDistanceState())
 
             // Redraw lines on map
             map.current.getSource('geojson').setData(geojson);
@@ -279,7 +289,7 @@ function Map() {
                 alert("Error moving point.");
                 console.error("Multiple markers exist, but dragged marker had no associated lines. Not sure how that happened...");
               }
-              updateDistanceState();
+              setDist(updateDistanceState())
               map.current.getSource('geojson').setData(geojson);
             }
           });
@@ -314,7 +324,7 @@ function Map() {
         <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
         <hr/>
         <div>
-          <button onClick={()=>{}} className="sidebar-btn clear-btn">
+          <button onClick={() => setClearMap(true) } className="sidebar-btn clear-btn">
             <div>
               <ClearIcon /> 
               <p>Clear</p>
@@ -329,7 +339,17 @@ function Map() {
         </div>
       </div>
       <div ref={mapContainer} className="map-container" />
-      { loading && <div className="dialog">Loading...</div>}
+      { loading && <div className="dialog loading-dialog">Loading...</div> }
+      { clearMap && <AreYouSureDialog
+          open={clearMap}
+          onYes={() => { 
+            setClearMap(false);
+            handleClearMap();
+            setDist(updateDistanceState());
+            map.current.getSource('geojson').setData(geojson); // Reload UI
+          }} 
+          onNo={() => setClearMap(false)} 
+        /> }
     </div>
   );
 }
