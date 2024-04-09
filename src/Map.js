@@ -27,6 +27,7 @@ const geojson = {
 };
 
 function Map() {
+  const [loading, setLoading] = useState(true);
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [lng, setLng] = useState(-104.959730  );
@@ -51,6 +52,7 @@ function Map() {
     map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}));
 
     map.current.on('load', () => {
+      setLoading(false);
       console.info("Map loaded. Adding routing functionality.");
       map.current.addSource('geojson', {
         'type': 'geojson',
@@ -91,7 +93,7 @@ function Map() {
             // coordinates: (Needs to be added)
           }
         };
-        if (jsonData.routes.length == 0) {
+        if (jsonData.routes.length === 0) {
           alert("Failed to calculate directions");
           // Default to direct distance/lines
           newLine.geometry.coordinates = [lngLatStart, lngLatEnd];
@@ -127,7 +129,7 @@ function Map() {
           divRef.current.innerHTML = '<div></div>';
           divRef.current.appendChild(btnRef.current);
           btnRef.current.addEventListener('click', async (e) => {
-            let markerToRemoveIndex = markers.findIndex(el => el.id == idToUse);
+            let markerToRemoveIndex = markers.findIndex(el => el.id === idToUse);
             let markerToRemove = markers[markerToRemoveIndex];
             markerToRemove.markerObj.remove();
             markers = markers.filter(
@@ -135,17 +137,17 @@ function Map() {
             );
             if (markers.length > 1) {
               // Marker removed. Update all associated lines
-              if (markerToRemove.associatedLines.length == 1) {
+              if (markerToRemove.associatedLines.length === 1) {
                 // End point. Remove associated line, update new end point
                 const lineToRemove = markerToRemove.associatedLines[0];
                 geojson.features = geojson.features.filter(
-                  f => f.properties.id != lineToRemove
+                  f => f.properties.id !== lineToRemove
                 );
 
                 // Remove all references to the deleted line from all markers
                 markers.forEach((m,i) => {
                   markers[i].associatedLines = m.associatedLines.filter(
-                    l => l != lineToRemove
+                    l => l !== lineToRemove
                   );
                 });
               }
@@ -170,7 +172,7 @@ function Map() {
                 lMarker.associatedLines.push(newLine.properties.id);
                 rMarker.associatedLines.push(newLine.properties.id);
               }
-              else if (markerToRemove.associatedLines.length == 0) {
+              else if (markerToRemove.associatedLines.length === 0) {
                 // Should never happen...
                 alert("Error deleting point.");
                 console.error("Multiple markers exist after removal, but removed marker had no associated lines. Not sure how that happened...");
@@ -193,7 +195,7 @@ function Map() {
             .addTo(map.current);
 
           addedMarker.on('dragend', async (e) => {
-            let draggedMarkerIndex = markers.findIndex(el => el.id == idToUse);
+            let draggedMarkerIndex = markers.findIndex(el => el.id === idToUse);
             let draggedMarker = markers[draggedMarkerIndex];
             draggedMarker.lngLat = [e.target._lngLat.lng, e.target._lngLat.lat];
             if (markers.length > 1) {
@@ -201,12 +203,12 @@ function Map() {
                 // Edit 1 or 2 associated line
                 let linesToEdit = [];
                 draggedMarker.associatedLines.forEach(l => {
-                  linesToEdit.push(geojson.features.find(f => f.properties.id == l));
+                  linesToEdit.push(geojson.features.find(f => f.properties.id === l));
                 });
 
                 for (const [i, l] of linesToEdit.entries()) { // CANNOT use .forEach here b/c async
                   // Find other marker associated with line
-                  const otherMarkerIndex = markers.findIndex(m => m.id != idToUse && m.associatedLines.includes(l.properties.id));
+                  const otherMarkerIndex = markers.findIndex(m => m.id !== idToUse && m.associatedLines.includes(l.properties.id));
 
                   // Replace old line with new one
                   const sIndex = Math.min(draggedMarkerIndex, otherMarkerIndex);
@@ -216,7 +218,7 @@ function Map() {
                   linesToEdit[i].geometry.coordinates = newLine.geometry.coordinates;
                 }
               }
-              else if (draggedMarker.associatedLines.length == 0) {
+              else if (draggedMarker.associatedLines.length === 0) {
                 // Should never happen...
                 alert("Error moving point.");
                 console.error("Multiple markers exist, but dragged marker had no associated lines. Not sure how that happened...");
@@ -274,6 +276,7 @@ function Map() {
         Distance: {dist.toFixed(2)} Miles
       </div>
       <div ref={mapContainer} className="map-container" />
+      { loading && <div className="dialog">Loading...</div>}
     </div>
   );
 }
