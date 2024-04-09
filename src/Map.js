@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 import length from '@turf/length'
 import { v4 as uuidv4 } from 'uuid';
+import UndoIcon from '@mui/icons-material/Undo';
+import ClearIcon from '@mui/icons-material/Clear';
 import './Map.css';
 
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
@@ -40,6 +42,8 @@ function Map() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
+      // style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      // style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [lng, lat],
       zoom: zoom
     });
@@ -49,7 +53,7 @@ function Map() {
 
     // Add zoom control and geolocate
     map.current.addControl(new mapboxgl.NavigationControl(), "bottom-right");
-    map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}));
+    map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "bottom-right");
 
     map.current.on('load', () => {
       setLoading(false);
@@ -76,12 +80,15 @@ function Map() {
         filter: ['in', '$type', 'LineString']
       });
 
-      async function getDirections(lngLatStart, lngLatEnd) {
-        const jsonData = await getRouteBetweenPoints(
-          lngLatStart,
-          lngLatEnd,
-          mapboxgl.accessToken
-        );
+      async function getDirections(lngLatStart, lngLatEnd, calculateDirections=true) {
+        let jsonData;
+        if (calculateDirections) {
+          jsonData = await getRouteBetweenPoints(
+            lngLatStart,
+            lngLatEnd,
+            mapboxgl.accessToken
+          );
+        }
         let newLine = { // To be returned
           type: 'Feature',
           properties: {
@@ -93,8 +100,8 @@ function Map() {
             // coordinates: (Needs to be added)
           }
         };
-        if (jsonData.routes.length === 0) {
-          alert("Failed to calculate directions");
+        if (!calculateDirections || jsonData.routes.length === 0) {
+          if (calculateDirections) { alert("Failed to calculate directions"); }
           // Default to direct distance/lines
           newLine.geometry.coordinates = [lngLatStart, lngLatEnd];
           newLine.properties.distance = length(newLine, {units: 'miles'});
@@ -111,8 +118,7 @@ function Map() {
         setDist(geojson.features.map(line => line.properties.distance).reduce((a,b) => a+b, 0));
       }
 
-      // Place a marker on click
-      map.current.on('click', async e => {
+      async function handleLeftRightClick(e, calculateDirections) {
         // If anything but a point was clicked, add a new one
         if (!markers.map(m => m.element).includes(e.originalEvent.target)) {
           // Create a new DOM node and save it to a React ref
@@ -200,7 +206,8 @@ function Map() {
             let prevPt = markers[markers.length-1];
             const newLine = await getDirections(
               [prevPt.lngLat[0], prevPt.lngLat[1]],
-              markerToAdd.lngLat
+              markerToAdd.lngLat,
+              calculateDirections
             );
             // Associate this new line with both of its endpoint markers
             // This is so we can know which lines to edit on marker delete/move
@@ -277,9 +284,17 @@ function Map() {
             }
           });
         }
+      }
 
+      // Place a marker on click
+      map.current.on('click', async e => {
+        await handleLeftRightClick(e, true);
         // Clean up on unmount
         return () => map.remove();
+      });
+
+      map.current.on('contextmenu', async e => {
+        await handleLeftRightClick(e, false);
       });
     });
 
@@ -296,7 +311,22 @@ function Map() {
       <div className="sidebar">
         Longitude: {Number(lng).toFixed(4)} | Latitude: {Number(lat).toFixed(4)} | Zoom: {Number(zoom).toFixed(2)}
         <br/><br/>
-        Distance: {dist.toFixed(2)} Miles
+        <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
+        <hr/>
+        <div>
+          <button onClick={()=>{}} className="sidebar-btn clear-btn">
+            <div>
+              <ClearIcon /> 
+              <p>Clear</p>
+            </div>
+            </button>
+          <button onClick={()=>{}} className="sidebar-btn undo-btn">
+            <div>
+              <UndoIcon />
+              <p>Undo</p>
+            </div>
+          </button>
+        </div>
       </div>
       <div ref={mapContainer} className="map-container" />
       { loading && <div className="dialog">Loading...</div>}

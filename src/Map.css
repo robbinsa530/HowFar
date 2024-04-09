@@ -17,6 +17,32 @@
   border-radius: 4px;
 }
 
+.sidebar-distance {
+  font-size: 1.5em;
+}
+
+.sidebar-btn-box {
+  text-align: center;
+}
+
+.sidebar-btn {
+  z-index: 2;
+  display: inline-block;
+  padding: 5px;
+  width: 25%;
+  font-size: 1.2em;
+  border: 2px solid #ccc;
+  margin: 10px;
+  cursor: pointer;
+}
+.sidebar-btn:hover {
+  background-color: #ccc;
+}
+
+.sidebar-btn p {
+  margin: 0;
+}
+
 .marker {
   background-color: white;
   border: 2px solid black;
