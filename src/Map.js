@@ -186,13 +186,54 @@ function Map() {
             updateDistanceState();
             map.current.getSource('geojson').setData(geojson);
           });
+
+          let markerToAdd = {
+            id: idToUse,
+            element: ref.current,
+            lngLat: [e.lngLat.lng, e.lngLat.lat],
+            associatedLines: []
+            // markerObj: (Needs to be added)
+          };
+
+          // If theres already 1+ markers, calculate directions/distance
+          if (markers.length + 1 > 1) {
+            let prevPt = markers[markers.length-1];
+            const newLine = await getDirections(
+              [prevPt.lngLat[0], prevPt.lngLat[1]],
+              markerToAdd.lngLat
+            );
+            // Associate this new line with both of its endpoint markers
+            // This is so we can know which lines to edit on marker delete/move
+            prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-2]
+            markerToAdd.associatedLines.push(newLine.properties.id);
+
+            // Update position of marker. This is in case click wasn't on a road or path,
+            // the API will return the closest point to a road or path. That's what we wanna use
+            markerToAdd.lngLat = newLine.geometry.coordinates[newLine.geometry.coordinates.length -1];
+
+            if (markers.length == 1) { // Only on the second point, make sure we update the first too
+              markers[0].markerObj.setLngLat(newLine.geometry.coordinates[0]);
+              markers[0].lngLat = newLine.geometry.coordinates[0];
+            }
+
+            geojson.features.push(newLine);
+            updateDistanceState();
+
+            // Redraw lines on map
+            map.current.getSource('geojson').setData(geojson);
+          }
+
           let addedMarker = new mapboxgl.Marker({
             className: "marker",
             element: ref.current,
             draggable: true
-          }).setLngLat(e.lngLat)
+          }).setLngLat(markerToAdd.lngLat)
             .setPopup(new mapboxgl.Popup().setDOMContent(divRef.current))
             .addTo(map.current);
+
+          // Add marker to running list
+          markerToAdd.markerObj = addedMarker;
+          markers.push(markerToAdd);
 
           addedMarker.on('dragend', async (e) => {
             let draggedMarkerIndex = markers.findIndex(el => el.id === idToUse);
@@ -200,7 +241,7 @@ function Map() {
             draggedMarker.lngLat = [e.target._lngLat.lng, e.target._lngLat.lat];
             if (markers.length > 1) {
               if (draggedMarker.associatedLines.length >= 1) {
-                // Edit 1 or 2 associated line
+                // Edit 1 or 2 associated lines
                 let linesToEdit = [];
                 draggedMarker.associatedLines.forEach(l => {
                   linesToEdit.push(geojson.features.find(f => f.properties.id === l));
@@ -216,6 +257,14 @@ function Map() {
                   const newLine = await getDirections(markers[sIndex].lngLat, markers[eIndex].lngLat);
                   linesToEdit[i].properties.distance = newLine.properties.distance;
                   linesToEdit[i].geometry.coordinates = newLine.geometry.coordinates;
+
+                  // Update position of marker. This is in case it wasn't dragged onto a road or path,
+                  // the API will return the closest point to a road or path. That's what we wanna use
+                  if (i == 0) {
+                    const coordIndex = (draggedMarkerIndex < otherMarkerIndex) ? 0 : newLine.geometry.coordinates.length -1;
+                    draggedMarker.markerObj.setLngLat(newLine.geometry.coordinates[coordIndex]);
+                    draggedMarker.lngLat = newLine.geometry.coordinates[coordIndex];
+                  }
                 }
               }
               else if (draggedMarker.associatedLines.length === 0) {
@@ -227,32 +276,6 @@ function Map() {
               map.current.getSource('geojson').setData(geojson);
             }
           });
-
-          markers.push({
-            id: idToUse,
-            element: ref.current,
-            lngLat: [e.lngLat.lng, e.lngLat.lat],
-            markerObj: addedMarker,
-            associatedLines: []
-          });
-
-          // Marker has been placed. If theres multiple, calculate directions/distance
-          if (markers.length > 1) {
-            let prevPt = markers[markers.length-2];
-            const newLine = await getDirections(
-              [prevPt.lngLat[0], prevPt.lngLat[1]],
-              [e.lngLat.lng, e.lngLat.lat]
-            );
-            // Associate this new line with both of its endpoint markers
-            // This is so we can know which lines to edit on marker delete/move
-            prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-2]
-            markers[markers.length -1].associatedLines.push(newLine.properties.id);
-            geojson.features.push(newLine);
-            updateDistanceState();
-
-            // Redraw lines on map
-            map.current.getSource('geojson').setData(geojson);
-          }
         }
 
         // Clean up on unmount
