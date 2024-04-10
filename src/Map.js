@@ -4,9 +4,12 @@ import length from '@turf/length'
 import { v4 as uuidv4 } from 'uuid';
 import UndoIcon from '@mui/icons-material/Undo';
 import ClearIcon from '@mui/icons-material/Clear';
-import './Map.css';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 
+import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
+import LoadingDialog from './components/LoadingDialog'
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 
 import publicKey from './secrets/mapbox.public';
@@ -166,6 +169,13 @@ function Map() {
                     l => l !== lineToRemove
                   );
                 });
+
+                //Edit class of start/end marker so it'll be white
+                if (markerToRemoveIndex === 0) { // Start removed
+                  markers[0].markerObj.removeClassName("marker").addClassName("start-marker")
+                } else { // End removed
+                  markers[markers.length -1].markerObj.removeClassName("marker").addClassName("end-marker");
+                }
               }
               else if (markerToRemove.associatedLines.length > 1) {
                 // Middle point. Remove associated lines, reroute, update
@@ -197,6 +207,7 @@ function Map() {
               geojson.features = [];
               markers.forEach((_,i) => {
                 markers[i].associatedLines = [];
+                markers[i].markerObj.removeClassName("marker").removeClassName("end-marker").addClassName("start-marker");
               });
             }
             setDist(updateDistanceState());
@@ -236,12 +247,15 @@ function Map() {
             geojson.features.push(newLine);
             setDist(updateDistanceState())
 
+            //Edit class of last end marker so it'll be white
+            prevPt.markerObj.removeClassName("end-marker").addClassName("marker");
+
             // Redraw lines on map
             map.current.getSource('geojson').setData(geojson);
           }
 
           let addedMarker = new mapboxgl.Marker({
-            className: "marker",
+            className: markers.length ? "end-marker" : "start-marker",
             element: ref.current,
             draggable: true
           }).setLngLat(markerToAdd.lngLat)
@@ -323,23 +337,15 @@ function Map() {
         <br/><br/>
         <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
         <hr/>
-        <div>
-          <button onClick={() => setClearMap(true) } className="sidebar-btn clear-btn">
-            <div>
-              <ClearIcon /> 
-              <p>Clear</p>
-            </div>
-            </button>
-          <button onClick={()=>{}} className="sidebar-btn undo-btn">
-            <div>
-              <UndoIcon />
-              <p>Undo</p>
-            </div>
-          </button>
-        </div>
+
+        <Stack className="sidebar-btn-container" spacing={2} direction="row">
+          <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
+          <Button variant="contained" onClick={()=>{}} startIcon={<UndoIcon />}>Undo</Button>
+        </Stack>
+
       </div>
       <div ref={mapContainer} className="map-container" />
-      { loading && <div className="dialog loading-dialog">Loading...</div> }
+      { loading && <LoadingDialog open={loading} /> }
       { clearMap && <AreYouSureDialog
           open={clearMap}
           onYes={() => { 
