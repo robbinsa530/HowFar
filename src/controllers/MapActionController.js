@@ -4,12 +4,12 @@ import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-load
 export async function handleLeftRightClick(e, markers, geojson, map, updateDistanceInComponent, getDirections, rightClick) {
   // If anything but a point was clicked, add a new one
   if (!markers.map(m => m.element).includes(e.originalEvent.target)) {
-    // Create a new DOM node and save it to a React ref
+    // Create a new DOM node and save it to a React ref. This will be the marker element
     const ref = React.createRef();
     ref.current = document.createElement('div');
     const idToUse = String(new Date().getTime());
     
-    // Create a Mapbox Marker at our new DOM node
+    // Create a Mapbox Popup with delete button
     const divRef = React.createRef();
     const btnRef = React.createRef();
     divRef.current = document.createElement('div');
