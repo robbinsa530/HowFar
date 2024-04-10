@@ -14,6 +14,7 @@ import FormControl from '@mui/material/FormControl';
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
 import LoadingDialog from './components/LoadingDialog'
+import BlueSwitch from './components/BlueSwitch'
 import { handleLeftRightClick } from './controllers/MapActionController';
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 
@@ -221,7 +222,7 @@ function Map() {
             <FormControlLabel
               value="auto-follow-roads"
               control={
-                <Switch color="primary" checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
+                <BlueSwitch checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
               }
               label="Auto follow roads"
               labelPlacement="start"
@@ -229,7 +230,7 @@ function Map() {
             <FormControlLabel
               value={"right-click-enabled"}
               control={
-                <Switch color="primary" checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
+                <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
               }
               label="Right click enabled"
               labelPlacement="start"
