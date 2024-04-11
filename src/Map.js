@@ -10,6 +10,8 @@ import Button from '@mui/material/Button';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
@@ -269,29 +271,37 @@ function Map() {
         </div>
 
         <Stack className="sidebar-btn-container" spacing={2} direction="row">
-          <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
-          <Button variant="contained" onClick={()=>{}} startIcon={<UndoIcon />}>Undo</Button>
+          <Tooltip title={<Typography>Clear route and all waypoints from map</Typography>}>
+            <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
+          </Tooltip>
+          <Tooltip title={<Typography>Undo last action</Typography>}>
+            <Button variant="contained" disabled onClick={()=>{}} startIcon={<UndoIcon />}>Undo</Button>
+          </Tooltip>
         </Stack>
 
 
         <FormControl component="fieldset">
           <FormGroup aria-label="boolean-switches">
-            <FormControlLabel
-              value="auto-follow-roads"
-              control={
-                <BlueSwitch checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
-              }
-              label="Auto follow roads"
-              labelPlacement="start"
-            />
-            <FormControlLabel
-              value={"right-click-enabled"}
-              control={
-                <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
-              }
-              label="Right click enabled"
-              labelPlacement="start"
-            />
+            <Tooltip title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
+              <FormControlLabel
+                value="auto-follow-roads"
+                control={
+                  <BlueSwitch checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
+                }
+                label="Auto follow roads"
+                labelPlacement="start"
+              />
+            </Tooltip>
+            <Tooltip title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
+              <FormControlLabel
+                value={"right-click-enabled"}
+                control={
+                  <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
+                }
+                label="Right click enabled"
+                labelPlacement="start"
+              />
+            </Tooltip>
           </FormGroup>
         </FormControl>
 
