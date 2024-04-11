@@ -23,6 +23,7 @@ import LoadingDialog from './components/LoadingDialog'
 import BlueSwitch from './components/BlueSwitch'
 import BlueRadio from './components/BlueRadio'
 import BlueSelect from './components/BlueSelect'
+import BlueSlider from './components/BlueSlider'
 import { handleLeftRightClick } from './controllers/MapActionController';
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 
@@ -66,9 +67,11 @@ function Map() {
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
   const [mapType, setMapType] = useState(0);
+  const [walkwayBias, setWalkwayBias] = useState(0);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
+  const walkwayBiasRef = React.useRef(walkwayBias);
 
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -94,6 +97,11 @@ function Map() {
   const handleSelectMapType = useCallback((event) => {
     setMapType(event.target.value);
     map.current.setStyle(mapTypes[event.target.value]);
+  }, []);
+
+  const handleChangeWalkwayBias = useCallback((_, newValue) => {
+    setWalkwayBias(newValue);
+    walkwayBiasRef.current = newValue;
   }, []);
 
   const updateDistanceAndEleState = useCallback(() => {
@@ -152,6 +160,7 @@ function Map() {
       jsonData = await getRouteBetweenPoints(
         lngLatStart,
         lngLatEnd,
+        walkwayBiasRef.current,
         mapboxgl.accessToken
       );
     }
@@ -369,6 +378,25 @@ function Map() {
             <MenuItem value={1}>Outdoors</MenuItem>
             <MenuItem value={2}>Satellite</MenuItem>
           </BlueSelect>
+        </FormControl>
+
+        <br/><br/><hr/><br/>
+        <FormControl fullWidth>
+          <FormLabel sx={{textAlign: "left", color:"white"}}>When routing, favor...</FormLabel>
+          <BlueSlider
+            aria-label="Walkway-Bias"
+            value={walkwayBias}
+            onChange={handleChangeWalkwayBias}
+            defaultValue={0}
+            shiftStep={0.5}
+            step={0.1}
+            min={-1}
+            max={1}
+            tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
+                    roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
+                    as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
+                    favor both equally</>}
+          />
         </FormControl>
 
       </div>
