@@ -1,12 +1,12 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 import length from '@turf/length'
+import lineChunk from '@turf/line-chunk'
 import { v4 as uuidv4 } from 'uuid';
 import UndoIcon from '@mui/icons-material/Undo';
 import ClearIcon from '@mui/icons-material/Clear';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
@@ -38,10 +38,6 @@ const geojson = {
   'features': []
 };
 
-function updateDistanceState() {
-  return geojson.features.map(line => line.properties.distance).reduce((a,b) => a+b, 0);
-}
-
 function handleClearMap() {
   // Clear markers/lines
   markers.forEach(m => m.markerObj.remove());
@@ -60,6 +56,8 @@ function Map() {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [dist, setDist] = useState(0.0);
+  const [eleUp, setEleUp] = useState(0.0);
+  const [eleDown, setEleDown] = useState(0.0);
 
   const handleSwitchAutoFollowRoads = useCallback((event) => {
     setAutoFollowRoads(event.target.checked);
@@ -69,6 +67,20 @@ function Map() {
   const handleSwitchRightClickEnabled = useCallback((event) => {
     setRightClickEnabled(event.target.checked);
     rightClickEnabledRef.current = event.target.checked;
+  }, []);
+
+  const updateDistanceAndEleState = useCallback(() => {
+    let distTotal = 0.0;
+    let eleUpTotal = 0.0;
+    let eleDownTotal = 0.0;
+    geojson.features.forEach(line => {
+      distTotal += line.properties.distance;
+      eleUpTotal += line.properties.eleUp;
+      eleDownTotal += line.properties.eleDown;
+    });
+    setDist(distTotal);
+    setEleUp(eleUpTotal * 3.28084);
+    setEleDown(eleDownTotal * 3.28084);
   }, []);
 
   async function getDirections(lngLatStart, lngLatEnd, calculateDirectionsOverride=undefined) {
@@ -88,6 +100,8 @@ function Map() {
       properties: {
         id: uuidv4(),
         // distance: (Needs to be added)
+        // eleUp: (Needs to be added)
+        // eleDown: (Needs to be added)
       },
       geometry: {
         type: 'LineString',
@@ -125,6 +139,36 @@ function Map() {
         newLine.properties.distance += distBtwn;
       }
     }
+    //Calculate elevation gain/loss
+    const chunks = lineChunk(newLine, 0.02/*km*/).features;
+    const elevations = [ // In meters
+      ...chunks.map((feature) => {
+          return map.current.queryTerrainElevation(
+              feature.geometry.coordinates[0]
+          );
+      }),
+      // do not forget the last coordinate
+      map.current.queryTerrainElevation(
+          chunks[chunks.length - 1].geometry.coordinates[1]
+      )
+    ];
+    let up = 0.0;
+    let down = 0.0;
+    let prevEle;
+    elevations.forEach((ele,i) => {
+      if (i > 0) {
+        const change = ele - prevEle;
+        if (change < 0) {
+          down += change;
+        } else {
+          up += change;
+        }
+      }
+      prevEle = ele;
+    });
+    newLine.properties.eleUp = up;
+    newLine.properties.eleDown = down;
+
     return newLine;
   }
 
@@ -146,6 +190,16 @@ function Map() {
       map.current.addControl(new mapboxgl.NavigationControl(), "bottom-right");
       map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "bottom-right");
     
+      map.current.on('style.load', () => {
+        map.current.addSource('mapbox-dem', {
+          type: 'raster-dem',
+          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          tileSize: 512,
+          maxzoom: 14
+        });
+        map.current.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
+      });
+
       map.current.on('load', () => {
         setLoading(false);
         console.info("Map loaded. Adding routing functionality.");
@@ -179,7 +233,7 @@ function Map() {
           markers,
           geojson,
           map,
-          () => {setDist(updateDistanceState())},
+          updateDistanceAndEleState,
           getDirections,
           false // rightClick bool
         );
@@ -192,7 +246,7 @@ function Map() {
             markers,
             geojson,
             map,
-            () => {setDist(updateDistanceState())},
+            updateDistanceAndEleState,
             getDirections,
             true // rightClick bool
           );
@@ -209,7 +263,10 @@ function Map() {
     <div className="Map">
       <div className="sidebar">
         <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
-        <hr/>
+        <div className="elevation-container">
+          <p className="sidebar-elevation">Elevation Gain/Loss:</p>
+          <p className="sidebar-elevation">{eleUp.toFixed(2)}/{eleDown.toFixed(2)} Ft</p>
+        </div>
 
         <Stack className="sidebar-btn-container" spacing={2} direction="row">
           <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
@@ -246,7 +303,7 @@ function Map() {
           onYes={() => {
             setClearMap(false);
             handleClearMap();
-            setDist(updateDistanceState());
+            updateDistanceAndEleState();
             map.current.getSource('geojson').setData(geojson); // Reload UI
           }} 
           onNo={() => setClearMap(false)} 

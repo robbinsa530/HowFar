@@ -155,6 +155,8 @@ export async function handleLeftRightClick(e, markers, geojson, map, updateDista
             const eIndex = Math.max(draggedMarkerIndex, otherMarkerIndex);
             const newLine = await getDirections(markers[sIndex].lngLat, markers[eIndex].lngLat);
             linesToEdit[i].properties.distance = newLine.properties.distance;
+            linesToEdit[i].properties.eleUp = newLine.properties.eleUp;
+            linesToEdit[i].properties.eleDown = newLine.properties.eleDown;
             linesToEdit[i].geometry.coordinates = newLine.geometry.coordinates;
 
             // Update position of marker. This is in case it wasn't dragged onto a road or path,

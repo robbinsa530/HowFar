@@ -18,7 +18,16 @@
 }
 
 .sidebar-distance {
-  font-size: 1.5em;
+  font-size: 1.6em;
+}
+
+.sidebar-elevation {
+  font-size: 1.2em;
+}
+
+.elevation-container {
+  border: 1px solid white;
+  padding: 0px;
 }
 
 .sidebar-btn-container {
