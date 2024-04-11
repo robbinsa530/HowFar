@@ -14,17 +14,26 @@ import FormLabel from '@mui/material/FormLabel';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import RadioGroup from '@mui/material/RadioGroup';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
 
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
 import LoadingDialog from './components/LoadingDialog'
 import BlueSwitch from './components/BlueSwitch'
 import BlueRadio from './components/BlueRadio'
+import BlueSelect from './components/BlueSelect'
 import { handleLeftRightClick } from './controllers/MapActionController';
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 
 import publicKey from './secrets/mapbox.public';
 mapboxgl.accessToken = publicKey;
+
+const mapTypes = [
+  'mapbox://styles/mapbox/streets-v12',
+  'mapbox://styles/mapbox/outdoors-v12',
+  'mapbox://styles/mapbox/satellite-streets-v12'
+];
 
 /*
 marker:
@@ -56,6 +65,7 @@ function Map() {
   const [autoFollowRoads, setAutoFollowRoads] = useState(true);
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
+  const [mapType, setMapType] = useState(0);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
@@ -81,6 +91,11 @@ function Map() {
     addToStartOrEndRef.current = event.target.value;
   }, []);
 
+  const handleSelectMapType = useCallback((event) => {
+    setMapType(event.target.value);
+    map.current.setStyle(mapTypes[event.target.value]);
+  }, []);
+
   const updateDistanceAndEleState = useCallback(() => {
     let distTotal = 0.0;
     let eleUpTotal = 0.0;
@@ -93,6 +108,39 @@ function Map() {
     setDist(distTotal);
     setEleUp(eleUpTotal * 3.28084);
     setEleDown(eleDownTotal * 3.28084);
+  }, []);
+
+  const applyMapStyles = useCallback(() => {
+    // Elevation Data
+    map.current.addSource('mapbox-dem', {
+      type: 'raster-dem',
+      url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+      tileSize: 512,
+      maxzoom: 14
+    });
+    map.current.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
+
+    map.current.addSource('geojson', {
+      'type': 'geojson',
+      'data': geojson
+    });
+
+    // Add styles to the map
+    map.current.addLayer({
+      id: 'measure-lines',
+      type: 'line',
+      source: 'geojson',
+      layout: {
+          'line-cap': 'round',
+          'line-join': 'round'
+      },
+      paint: {
+          'line-color': '#074dd9',
+          'line-width': 5,
+          'line-opacity': 0.65
+      },
+      filter: ['in', '$type', 'LineString']
+    });
   }, []);
 
   async function getDirections(lngLatStart, lngLatEnd, calculateDirectionsOverride=undefined) {
@@ -188,9 +236,7 @@ function Map() {
     if (!map.current) { // initialize map only once
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        // style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        // style: 'mapbox://styles/mapbox/outdoors-v12',
+        style: mapTypes[0],
         center: [-104.959730, 39.765733],
         zoom: 14
       });
@@ -203,39 +249,12 @@ function Map() {
       map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "bottom-right");
     
       map.current.on('style.load', () => {
-        map.current.addSource('mapbox-dem', {
-          type: 'raster-dem',
-          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-          tileSize: 512,
-          maxzoom: 14
-        });
-        map.current.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
+        applyMapStyles();
       });
 
       map.current.on('load', () => {
         setLoading(false);
         console.info("Map loaded. Adding routing functionality.");
-        map.current.addSource('geojson', {
-          'type': 'geojson',
-          'data': geojson
-        });
-    
-        // Add styles to the map
-        map.current.addLayer({
-          id: 'measure-lines',
-          type: 'line',
-          source: 'geojson',
-          layout: {
-              'line-cap': 'round',
-              'line-join': 'round'
-          },
-          paint: {
-              'line-color': '#074dd9',
-              'line-width': 5,
-              'line-opacity': 0.65
-          },
-          filter: ['in', '$type', 'LineString']
-        });
       });
 
       // Place a marker on click
@@ -334,6 +353,22 @@ function Map() {
               <FormControlLabel value="add-to-end" control={<BlueRadio />} label="End" />
             </RadioGroup>
           </Tooltip>
+        </FormControl>
+        
+        <br/><hr/><br/>
+        <FormControl fullWidth>
+          <InputLabel sx={{color:"white", fontSize:"1.1em", "&.Mui-focused": {color: "white"}}}>Map type</InputLabel>
+          <BlueSelect
+            labelId="select-map-type"
+            id="select-map-type"
+            label="Map type"
+            value={mapType}
+            onChange={handleSelectMapType}
+          >
+            <MenuItem value={0}>Standard</MenuItem>
+            <MenuItem value={1}>Outdoors</MenuItem>
+            <MenuItem value={2}>Satellite</MenuItem>
+          </BlueSelect>
         </FormControl>
 
       </div>
