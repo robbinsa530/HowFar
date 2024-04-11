@@ -1,7 +1,6 @@
 .map-container {
   width: 100vw;
   height: 100vh;
-  /* height: calc(100vh - 100px); /* Use this when I want to add stuff at the bottom*/
 }
 
 .sidebar {
@@ -80,4 +79,13 @@
   text-align: center;
   vertical-align: baseline;
   white-space: nowrap;
+}
+
+.footer {
+  background-color: rgb(35 55 75 / 80%);
+  color: white;
+  z-index: 1;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
 }

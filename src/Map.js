@@ -400,6 +400,7 @@ function Map() {
         </FormControl>
 
       </div>
+      <footer className='footer'> <small>&copy; Copyright {new Date().getFullYear()} Alex Robbins. All Rights Reserved.</small> </footer>
       <div ref={mapContainer} className="map-container" />
       { loading && <LoadingDialog open={loading} /> }
       { clearMap && <AreYouSureDialog
