@@ -33,7 +33,8 @@ mapboxgl.accessToken = publicKey;
 const mapTypes = [
   'mapbox://styles/mapbox/streets-v12',
   'mapbox://styles/mapbox/outdoors-v12',
-  'mapbox://styles/mapbox/satellite-streets-v12'
+  'mapbox://styles/mapbox/satellite-streets-v12',
+  'mapbox://styles/mapbox/dark-v11'
 ];
 
 /*
@@ -348,7 +349,7 @@ function Map() {
 
         <br/><br/><hr/><br/>
         <FormControl>
-          <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to...</FormLabel>
+          <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to:</FormLabel>
           <Tooltip title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
             <RadioGroup
               row
@@ -377,12 +378,13 @@ function Map() {
             <MenuItem value={0}>Standard</MenuItem>
             <MenuItem value={1}>Outdoors</MenuItem>
             <MenuItem value={2}>Satellite</MenuItem>
+            <MenuItem value={3}>Dark Theme</MenuItem>
           </BlueSelect>
         </FormControl>
 
         <br/><br/><hr/><br/>
         <FormControl fullWidth>
-          <FormLabel sx={{textAlign: "left", color:"white"}}>When routing, favor...</FormLabel>
+          <FormLabel sx={{textAlign: "left", color:"white"}}>When routing, favor:</FormLabel>
           <BlueSlider
             aria-label="Walkway-Bias"
             value={walkwayBias}
