@@ -10,13 +10,16 @@ import Button from '@mui/material/Button';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import RadioGroup from '@mui/material/RadioGroup';
 
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
 import LoadingDialog from './components/LoadingDialog'
 import BlueSwitch from './components/BlueSwitch'
+import BlueRadio from './components/BlueRadio'
 import { handleLeftRightClick } from './controllers/MapActionController';
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 
@@ -52,8 +55,10 @@ function Map() {
   const [clearMap, setClearMap] = useState(false);
   const [autoFollowRoads, setAutoFollowRoads] = useState(true);
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
+  const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
+  const addToStartOrEndRef = React.useRef(addToStartOrEnd);
 
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -69,6 +74,11 @@ function Map() {
   const handleSwitchRightClickEnabled = useCallback((event) => {
     setRightClickEnabled(event.target.checked);
     rightClickEnabledRef.current = event.target.checked;
+  }, []);
+
+  const handleToggleStartEnd = useCallback((event) => {
+    setAddToStartOrEnd(event.target.value);
+    addToStartOrEndRef.current = event.target.value;
   }, []);
 
   const updateDistanceAndEleState = useCallback(() => {
@@ -237,7 +247,8 @@ function Map() {
           map,
           updateDistanceAndEleState,
           getDirections,
-          false // rightClick bool
+          false, // rightClick bool
+          (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
         );
       });
 
@@ -250,7 +261,8 @@ function Map() {
             map,
             updateDistanceAndEleState,
             getDirections,
-            true // rightClick bool
+            true, // rightClick bool
+            (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
           );
         }
       });
@@ -269,21 +281,22 @@ function Map() {
           <p className="sidebar-elevation">Elevation Gain/Loss:</p>
           <p className="sidebar-elevation">{eleUp.toFixed(2)}/{eleDown.toFixed(2)} Ft</p>
         </div>
+        <br/>
 
         <Stack className="sidebar-btn-container" spacing={2} direction="row">
           <Tooltip title={<Typography>Clear route and all waypoints from map</Typography>}>
             <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
           </Tooltip>
           <Tooltip title={<Typography>Undo last action</Typography>}>
-            <Button variant="contained" disabled onClick={()=>{}} startIcon={<UndoIcon />}>Undo</Button>
+            <Button variant="contained" onClick={()=>{}} startIcon={<UndoIcon />}>Undo</Button>
           </Tooltip>
         </Stack>
 
-
+        <br/><hr/><br/>
         <FormControl component="fieldset">
           <FormGroup aria-label="boolean-switches">
             <Tooltip title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
-              <FormControlLabel
+              <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                 value="auto-follow-roads"
                 control={
                   <BlueSwitch checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
@@ -293,7 +306,7 @@ function Map() {
               />
             </Tooltip>
             <Tooltip title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
-              <FormControlLabel
+              <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                 value={"right-click-enabled"}
                 control={
                   <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
@@ -303,6 +316,24 @@ function Map() {
               />
             </Tooltip>
           </FormGroup>
+        </FormControl>
+
+        <br/><br/><hr/><br/>
+        <FormControl>
+          <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to...</FormLabel>
+          <Tooltip title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
+            <RadioGroup
+              row
+              aria-labelledby="add-to-start-or-end-radio-group"
+              defaultValue="add-to-end"
+              name="add-to-start-or-end-radio-buttons-group"
+              value={addToStartOrEnd}
+              onChange={handleToggleStartEnd}
+            >
+              <FormControlLabel value="add-to-start" control={<BlueRadio />} label="Beginning" />
+              <FormControlLabel value="add-to-end" control={<BlueRadio />} label="End" />
+            </RadioGroup>
+          </Tooltip>
         </FormControl>
 
       </div>

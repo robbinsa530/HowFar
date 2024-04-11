@@ -1,7 +1,7 @@
 import React from 'react';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 
-export async function handleLeftRightClick(e, markers, geojson, map, updateDistanceInComponent, getDirections, rightClick) {
+export async function handleLeftRightClick(e, markers, geojson, map, updateDistanceInComponent, getDirections, rightClick, addToEnd/*standard*/) {
   // If anything but a point was clicked, add a new one
   if (!markers.map(m => m.element).includes(e.originalEvent.target)) {
     // Create a new DOM node and save it to a React ref. This will be the marker element
@@ -90,49 +90,97 @@ export async function handleLeftRightClick(e, markers, geojson, map, updateDista
       // markerObj: (Needs to be added)
     };
 
-    // If theres already 1+ markers, calculate directions/distance
-    if (markers.length + 1 > 1) {
-      let prevPt = markers[markers.length-1];
-      const newLine = await getDirections(
-        [prevPt.lngLat[0], prevPt.lngLat[1]],
-        markerToAdd.lngLat,
-        (rightClick) ? false : undefined // If right click, just this time don't calculate directions
-      );
-      // Associate this new line with both of its endpoint markers
-      // This is so we can know which lines to edit on marker delete/move
-      prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-2]
-      markerToAdd.associatedLines.push(newLine.properties.id);
+    let addedMarker;
+    if (addToEnd) {
+      // If theres already 1+ markers, calculate directions/distance
+      if (markers.length + 1 > 1) {
+        let prevPt = markers[markers.length-1];
+        const newLine = await getDirections(
+          [prevPt.lngLat[0], prevPt.lngLat[1]],
+          markerToAdd.lngLat,
+          (rightClick) ? false : undefined // If right click, just this time don't calculate directions
+        );
+        // Associate this new line with both of its endpoint markers
+        // This is so we can know which lines to edit on marker delete/move
+        prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-1]
+        markerToAdd.associatedLines.push(newLine.properties.id);
 
-      // Update position of marker. This is in case click wasn't on a road or path,
-      // the API will return the closest point to a road or path. That's what we wanna use
-      markerToAdd.lngLat = newLine.geometry.coordinates[newLine.geometry.coordinates.length -1];
+        // Update position of marker. This is in case click wasn't on a road or path,
+        // the API will return the closest point to a road or path. That's what we wanna use
+        markerToAdd.lngLat = newLine.geometry.coordinates[newLine.geometry.coordinates.length -1];
 
-      if (markers.length === 1) { // Only on the second point, make sure we update the first too
-        markers[0].markerObj.setLngLat(newLine.geometry.coordinates[0]);
-        markers[0].lngLat = newLine.geometry.coordinates[0];
+        if (markers.length === 1) { // Only on the second point, make sure we update the first too
+          markers[0].markerObj.setLngLat(newLine.geometry.coordinates[0]);
+          markers[0].lngLat = newLine.geometry.coordinates[0];
+        }
+
+        geojson.features.push(newLine);
+        updateDistanceInComponent();
+
+        //Edit class of last end marker so it'll be white
+        prevPt.markerObj.removeClassName("end-marker").addClassName("marker");
+
+        // Redraw lines on map
+        map.current.getSource('geojson').setData(geojson);
       }
 
-      geojson.features.push(newLine);
-      updateDistanceInComponent();
+      addedMarker = new mapboxgl.Marker({
+        className: markers.length ? "end-marker" : "start-marker",
+        element: ref.current,
+        draggable: true
+      }).setLngLat(markerToAdd.lngLat)
+        .setPopup(new mapboxgl.Popup().setDOMContent(divRef.current))
+        .addTo(map.current);
 
-      //Edit class of last end marker so it'll be white
-      prevPt.markerObj.removeClassName("end-marker").addClassName("marker");
-
-      // Redraw lines on map
-      map.current.getSource('geojson').setData(geojson);
+      // Add marker to running list
+      markerToAdd.markerObj = addedMarker;
+      markers.push(markerToAdd);
     }
+    else { // Add to start
+      // If theres already 1+ markers, calculate directions/distance
+      if (markers.length + 1 > 1) {
+        let prevPt = markers[0];
+        const newLine = await getDirections(
+          markerToAdd.lngLat,
+          [prevPt.lngLat[0], prevPt.lngLat[1]],
+          (rightClick) ? false : undefined // If right click, just this time don't calculate directions
+        );
+        // Associate this new line with both of its endpoint markers
+        // This is so we can know which lines to edit on marker delete/move
+        prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-1]
+        markerToAdd.associatedLines.push(newLine.properties.id);
 
-    let addedMarker = new mapboxgl.Marker({
-      className: markers.length ? "end-marker" : "start-marker",
-      element: ref.current,
-      draggable: true
-    }).setLngLat(markerToAdd.lngLat)
-      .setPopup(new mapboxgl.Popup().setDOMContent(divRef.current))
-      .addTo(map.current);
+        // Update position of marker. This is in case click wasn't on a road or path,
+        // the API will return the closest point to a road or path. That's what we wanna use
+        markerToAdd.lngLat = newLine.geometry.coordinates[0];
 
-    // Add marker to running list
-    markerToAdd.markerObj = addedMarker;
-    markers.push(markerToAdd);
+        if (markers.length === 1) { // Only on the second point, make sure we update the first too
+          markers[0].markerObj.setLngLat(newLine.geometry.coordinates[newLine.geometry.coordinates.length - 1]);
+          markers[0].lngLat = newLine.geometry.coordinates[newLine.geometry.coordinates.length - 1];
+        }
+
+        geojson.features.unshift(newLine);
+        updateDistanceInComponent();
+
+        //Edit class of last end marker so it'll be white
+        prevPt.markerObj.removeClassName("start-marker").addClassName("marker");
+
+        // Redraw lines on map
+        map.current.getSource('geojson').setData(geojson);
+      }
+
+      addedMarker = new mapboxgl.Marker({
+        className: "start-marker",
+        element: ref.current,
+        draggable: true
+      }).setLngLat(markerToAdd.lngLat)
+        .setPopup(new mapboxgl.Popup().setDOMContent(divRef.current))
+        .addTo(map.current);
+
+      // Add marker to running list
+      markerToAdd.markerObj = addedMarker;
+      markers.unshift(markerToAdd);
+    }
 
     addedMarker.on('dragend', async (e) => {
       let draggedMarkerIndex = markers.findIndex(el => el.id === idToUse);
