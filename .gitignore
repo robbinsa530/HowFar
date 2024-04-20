@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/server/node_modules
 /.pnp
 .pnp.js
 
@@ -24,6 +25,7 @@ yarn-error.log*
 
 # passwords/keys
 src/secrets
+server/secrets
 
 # my stuff
 .todo

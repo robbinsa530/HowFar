@@ -48,6 +48,9 @@ export async function handleLeftRightClick(e, markers, geojson, map, updateDista
         else if (markerToRemove.associatedLines.length > 1) {
           // Middle point. Remove associated lines, reroute, update
           const linesToRemove = markerToRemove.associatedLines;
+          const lineIndices = linesToRemove.map(l => {
+            return geojson.features.findIndex(f => f.properties.id === l);
+          });
           geojson.features = geojson.features.filter(
             f => !linesToRemove.includes(f.properties.id)
           );
@@ -58,9 +61,9 @@ export async function handleLeftRightClick(e, markers, geojson, map, updateDista
           lMarker.associatedLines = lMarker.associatedLines.filter(l => !linesToRemove.includes(l));
           rMarker.associatedLines = rMarker.associatedLines.filter(l => !linesToRemove.includes(l));
 
-          // Calculate new route
+          // Calculate new route and insert where the old lines were
           const newLine = await getDirections(lMarker.lngLat, rMarker.lngLat);
-          geojson.features.push(newLine);
+          geojson.features.splice(Math.min(...lineIndices), 0, newLine);
 
           // Update markers at ends of new line with line's id
           lMarker.associatedLines.push(newLine.properties.id);

@@ -16,6 +16,19 @@
   border-radius: 4px;
 }
 
+.bottom-sidebar {
+  color: #fff;
+  font-family: monospace;
+  background-color: rgb(35 55 75 / 90%);
+  padding: 2px 2px;
+  z-index: 1;
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  margin: 12px;
+  border-radius: 4px;
+}
+
 .sidebar-distance {
   font-size: 1.6em;
 }
@@ -81,11 +94,13 @@
   white-space: nowrap;
 }
 
-.footer {
-  background-color: rgb(35 55 75 / 80%);
-  color: white;
-  z-index: 1;
-  position: absolute;
-  bottom: 0;
-  width: 100%;
+.strava-connected-div {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-top: -15px;
+}
+
+.strava-connected-p {
+  margin-right: 8px;
 }

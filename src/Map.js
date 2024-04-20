@@ -5,6 +5,8 @@ import lineChunk from '@turf/line-chunk'
 import { v4 as uuidv4 } from 'uuid';
 import UndoIcon from '@mui/icons-material/Undo';
 import ClearIcon from '@mui/icons-material/Clear';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import FormGroup from '@mui/material/FormGroup';
@@ -20,12 +22,19 @@ import MenuItem from '@mui/material/MenuItem';
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
 import LoadingDialog from './components/LoadingDialog'
+import PostToStravaDialog from './components/PostToStravaDialog'
 import BlueSwitch from './components/BlueSwitch'
 import BlueRadio from './components/BlueRadio'
 import BlueSelect from './components/BlueSelect'
 import BlueSlider from './components/BlueSlider'
+import ConnectWithStrava from './assets/ConnectWithStrava';
+import CompatibleWithStrava from './assets/CompatibleWithStrava';
 import { handleLeftRightClick } from './controllers/MapActionController';
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
+import { checkUserHasToken } from './controllers/StravaController';
+
+// import clientId from './secrets/strava';
+import clientId from './secrets/strava.testaccount';
 
 import publicKey from './secrets/mapbox.public';
 mapboxgl.accessToken = publicKey;
@@ -54,6 +63,9 @@ const geojson = {
   'features': []
 };
 
+// No-React flag for when window listener gets added. Avoids using state which may cause unnecessary renders
+let onFocusEventListenerAdded = false;
+
 function handleClearMap() {
   // Clear markers/lines
   markers.forEach(m => m.markerObj.remove());
@@ -61,14 +73,102 @@ function handleClearMap() {
   geojson.features = [];
 }
 
+async function postToStrava(postData) {
+  // Calculate start/end times in current time zone
+  let baseDate = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z'));
+  const offset = baseDate.getTimezoneOffset();
+  const startTime = new Date(baseDate.getTime() + (offset*60*1000));
+  const durationInSeconds = (parseInt(postData.hours) * 3600) +
+                            (parseInt(postData.minutes) * 60) +
+                            (parseInt(postData.seconds));
+  const endTime = new Date(startTime.getTime() + (durationInSeconds*1000));
+
+  // Calculate points array from route
+  let points = geojson.features.reduce((accum, currLine) => {
+    // All but the last pt (last pt of each line is 1st pt of next line)
+    const currLinePts = currLine.geometry.coordinates.slice(0, -1);
+    accum.push(...currLinePts);
+    return accum;
+  }, []);
+  const lastLineGeomArrayLength = geojson.features[geojson.features.length -1].geometry.coordinates.length;
+  points.push(geojson.features[geojson.features.length -1].geometry.coordinates[lastLineGeomArrayLength - 1]); // Cuz we missed the actual last point
+
+  let tempLine = {
+    type: 'Feature',
+    geometry: {
+      type: 'LineString',
+      coordinates: []
+    }
+  };
+
+  // Gotta do some weird math because summing geometry distances never quite matches up to total route distance.
+  // I suspect this has to do with how so many numbers are being rounded along the way, there is probably a small
+  // loss of precision. Regardless, this algorithm almost always ends up producing a GPX file with the correct
+  // distance and time. However, on strava the pace graph always ends up super jumpy (by ~10-20s/mile). This is because
+  // (it seems) Strava ignores milliseconds of timestamps associated with route points, so some segments will have their 
+  // time altered by up to a whole second (which for small segments will alter pace drastically). 
+  //
+  // I tried a different strategy where I broke up the route into 2 second waypoint intervals based on pace. This mostly
+  // worked, but any time there was a 90-180 degree turn in the route, the pace was very wrong again. Additionally with
+  // this method the distance and time was sometimes off by a small amount.
+  //
+  // In the end I've chosen (for now) to keep this method which produces correct times/distances but an ugly pace graph.
+  let clock = startTime.getTime();
+  const totalDist = postData.distance;
+  let runningDist = 0.0;
+  for (const [i, pt] of points.entries()) {
+    let dist = 0.0;
+    if (i > 0) {
+      tempLine.geometry.coordinates = [points[i-1], pt];
+      dist = length(tempLine, {units: 'miles'});
+      runningDist += dist;
+    }
+    points[i].push(dist);
+  }
+  const ratio = runningDist / totalDist;
+  for (const [i, pt] of points.entries()) {
+    let segDuration = ((pt[2]/totalDist) * durationInSeconds) / ratio;
+    clock += (segDuration*1000);
+    points[i][2] = (new Date(clock)).toISOString();
+  }
+  // Usually its off by like 0.001-0.01ms
+  points[points.length - 1][2] = (new Date(Math.round(clock))).toISOString();
+
+  const postResp = await fetch("http://127.0.0.1:3001/uploadToStrava",
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        points,
+        title: postData.title,
+        description: postData.description,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        sportType: postData.sportType
+      })
+    }
+  );
+  if (postResp.ok) {
+    console.log("Successfully uploaded activity to Strava");
+    alert("Successfully uploaded activity to Strava");
+  } else {
+    console.error("Failed to upload activity to Strava.", postResp.status);
+    alert("Failed to upload activity to Strava");
+  }
+}
+
 function Map() {
   const [loading, setLoading] = useState(true);
   const [clearMap, setClearMap] = useState(false);
+  const [connectedToStrava, setConnectedToStrava] = useState(null);
+  const [stravaDialogOpen, setStravaDialogOpen] = useState(false);
   const [autoFollowRoads, setAutoFollowRoads] = useState(true);
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
   const [mapType, setMapType] = useState(0);
   const [walkwayBias, setWalkwayBias] = useState(0);
+  const stravaLoginWindowWasOpenedRef = React.useRef(false);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
@@ -117,6 +217,51 @@ function Map() {
     setDist(distTotal);
     setEleUp(eleUpTotal * 3.28084);
     setEleDown(eleDownTotal * 3.28084);
+  }, []);
+
+  const updateConnectedStatus = useCallback(async () => {
+    const checkResp = await checkUserHasToken();
+    if (checkResp.ok) {
+      const data = await checkResp.json();
+      setConnectedToStrava(data.hasToken);
+    }  else {
+      console.error("Error checking Strava user status.");
+    }
+  }, []);
+
+  const handleConnectToStrava = useCallback(async () => {
+    const checkResp = await checkUserHasToken();
+    if (checkResp.ok) {
+      const data = await checkResp.json();
+      if (data.hasToken) {
+        console.info('User has token saved. Can now allow post to Strava');
+        setConnectedToStrava(true);
+      } else {
+        // Force Strava sign-in
+        stravaLoginWindowWasOpenedRef.current = true;
+        window.open(`https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=http://127.0.0.1:3001/saveToken&response_type=code&approval_prompt=auto&scope=read,activity:write`, "_blank");
+      }
+    }  else {
+      console.error("Error checking Strava user status.");
+      alert("Failed to authenticate");
+    }
+  }, []);
+
+  const handlePostToStravaClick = useCallback(async () => {
+    const checkResp = await checkUserHasToken();
+    if (checkResp.ok) {
+      const data = await checkResp.json();
+      setConnectedToStrava(data.hasToken); // Just in case server has different data than state
+      if (data.hasToken) {
+        console.info('User has token saved. Allowing post to Strava');
+        setStravaDialogOpen(true);
+      } else {
+        alert('You must log into Strava using the "Connect With Strava" button before posting activity');
+      }
+    }  else {
+      console.error("Error checking Strava user status.");
+      alert("Failed to authenticate");
+    }
   }, []);
 
   const applyMapStyles = useCallback(() => {
@@ -242,6 +387,25 @@ function Map() {
     return newLine;
   }
 
+  // This gets attached to the focus changed listener of the window.
+  // It lets the connected bool be updated when the user switches back
+  // to this page after logging in in a separate window/tab
+  const handlePageGotFocus = useCallback(async (event) => {
+    if (stravaLoginWindowWasOpenedRef.current) {
+      stravaLoginWindowWasOpenedRef.current = false;
+      await updateConnectedStatus();
+    }
+  }, []);
+
+  useEffect(()=>{ // Set connected status on first load
+    if (!onFocusEventListenerAdded) {
+      window.addEventListener('focus', handlePageGotFocus);
+      onFocusEventListenerAdded = true;
+    }
+
+    updateConnectedStatus();
+  }, []);
+
   useEffect(() => {
     if (!map.current) { // initialize map only once
       map.current = new mapboxgl.Map({
@@ -313,10 +477,10 @@ function Map() {
         <br/>
 
         <Stack className="sidebar-btn-container" spacing={2} direction="row">
-          <Tooltip title={<Typography>Clear route and all waypoints from map</Typography>}>
+          <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
             <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
           </Tooltip>
-          <Tooltip title={<Typography>Undo last action</Typography>}>
+          <Tooltip disableInteractive title={<Typography>Undo last action</Typography>}>
             <Button variant="contained" onClick={()=>{}} startIcon={<UndoIcon />}>Undo</Button>
           </Tooltip>
         </Stack>
@@ -324,7 +488,7 @@ function Map() {
         <br/><hr/><br/>
         <FormControl component="fieldset">
           <FormGroup aria-label="boolean-switches">
-            <Tooltip title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
+            <Tooltip disableInteractive title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
               <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                 value="auto-follow-roads"
                 control={
@@ -334,7 +498,7 @@ function Map() {
                 labelPlacement="start"
               />
             </Tooltip>
-            <Tooltip title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
+            <Tooltip disableInteractive title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
               <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                 value={"right-click-enabled"}
                 control={
@@ -350,7 +514,7 @@ function Map() {
         <br/><br/><hr/><br/>
         <FormControl>
           <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to:</FormLabel>
-          <Tooltip title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
+          <Tooltip disableInteractive title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
             <RadioGroup
               row
               aria-labelledby="add-to-start-or-end-radio-group"
@@ -401,8 +565,33 @@ function Map() {
           />
         </FormControl>
 
+        <br/><br/><hr/><br/>
+        <Tooltip disableInteractive title={<Typography>Connect To Strava</Typography>}>
+          <Button onClick={handleConnectToStrava}>
+            <ConnectWithStrava />
+          </Button>
+        </Tooltip>
+        { (connectedToStrava != null) &&
+          <div className="strava-connected-div">
+            <p className="strava-connected-p">{!connectedToStrava && "Not "}Connected</p>
+            {connectedToStrava ? <CheckCircleIcon sx={{color: '#53e327'}} /> : <CancelIcon sx={{color: "#d6392d"}} />}
+        </div>}
+
+        <br/>
+        <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
+          <Button variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
+        </Tooltip>
+        <br/><br/>
       </div>
-      <footer className='footer'> <small>&copy; Copyright {new Date().getFullYear()} Alex Robbins. All Rights Reserved.</small> </footer>
+      
+      <div className="bottom-sidebar">
+        <CompatibleWithStrava />
+        <br/>
+        <small>&copy; Copyright {new Date().getFullYear()} Alex Robbins</small>
+        <br/>
+        <small>All Rights Reserved.</small>
+      </div>
+
       <div ref={mapContainer} className="map-container" />
       { loading && <LoadingDialog open={loading} /> }
       { clearMap && <AreYouSureDialog
@@ -415,6 +604,12 @@ function Map() {
           }} 
           onNo={() => setClearMap(false)} 
         /> }
+        { stravaDialogOpen && <PostToStravaDialog
+          distance={dist}
+          open={stravaDialogOpen}
+          onPost={postToStrava}
+          onCancel={() => setStravaDialogOpen(false)}
+        />}
     </div>
   );
 }

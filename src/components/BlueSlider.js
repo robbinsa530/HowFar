@@ -24,7 +24,7 @@ const marks = [
 function BlueSlider(props) {
   return (
     <Box>
-      <Tooltip title={<Typography>{props.tooltip}</Typography>}>
+      <Tooltip disableInteractive title={<Typography>{props.tooltip}</Typography>}>
         <Slider {...props}
           marks={marks}
           sx={{
@@ -34,11 +34,17 @@ function BlueSlider(props) {
       </Tooltip>
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Typography
+          sx={{
+            color: blue[200]
+          }}
           variant="body2"
         >
           Roads
         </Typography>
         <Typography
+          sx={{
+            color: blue[200]
+          }}
           variant="body2"
         >
           Walkways
