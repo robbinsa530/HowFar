@@ -29,12 +29,16 @@ import BlueSelect from './components/BlueSelect'
 import BlueSlider from './components/BlueSlider'
 import ConnectWithStrava from './assets/ConnectWithStrava';
 import CompatibleWithStrava from './assets/CompatibleWithStrava';
-import { handleLeftRightClick } from './controllers/MapActionController';
+import { 
+  handleLeftRightClick,
+  removeMarker,
+  addMarkerBack,
+  moveMarkerBack } from './controllers/MapActionController';
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 import { checkUserHasToken } from './controllers/StravaController';
 
-// import clientId from './secrets/strava';
-import clientId from './secrets/strava.testaccount';
+import clientId from './secrets/strava';
+// import clientId from './secrets/strava.testaccount';
 
 import publicKey from './secrets/mapbox.public';
 mapboxgl.accessToken = publicKey;
@@ -63,11 +67,15 @@ const geojson = {
   'features': []
 };
 
+// Hold onto previous states to allow undo
+let undoActionList = [];
+
 // No-React flag for when window listener gets added. Avoids using state which may cause unnecessary renders
 let onFocusEventListenerAdded = false;
 
 function handleClearMap() {
   // Clear markers/lines
+  undoActionList = [];
   markers.forEach(m => m.markerObj.remove());
   markers = [];
   geojson.features = [];
@@ -387,6 +395,23 @@ function Map() {
     return newLine;
   }
 
+  const handleUndo = useCallback(async () => {
+    if (undoActionList.length === 0) {
+      return;
+    }
+    // Undo last add/move/delete
+    const lastAction = undoActionList.pop();
+    if (lastAction.type === 'add') {
+      await removeMarker(lastAction.marker.id, markers, geojson, getDirections);
+    }
+    else if (lastAction.type === 'move') {
+      moveMarkerBack(lastAction.info);
+    }
+    else if (lastAction.type === 'delete') {
+      addMarkerBack(lastAction.info, markers, geojson, map);
+    }
+  }, []);
+
   // This gets attached to the focus changed listener of the window.
   // It lets the connected bool be updated when the user switches back
   // to this page after logging in in a separate window/tab
@@ -437,6 +462,7 @@ function Map() {
           e,
           markers,
           geojson,
+          undoActionList,
           map,
           updateDistanceAndEleState,
           getDirections,
@@ -451,6 +477,7 @@ function Map() {
             e,
             markers,
             geojson,
+            undoActionList,
             map,
             updateDistanceAndEleState,
             getDirections,
@@ -481,7 +508,11 @@ function Map() {
             <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
           </Tooltip>
           <Tooltip disableInteractive title={<Typography>Undo last action</Typography>}>
-            <Button variant="contained" onClick={()=>{}} startIcon={<UndoIcon />}>Undo</Button>
+            <Button variant="contained" onClick={() => {
+              handleUndo();
+              updateDistanceAndEleState();
+              map.current.getSource('geojson').setData(geojson); // Reload UI
+            }} startIcon={<UndoIcon />}>Undo</Button>
           </Tooltip>
         </Stack>
 
@@ -566,7 +597,7 @@ function Map() {
         </FormControl>
 
         <br/><br/><hr/><br/>
-        <Tooltip disableInteractive title={<Typography>Connect To Strava</Typography>}>
+        <Tooltip disableInteractive title={<Typography>Connect with Strava</Typography>}>
           <Button onClick={handleConnectToStrava}>
             <ConnectWithStrava />
           </Button>

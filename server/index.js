@@ -16,8 +16,8 @@ app.use(express.json({limit: '50mb'}))
 
 let strava;
 // Open strava codes file
-// const stravaFile = './server/secrets/strava.json';
-const stravaFile = './server/secrets/strava.testaccount.json';
+const stravaFile = './server/secrets/strava.json';
+// const stravaFile = './server/secrets/strava.testaccount.json';
 fs.readFile(stravaFile, (err, data) => {
   if (err) {
     console.error("Failed to load strava codes... Uh oh...", err);
