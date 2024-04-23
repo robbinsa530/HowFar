@@ -7,7 +7,10 @@ import UndoIcon from '@mui/icons-material/Undo';
 import ClearIcon from '@mui/icons-material/Clear';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
+import MenuIcon from '@mui/icons-material/Menu';
 import Stack from '@mui/material/Stack';
+import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -18,6 +21,7 @@ import Typography from '@mui/material/Typography';
 import RadioGroup from '@mui/material/RadioGroup';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import Drawer from '@mui/material/Drawer';
 
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
@@ -171,6 +175,7 @@ function Map() {
   const [clearMap, setClearMap] = useState(false);
   const [connectedToStrava, setConnectedToStrava] = useState(null);
   const [stravaDialogOpen, setStravaDialogOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [autoFollowRoads, setAutoFollowRoads] = useState(true);
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
@@ -444,8 +449,8 @@ function Map() {
       map.current.getCanvas().style.cursor = 'crosshair';
   
       // Add zoom control and geolocate
-      map.current.addControl(new mapboxgl.NavigationControl(), "bottom-right");
-      map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "bottom-right");
+      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+      map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "top-right");
     
       map.current.on('style.load', () => {
         applyMapStyles();
@@ -496,6 +501,15 @@ function Map() {
   return (
     <div className="Map">
       <div className="sidebar">
+        <div className="menu-btn-div">
+          <Tooltip disableInteractive title={<Typography>More Options</Typography>}>
+          <IconButton onClick={() => setMenuOpen(true)} sx={{color:'white', margin:0, padding:0}}>
+            <MenuIcon />
+          </IconButton>
+          </Tooltip>
+        </div>
+        <img src="how_far_logo_complete.png" width="225px"/>
+        <br/>
         <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
         <div className="elevation-container">
           <p className="sidebar-elevation">Elevation Gain/Loss:</p>
@@ -595,24 +609,6 @@ function Map() {
                     favor both equally</>}
           />
         </FormControl>
-
-        <br/><br/><hr/><br/>
-        <Tooltip disableInteractive title={<Typography>Connect with Strava</Typography>}>
-          <Button onClick={handleConnectToStrava}>
-            <ConnectWithStrava />
-          </Button>
-        </Tooltip>
-        { (connectedToStrava != null) &&
-          <div className="strava-connected-div">
-            <p className="strava-connected-p">{!connectedToStrava && "Not "}Connected</p>
-            {connectedToStrava ? <CheckCircleIcon sx={{color: '#53e327'}} /> : <CancelIcon sx={{color: "#d6392d"}} />}
-        </div>}
-
-        <br/>
-        <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
-          <Button variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
-        </Tooltip>
-        <br/><br/>
       </div>
       
       <div className="bottom-sidebar">
@@ -638,9 +634,45 @@ function Map() {
         { stravaDialogOpen && <PostToStravaDialog
           distance={dist}
           open={stravaDialogOpen}
-          onPost={postToStrava}
-          onCancel={() => setStravaDialogOpen(false)}
+          onPost={(data) => {
+            postToStrava(data);
+            setMenuOpen(false);
+          }}
+          onCancel={() => {
+            setStravaDialogOpen(false);
+            setMenuOpen(false);
+          }}
         />}
+        <Drawer 
+          open={menuOpen} 
+          onClose={() => setMenuOpen(false)}
+          PaperProps={{
+            sx: {
+              backgroundColor: "rgb(55 75 95)",
+              padding: '10px'
+            }
+          }}
+        >
+          <div className="menu-back-btn-div">
+            <Button variant="outlined" onClick={() => setMenuOpen(false)} sx={{color:'white', margin:0, padding:0}}>
+              <KeyboardBackspaceIcon />
+            </Button>
+          </div>
+          <Tooltip disableInteractive title={<Typography>Connect with Strava</Typography>}>
+            <Button onClick={handleConnectToStrava}>
+              <ConnectWithStrava />
+            </Button>
+          </Tooltip>
+          { (connectedToStrava != null) &&
+            <div className="strava-connected-div">
+              <p className="strava-connected-p">{!connectedToStrava && "Not "}Connected</p>
+              {connectedToStrava ? <CheckCircleIcon sx={{color: '#53e327'}} /> : <CancelIcon sx={{color: "#d6392d"}} />}
+          </div>}
+          <br/>
+          <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
+            <Button variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
+          </Tooltip>
+        </Drawer>
     </div>
   );
 }
