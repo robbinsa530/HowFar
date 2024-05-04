@@ -672,6 +672,8 @@ function Map() {
           <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
             <Button variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
           </Tooltip>
+
+          <a href="https://github.com/robbinsa530/HowFar/blob/main/README.md" target="_blank" className="help-footer">Help</a>
         </Drawer>
     </div>
   );

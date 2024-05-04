@@ -118,3 +118,11 @@
   margin-right: 8px;
   color: white;
 }
+
+.help-footer {
+  position: fixed;
+  bottom: 0;
+  text-align: center;
+  padding-bottom: 20px;
+  color: white;
+}
