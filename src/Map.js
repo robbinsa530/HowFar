@@ -441,8 +441,8 @@ function Map() {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: mapTypes[0],
-        center: [-104.959730, 39.765733],
-        zoom: 14
+        center: [-104.959730, 39.765733], // Default location, super zoomed out over CO
+        zoom: 3
       });
   
       // Default cursor should be pointer
@@ -458,6 +458,15 @@ function Map() {
 
       map.current.on('load', () => {
         setLoading(false);
+        // Snap to users location if allowed
+        navigator.geolocation.getCurrentPosition(function(position) {
+          map.current.flyTo({
+            center: [position.coords.longitude, position.coords.latitude],
+            zoom: 14,
+            essential: true,
+            animate: false
+          });
+        });
         console.info("Map loaded. Adding routing functionality.");
       });
 
