@@ -220,7 +220,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
     let addedMarker;
     if (addToEnd) {
       // If theres already 1+ markers, calculate directions/distance
-      if (markers.length + 1 > 1) {
+      if (markers.length > 0) {
         let prevPt = markers[markers.length-1];
         const newLine = await getDirections(
           [prevPt.lngLat[0], prevPt.lngLat[1]],
@@ -245,7 +245,9 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
         updateDistanceInComponent();
 
         //Edit class of last end marker so it'll be white
-        prevPt.markerObj.removeClassName("end-marker").addClassName("marker");
+        if (markers.length > 1) {
+          prevPt.markerObj.removeClassName("end-marker").addClassName("marker");
+        }
 
         // Redraw lines on map
         map.current.getSource('geojson').setData(geojson);
@@ -265,7 +267,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
     }
     else { // Add to start
       // If theres already 1+ markers, calculate directions/distance
-      if (markers.length + 1 > 1) {
+      if (markers.length > 0) {
         let prevPt = markers[0];
         const newLine = await getDirections(
           markerToAdd.lngLat,
@@ -289,8 +291,12 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
         geojson.features.unshift(newLine);
         updateDistanceInComponent();
 
-        //Edit class of last end marker so it'll be white
-        prevPt.markerObj.removeClassName("start-marker").addClassName("marker");
+        // Edit class of last end marker so it'll be white (or red if there was only 1)
+        if (markers.length === 1) {
+          prevPt.markerObj.removeClassName("start-marker").addClassName("end-marker");
+        } else {
+          prevPt.markerObj.removeClassName("start-marker").addClassName("marker");
+        }
 
         // Redraw lines on map
         map.current.getSource('geojson').setData(geojson);
