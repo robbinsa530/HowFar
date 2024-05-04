@@ -1,4 +1,4 @@
-![HowFar Logo](public\how_far_logo_complete.png)
+![HowFar Logo](./public/how_far_logo_complete.png)
 
 ### HowFar is an activity mapping app that makes mapping runs, hikes, bikes and more a quick and easy process.
 
@@ -14,36 +14,36 @@
 ### Mapping Functionality
 Create a route by clicking on the map. As you click, the most efficient route between your selected points will be calculated and automatically drawn onto the map. Turn off "Auto Follow Roads" or right click at any time to route a straight line between your points instead. This is useful when your route does not follow established roads or paths, for example when it goes through an open field, off trail in the wilderness, or hops a curb from a road to a path.
 
-| ![Auto Follow Roads](assets\routing.png) |
+| ![Auto Follow Roads](./assets/routing.png) |
 |:-:|
 | *Auto follow roads routing* |
 
-| ![Direct Routing](assets\straight_line.png) |
+| ![Direct Routing](./assets/straight_line.png) |
 |:-:|
 | *Straight line routing* |
 
 As you map, your routes distance and estimated elevation gain and loss are updated and displayed at the top of the side bar. Adding, moving or deleting points will update these values, and clearing your route will reset all values to 0.
 
-| ![Distance and Elevation](assets\distance_ele.png) |
+| ![Distance and Elevation](./assets/distance_ele.png) |
 |:-:|
 | *Displayed distance and estimated elevation change* |
 
 ###  Map Types
 HowFar has multiple map types.
 
-| ![Standard Map](assets\standard_map.png) |
+| ![Standard Map](./assets/standard_map.png) |
 |:-:|
 | *Standard streets view map* |
 
-| ![Outdoors Map](assets\outdoor_map.png) |
+| ![Outdoors Map](./assets/outdoor_map.png) |
 |:-:|
 | *Outdoors map. Recommended for mapping trail runs, hikes and mountain bike rides as it makes viewing trails a much nicer experience* |
 
-| ![Satellite Map](assets\satellite_map.png) |
+| ![Satellite Map](./assets/satellite_map.png) |
 |:-:|
 | *Satellite map* |
 
-| ![Dark Map](assets\dark_map.png) |
+| ![Dark Map](./assets/dark_map.png) |
 |:-:|
 | *Dark theme map* |
 
@@ -55,26 +55,26 @@ Underneath the "Connect with Strava" button you will see your connection status.
 
 The "Post Activity" button will bring up a window where you can enter information like a name, description, elapsed time, time of day and activity type. Enter all of the required fields and click "Post" to post your run to Strava.
 
-| ![Strava Buttons](assets\strava_buttons.png) |
+| ![Strava Buttons](./assets/strava_buttons.png) |
 |:-:|
 | *Connect with Strava and Post Activity buttons* |
 
 
-| ![Post Activity Dialog](assets\post_dialog.png) |
+| ![Post Activity Dialog](./assets/post_dialog.png) |
 |:-:|
 | *Post activity to strava dialog window* |
 
 ### Favored Surface Type Slider
 This can be a confusing feature, but can also be helpful for mapping different types of activities, or for mapping in certain geographic areas. Basically, the closer the slider is to favoring "Roads", the more weight the mapping service will put on keeping your route **ON** roads. The closer the slider is to favoring "Walkways", the more weight the mapping service will put on keeping you **OFF** of roads and on sidewalks, trails, path and walkways.
 
-| ![Favored Surface Type Slider](assets\favor_slider.png) |
+| ![Favored Surface Type Slider](./assets/favor_slider.png) |
 |:-:|
 | *Favored surface type slider* |
 
-| ![Favor Walways](assets\favor_walkways.png) |
+| ![Favor Walways](./assets/favor_walkways.png) |
 |:-:|
 | *Routing with the slider all the way toward "Walkways". The route avoids roads and stays on paths* |
 
-| ![Favor Roads](assets\favor_roads.png) |
+| ![Favor Roads](./assets/favor_roads.png) |
 |:-:|
 | *Routing with the slider all the way toward "Roads". The route avoids paths and stays on raods* |
