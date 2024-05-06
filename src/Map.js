@@ -41,8 +41,7 @@ import {
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 import { checkUserHasToken } from './controllers/StravaController';
 
-const PORT = process.env.PORT || 3001;
-const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1"
+const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1:3001"
 let STRAVA_CLIENT_ID;
 
 const mapTypes = [
@@ -251,7 +250,7 @@ function Map() {
       } else {
         // Force Strava sign-in
         stravaLoginWindowWasOpenedRef.current = true;
-        window.open(`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${SERVER_ADDR}:${PORT}/saveToken&response_type=code&approval_prompt=auto&scope=read,activity:write`, "_blank");
+        window.open(`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${SERVER_ADDR}/saveToken&response_type=code&approval_prompt=auto&scope=read,activity:write`, "_blank");
       }
     }  else {
       console.error("Error checking Strava user status.");
