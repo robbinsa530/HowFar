@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const fetch = require('node-fetch');
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const FormData = require('form-data');
 
@@ -11,7 +12,8 @@ const app = express();
 
 app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({limit: '50mb'}))
+app.use(express.json({limit: '50mb'}));
+app.use(express.static(path.join(__dirname, '../build')));
 
 // These need to be set in dev and prod
 const strava = {
