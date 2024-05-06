@@ -41,11 +41,9 @@ import {
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 import { checkUserHasToken } from './controllers/StravaController';
 
-import clientId from './secrets/strava';
-// import clientId from './secrets/strava.testaccount';
-
-import publicKey from './secrets/mapbox.public';
-mapboxgl.accessToken = publicKey;
+const PORT = process.env.PORT || 3001;
+const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1"
+let STRAVA_CLIENT_ID;
 
 const mapTypes = [
   'mapbox://styles/mapbox/streets-v12',
@@ -146,7 +144,7 @@ async function postToStrava(postData) {
   // Usually its off by like 0.001-0.01ms
   points[points.length - 1][2] = (new Date(Math.round(clock))).toISOString();
 
-  const postResp = await fetch("http://127.0.0.1:3001/uploadToStrava",
+  const postResp = await fetch("/uploadToStrava",
     {
       method: 'POST',
       credentials: 'include',
@@ -181,6 +179,7 @@ function Map() {
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
   const [mapType, setMapType] = useState(0);
   const [walkwayBias, setWalkwayBias] = useState(0);
+  const mapSetupStartedRef = React.useRef(false);
   const stravaLoginWindowWasOpenedRef = React.useRef(false);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
@@ -252,7 +251,7 @@ function Map() {
       } else {
         // Force Strava sign-in
         stravaLoginWindowWasOpenedRef.current = true;
-        window.open(`https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=http://127.0.0.1:3001/saveToken&response_type=code&approval_prompt=auto&scope=read,activity:write`, "_blank");
+        window.open(`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${SERVER_ADDR}:${PORT}/saveToken&response_type=code&approval_prompt=auto&scope=read,activity:write`, "_blank");
       }
     }  else {
       console.error("Error checking Strava user status.");
@@ -432,72 +431,84 @@ function Map() {
       window.addEventListener('focus', handlePageGotFocus);
       onFocusEventListenerAdded = true;
     }
-
     updateConnectedStatus();
   }, []);
 
   useEffect(() => {
-    if (!map.current) { // initialize map only once
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: mapTypes[0],
-        center: [-104.959730, 39.765733], // Default location, super zoomed out over CO
-        zoom: 3
-      });
-  
-      // Default cursor should be pointer
-      map.current.getCanvas().style.cursor = 'crosshair';
-  
-      // Add zoom control and geolocate
-      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-      map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "top-right");
-    
-      map.current.on('style.load', () => {
-        applyMapStyles();
-      });
+    if (!mapSetupStartedRef.current && !map.current) { // initialize map only once
+      mapSetupStartedRef.current = true;
+      // Get API codes for Strava and Mapbox
+      fetch("/getApiTokens").then(apiCodesResp => {
+        if (apiCodesResp.ok) {
+          apiCodesResp.json().then(data => {
+            STRAVA_CLIENT_ID = data.STRAVA_CLIENT_ID;
+            mapboxgl.accessToken = data.MAPBOX_PUB_KEY;
 
-      map.current.on('load', () => {
-        setLoading(false);
-        // Snap to users location if allowed
-        navigator.geolocation.getCurrentPosition(function(position) {
-          map.current.flyTo({
-            center: [position.coords.longitude, position.coords.latitude],
-            zoom: 14,
-            essential: true,
-            animate: false
+            map.current = new mapboxgl.Map({
+              container: mapContainer.current,
+              style: mapTypes[0],
+              center: [-104.959730, 39.765733], // Default location, super zoomed out over CO
+              zoom: 3
+            });
+        
+            // Default cursor should be pointer
+            map.current.getCanvas().style.cursor = 'crosshair';
+        
+            // Add zoom control and geolocate
+            map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+            map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "top-right");
+
+            map.current.on('style.load', () => {
+              applyMapStyles();
+            });
+
+            map.current.on('load', () => {
+              setLoading(false);
+              // Snap to users location if allowed
+              navigator.geolocation.getCurrentPosition(function(position) {
+                map.current.flyTo({
+                  center: [position.coords.longitude, position.coords.latitude],
+                  zoom: 14,
+                  essential: true,
+                  animate: false
+                });
+              });
+              console.info("Map loaded. Adding routing functionality.");
+            });
+      
+            // Place a marker on click
+            map.current.on('click', async e => {
+              await handleLeftRightClick(
+                e,
+                markers,
+                geojson,
+                undoActionList,
+                map,
+                updateDistanceAndEleState,
+                getDirections,
+                false, // rightClick bool
+                (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
+              );
+            });
+      
+            map.current.on('contextmenu', async e => {
+              if (rightClickEnabledRef.current) {
+                await handleLeftRightClick(
+                  e,
+                  markers,
+                  geojson,
+                  undoActionList,
+                  map,
+                  updateDistanceAndEleState,
+                  getDirections,
+                  true, // rightClick bool
+                  (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
+                );
+              }
+            });
           });
-        });
-        console.info("Map loaded. Adding routing functionality.");
-      });
-
-      // Place a marker on click
-      map.current.on('click', async e => {
-        await handleLeftRightClick(
-          e,
-          markers,
-          geojson,
-          undoActionList,
-          map,
-          updateDistanceAndEleState,
-          getDirections,
-          false, // rightClick bool
-          (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
-        );
-      });
-
-      map.current.on('contextmenu', async e => {
-        if (rightClickEnabledRef.current) {
-          await handleLeftRightClick(
-            e,
-            markers,
-            geojson,
-            undoActionList,
-            map,
-            updateDistanceAndEleState,
-            getDirections,
-            true, // rightClick bool
-            (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
-          );
+        }  else {
+          console.error("Error getting API codes. App will not work.");
         }
       });
     }
@@ -682,7 +693,7 @@ function Map() {
             <Button variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
           </Tooltip>
 
-          <a href="https://github.com/robbinsa530/HowFar/blob/main/README.md" target="_blank" className="help-footer">Help</a>
+          <a href="https://github.com/robbinsa530/HowFar/blob/main/README.md" target="_blank" rel="noreferrer" className="help-footer">Help</a>
         </Drawer>
     </div>
   );

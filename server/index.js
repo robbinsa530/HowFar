@@ -4,7 +4,6 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
 const FormData = require('form-data');
 
 const PORT = process.env.PORT || 3001;
@@ -14,22 +13,22 @@ app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({limit: '50mb'}))
 
-let strava;
-// Open strava codes file
-const stravaFile = './server/secrets/strava.json';
-// const stravaFile = './server/secrets/strava.testaccount.json';
-fs.readFile(stravaFile, (err, data) => {
-  if (err) {
-    console.error("Failed to load strava codes... Uh oh...", err);
-  }
-  else {
-    strava = JSON.parse(data);
-  }
-});
+// These need to be set in dev and prod
+const strava = {
+  client_id: process.env.STRAVA_CLIENT_ID,
+  client_secret: process.env.STRAVA_CLIENT_SECRET
+}
 
 app.get("/checkHasToken", async (req, res) => {
   const hasToken = req.cookies.STRAVA_REFRESH != undefined;
   res.json({ hasToken });
+});
+
+app.get("/getApiTokens", async (req, res) => {
+  res.json({ 
+    STRAVA_CLIENT_ID: strava.client_id,
+    MAPBOX_PUB_KEY: process.env.MAPBOX_PUB_KEY
+   });
 });
 
 app.get("/saveToken", async (req, res) => {
