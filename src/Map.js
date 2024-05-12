@@ -25,7 +25,7 @@ import Drawer from '@mui/material/Drawer';
 
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
-import LoadingDialog from './components/LoadingDialog'
+import SimpleDialog from './components/SimpleDialog'
 import PostToStravaDialog from './components/PostToStravaDialog'
 import BlueSwitch from './components/BlueSwitch'
 import BlueRadio from './components/BlueRadio'
@@ -169,6 +169,7 @@ async function postToStrava(postData) {
 
 function Map() {
   const [loading, setLoading] = useState(true);
+  const [locating, setLocating] = useState(false);
   const [clearMap, setClearMap] = useState(false);
   const [connectedToStrava, setConnectedToStrava] = useState(null);
   const [stravaDialogOpen, setStravaDialogOpen] = useState(false);
@@ -464,13 +465,18 @@ function Map() {
             map.current.on('load', () => {
               setLoading(false);
               // Snap to users location if allowed
-              navigator.geolocation.getCurrentPosition(function(position) {
+              setLocating(true);
+              navigator.geolocation.getCurrentPosition(position => {
                 map.current.flyTo({
                   center: [position.coords.longitude, position.coords.latitude],
                   zoom: 14,
                   essential: true,
                   animate: false
                 });
+                setLocating(false);
+              }, err => {
+                console.error("Failed to locate");
+                setLocating(false);
               });
               console.info("Map loaded. Adding routing functionality.");
             });
@@ -639,7 +645,8 @@ function Map() {
       </div>
 
       <div ref={mapContainer} className="map-container" />
-      { loading && <LoadingDialog open={loading} /> }
+      { loading && <SimpleDialog open={loading} text="Loading..." /> }
+      { locating && <SimpleDialog open={locating} text="Locating..." /> }
       { clearMap && <AreYouSureDialog
           open={clearMap}
           onYes={() => {

@@ -2,18 +2,18 @@ import * as React from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 
-function LoadingDialog({ open }) {
+function SimpleDialog({ open, text }) {
   return (
       <Dialog
         open={open}
-        aria-labelledby="loading-dialog"
-        id="loading-dialog"
+        aria-labelledby="simple-dialog"
+        id="simple-dialog"
       >
         <DialogTitle>
-          {"Loading..."}
+          {text}
         </DialogTitle>
       </Dialog>
   );
 }
 
-export default LoadingDialog;
+export default SimpleDialog;

@@ -13,7 +13,10 @@ const app = express();
 app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({limit: '50mb'}));
-app.use(express.static(path.join(__dirname, '../build')));
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../build')));
+}
 
 // These need to be set in dev and prod
 const strava = {
