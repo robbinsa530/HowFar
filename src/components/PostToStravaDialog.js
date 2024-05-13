@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -13,6 +13,10 @@ import Select from '@mui/material/Select';
 
 function PostToStravaDialog({ distance, onPost, onCancel, open }) {
   const [activityType, setActivityType] = React.useState('Run');
+  const [pace, setPace] = React.useState('');
+  const [hours, setHours] = React.useState(0);
+  const [mins, setMins] = React.useState(0);
+  const [secs, setSecs] = React.useState(0);
 
   let currDate = new Date();
   const offset = currDate.getTimezoneOffset()
@@ -26,16 +30,38 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
     if (val < 0) {
       event.target.value = Math.abs(val);
     }
+    setHours(event.target.value === '' ? 0 : event.target.value);
   }, []);
+
   const onMinSecChange = useCallback((event) => {
     const val = event.target.value;
     if (val < 0) {
       event.target.value = Math.abs(val);
     }
     else if (val > 60) {
-      event.target.value = null;
+      event.target.value = '';
+    }
+    if (event.target.id === 'strava-minutes') {
+      setMins(event.target.value === '' ? 0 : event.target.value);
+    } else {
+      setSecs(event.target.value === '' ? 0 : event.target.value);
     }
   }, []);
+
+  // Update pace
+  useEffect(() => {
+    let totalTime = parseInt(hours)*3600 + parseInt(mins)*60 + parseInt(secs);
+    if (totalTime === 0) {
+      setPace('');
+      return;
+    }
+    let paceFrac = totalTime / distance; // secs per mile
+    let paceMins = Math.floor(paceFrac / 60);
+    let paceSecs = Math.round(paceFrac % 60);
+
+    setPace(paceMins + ":" + ("0" + paceSecs).slice(-2) + " min/mi");
+  }, [hours, mins, secs])
+
 
   const handleSelectChange = useCallback((event) => {
     setActivityType(event.target.value);
@@ -180,6 +206,24 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
             <MenuItem value={'Ride'}>Ride</MenuItem>
             <MenuItem value={'MountainBikeRide'}>Mountain Bike Ride</MenuItem>
           </Select>
+        </FormControl>
+
+        <FormControl
+          variant="filled"
+          sx={{marginLeft: '8px', width: '20ch'}}
+        >
+          <TextField
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: "#222"
+              }
+            }}
+            id="strava-pace"
+            disabled
+            value={pace}
+            label="Pace"
+          >
+          </TextField>
         </FormControl>
 
       </DialogContent>
