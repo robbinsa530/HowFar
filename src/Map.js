@@ -558,7 +558,6 @@ function Map() {
           <p className="sidebar-elevation">Elevation Gain/Loss:</p>
           <p className="sidebar-elevation">{eleUp.toFixed(2)}/{eleDown.toFixed(2)} Ft</p>
         </div>
-        <br/>
 
         <Stack className="sidebar-btn-container" spacing={2} direction="row">
           <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
@@ -573,7 +572,7 @@ function Map() {
           </Tooltip>
         </Stack>
 
-        <br/><hr/><br/>
+        <hr/>
         <FormControl component="fieldset">
           <FormGroup aria-label="boolean-switches">
             <Tooltip disableInteractive title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
@@ -599,7 +598,7 @@ function Map() {
           </FormGroup>
         </FormControl>
 
-        <br/><br/><hr/><br/>
+        <br/><hr/>
         <FormControl>
           <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to:</FormLabel>
           <Tooltip disableInteractive title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
@@ -634,7 +633,7 @@ function Map() {
           </BlueSelect>
         </FormControl>
 
-        <br/><br/><hr/><br/>
+        <br/><hr/>
         <FormControl fullWidth>
           <FormLabel sx={{textAlign: "left", color:"white"}}>When routing, favor:</FormLabel>
           <BlueSlider
