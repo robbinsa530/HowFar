@@ -309,7 +309,7 @@ function Map() {
     });
   }, []);
 
-  async function getDirections(lngLatStart, lngLatEnd, calculateDirectionsOverride=undefined) {
+  async function getDirections(lngLatStart, lngLatEnd, connectDisjoint, calculateDirectionsOverride=undefined) {
     const calculateDirections = (calculateDirectionsOverride !== undefined) ?
                                   calculateDirectionsOverride
                                   : autoFollowRoadsRef.current;
@@ -352,18 +352,36 @@ function Map() {
           at the nearest point on a road/path and ignore the distance in between that start and your
           last point. MapMyRun has this issue too actually. This fixes that for sufficiently large gaps.
       */
-      let tempLine = {
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [lngLatStart, newLine.geometry.coordinates[0]]
+      const [connectDisjointStart, connectDisjointEnd] = connectDisjoint;
+      if (connectDisjointStart) {
+        let tempLine = {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [lngLatStart, newLine.geometry.coordinates[0]]
+          }
+        }
+        const distBtwn = length(tempLine, {units: 'miles'});
+        if (distBtwn > 0.005) {
+          // Add segment to lineString and update distance
+          newLine.geometry.coordinates.unshift(lngLatStart);
+          newLine.properties.distance += distBtwn;
         }
       }
-      const distBtwn = length(tempLine, {units: 'miles'});
-      if (distBtwn > 0.01) {
-        // Add segment to lineString and update distance
-        newLine.geometry.coordinates.unshift(lngLatStart);
-        newLine.properties.distance += distBtwn;
+      if (connectDisjointEnd) {
+        let tempLine = {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [newLine.geometry.coordinates[newLine.geometry.coordinates.length -1], lngLatEnd]
+          }
+        }
+        const distBtwn = length(tempLine, {units: 'miles'});
+        if (distBtwn > 0.005) {
+          // Add segment to lineString and update distance
+          newLine.geometry.coordinates.push(lngLatEnd);
+          newLine.properties.distance += distBtwn;
+        }
       }
     }
     //Calculate elevation gain/loss
@@ -396,7 +414,7 @@ function Map() {
     newLine.properties.eleUp = up;
     newLine.properties.eleDown = down;
 
-    return newLine;
+    return [calculateDirections, newLine];
   }
 
   const handleUndo = useCallback(async () => {

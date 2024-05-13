@@ -7,6 +7,7 @@ export function moveMarkerBack(info) {
   // There are 3 possible cases. All of them require this step (moving the marker back to its old loc)
   info.marker.lngLat = info.oldPosition;
   info.marker.markerObj.setLngLat(info.oldPosition);
+  info.marker.snappedToRoad = info.oldSnappedToRoad;
   // The 3 cases are:
   // 1. The only existing marker was moved. Nothing else needs to be done
   // 2. An end point was moved. Move it back and adjust one line (if info.lines.length === 1)
@@ -149,7 +150,7 @@ export async function removeMarker(markerIdToRemove, markers, geojson, getDirect
       rMarker.associatedLines = rMarker.associatedLines.filter(l => !linesToRemove.includes(l));
 
       // Calculate new route and insert where the old lines were
-      const newLine = await getDirections(lMarker.lngLat, rMarker.lngLat);
+      const [_, newLine] = await getDirections(lMarker.lngLat, rMarker.lngLat, [!lMarker.snappedToRoad, !rMarker.snappedToRoad]);
       toReturn.lineAddedOnDeleteId = newLine.properties.id;
       geojson.features.splice(Math.min(...lineIndices), 0, newLine);
 
@@ -214,6 +215,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       element: ref.current,
       lngLat: [e.lngLat.lng, e.lngLat.lat],
       associatedLines: []
+      // snappedToRoad: (Needs to be added)
       // markerObj: (Needs to be added)
     };
 
@@ -222,11 +224,14 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       // If theres already 1+ markers, calculate directions/distance
       if (markers.length > 0) {
         let prevPt = markers[markers.length-1];
-        const newLine = await getDirections(
+        const [calculatedDirections, newLine] = await getDirections(
           [prevPt.lngLat[0], prevPt.lngLat[1]],
           markerToAdd.lngLat,
+          [!prevPt.snappedToRoad, false],
           (rightClick) ? false : undefined // If right click, just this time don't calculate directions
         );
+        markerToAdd.snappedToRoad = calculatedDirections;
+
         // Associate this new line with both of its endpoint markers
         // This is so we can know which lines to edit on marker delete/move
         prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-1]
@@ -235,6 +240,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
         // Update position of marker. This is in case click wasn't on a road or path,
         // the API will return the closest point to a road or path. That's what we wanna use
         markerToAdd.lngLat = newLine.geometry.coordinates[newLine.geometry.coordinates.length -1];
+        prevPt.lngLat = newLine.geometry.coordinates[0];
 
         if (markers.length === 1) { // Only on the second point, make sure we update the first too
           markers[0].markerObj.setLngLat(newLine.geometry.coordinates[0]);
@@ -269,11 +275,13 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       // If theres already 1+ markers, calculate directions/distance
       if (markers.length > 0) {
         let prevPt = markers[0];
-        const newLine = await getDirections(
+        const [calculatedDirections, newLine] = await getDirections(
           markerToAdd.lngLat,
           [prevPt.lngLat[0], prevPt.lngLat[1]],
+          [false, !prevPt.snappedToRoad],
           (rightClick) ? false : undefined // If right click, just this time don't calculate directions
         );
+        markerToAdd.snappedToRoad = calculatedDirections;
         // Associate this new line with both of its endpoint markers
         // This is so we can know which lines to edit on marker delete/move
         prevPt.associatedLines.push(newLine.properties.id); // markers[markers.length-1]
@@ -282,6 +290,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
         // Update position of marker. This is in case click wasn't on a road or path,
         // the API will return the closest point to a road or path. That's what we wanna use
         markerToAdd.lngLat = newLine.geometry.coordinates[0];
+        prevPt.lngLat = newLine.geometry.coordinates[newLine.geometry.coordinates.length -1];
 
         if (markers.length === 1) { // Only on the second point, make sure we update the first too
           markers[0].markerObj.setLngLat(newLine.geometry.coordinates[newLine.geometry.coordinates.length - 1]);
@@ -326,6 +335,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       let draggedMarker = markers[draggedMarkerIndex];
       let dragActionInfo = {
         marker: draggedMarker,
+        oldSnappedToRoad: draggedMarker.snappedToRoad,
         oldPosition: [...draggedMarker.lngLat], // Want copy since we're about to change this
         lines: [ // Can hold 0-2 lines.
           // {
@@ -351,9 +361,18 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
             // Find other marker associated with line
             const otherMarkerIndex = markers.findIndex(m => m.id !== idToUse && m.associatedLines.includes(l.properties.id));
             // Replace old line with new one
-            const sIndex = Math.min(draggedMarkerIndex, otherMarkerIndex);
-            const eIndex = Math.max(draggedMarkerIndex, otherMarkerIndex);
-            const newLine = await getDirections(markers[sIndex].lngLat, markers[eIndex].lngLat);
+            let calculatedDirections, newLine;
+            if (draggedMarkerIndex < otherMarkerIndex) {
+              [calculatedDirections, newLine] = await getDirections(
+                markers[draggedMarkerIndex].lngLat,
+                markers[otherMarkerIndex].lngLat,
+                [false, !markers[otherMarkerIndex].snappedToRoad]);
+            } else {
+              [calculatedDirections, newLine] = await getDirections(
+                markers[otherMarkerIndex].lngLat,
+                markers[draggedMarkerIndex].lngLat,
+                [!markers[otherMarkerIndex].snappedToRoad, false]);
+            }
             linesToEdit[i].properties.distance = newLine.properties.distance;
             linesToEdit[i].properties.eleUp = newLine.properties.eleUp;
             linesToEdit[i].properties.eleDown = newLine.properties.eleDown;
@@ -362,6 +381,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
             // Update position of marker. This is in case it wasn't dragged onto a road or path,
             // the API will return the closest point to a road or path. That's what we wanna use
             if (i === 0) {
+              draggedMarker.snappedToRoad = calculatedDirections;
               const coordIndex = (draggedMarkerIndex < otherMarkerIndex) ? 0 : newLine.geometry.coordinates.length -1;
               draggedMarker.markerObj.setLngLat(newLine.geometry.coordinates[coordIndex]);
               draggedMarker.lngLat = newLine.geometry.coordinates[coordIndex];
