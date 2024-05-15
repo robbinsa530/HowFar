@@ -82,7 +82,39 @@ function handleClearMap() {
   geojson.features = [];
 }
 
-async function postToStrava(postData) {
+async function createManualActivityOnStrava(postData) {
+  let baseDate = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z'));
+  const offset = baseDate.getTimezoneOffset();
+  const startTime = new Date(baseDate.getTime() + (offset*60*1000));
+  const durationInSeconds = (parseInt(postData.hours) * 3600) +
+                            (parseInt(postData.minutes) * 60) +
+                            (parseInt(postData.seconds));
+
+  const postResp = await fetch("/postManualActivityToStrava",
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        title: postData.title,
+        description: postData.description,
+        startTime: startTime.toISOString(),
+        duration: durationInSeconds,
+        distance: postData.distance.toFixed(2),
+        sportType: postData.sportType
+      })
+    }
+  );
+  if (postResp.ok) {
+    console.log("Successfully created activity on Strava");
+    alert("Successfully created activity on Strava");
+  } else {
+    console.error("Failed to create activity on Strava.", postResp.status);
+    alert("Failed to create activity on Strava");
+  }
+}
+
+async function uploadActivityToStrava(postData) {
   // Calculate start/end times in current time zone
   let baseDate = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z'));
   const offset = baseDate.getTimezoneOffset();
@@ -164,6 +196,14 @@ async function postToStrava(postData) {
   } else {
     console.error("Failed to upload activity to Strava.", postResp.status);
     alert("Failed to upload activity to Strava");
+  }
+}
+
+async function postToStrava(postData) {
+  if (postData.uploadMap) {
+    uploadActivityToStrava(postData);
+  } else {
+    createManualActivityOnStrava(postData);
   }
 }
 

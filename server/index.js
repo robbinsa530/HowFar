@@ -67,6 +67,72 @@ app.get("/saveToken", async (req, res) => {
   res.send("Authentication complete. You may close this tab. Don't worry, you shouldn't have to do this again.");
 });
 
+app.post("/postManualActivityToStrava", async (req, res) => {
+  // 1. Check for refresh token and request access token
+  const hasToken = req.cookies.STRAVA_REFRESH != undefined;
+  if (!hasToken) {
+    console.error('User must login first.');
+    res.status(401).send('User must login first.');
+    return;
+  }
+
+  // 2. We request an access token every time because it's easier than checking if old access token is still valid
+  const refreshBody = {
+    client_id: strava.client_id,
+    client_secret: strava.client_secret,
+    grant_type: 'refresh_token',
+    refresh_token: req.cookies.STRAVA_REFRESH
+  };
+  const refreshResponse = await fetch('https://www.strava.com/api/v3/oauth/token', {
+    method: 'post',
+    body: JSON.stringify(refreshBody),
+    headers: {'Content-Type': 'application/json'}
+  });
+  if (!refreshResponse.ok) {
+    const errText = await refreshResponse.text();
+    console.error('Authentication failed.', errText);
+    res.status(401).send("Authentication failed.");
+    return;
+  }
+  const refreshData = await refreshResponse.json();
+  const accessToken = refreshData.access_token;
+
+  // Update refresh token cookie
+  res.cookie('STRAVA_REFRESH', refreshData.refresh_token, { maxAge: 1000*60*60*24*180, httpOnly: true, sameSite:'Strict', overwrite: true });
+
+  const title = req.body.title;
+  const description = req.body.description;
+  const distanceInMiles = req.body.distance;
+  const startTime = req.body.startTime; // Format: 2016-06-17T23:41:03Z
+  const durationInSeconds = req.body.duration;
+  const sportType = req.body.sportType;
+
+  const activityBody = {
+    name: title,
+    description,
+    type: sportType,
+    start_date_local: startTime,
+    elapsed_time: durationInSeconds,
+    distance: distanceInMiles * 1609.344
+  };
+  const postResponse = await fetch('https://www.strava.com/api/v3/activities', {
+    method: 'post',
+    body: JSON.stringify(activityBody),
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (postResponse.ok) {
+    res.status(200).send("Success");
+  } else {
+    const errText = await postResponse.text();
+    console.error("post activity failed.", errText);
+    res.status(400).send("Post activity failed.");
+  }
+});
+
 app.post("/uploadToStrava", async (req, res) => {
   // 1. Check for refresh token and request access token
   const hasToken = req.cookies.STRAVA_REFRESH != undefined;

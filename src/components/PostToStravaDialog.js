@@ -79,6 +79,10 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
           const formJson = Object.fromEntries(formData.entries());
           formJson['sportType'] = activityType; // Workaround to get this into form
           formJson['distance'] = distance; // Used later to calculate timestamps for intermediate points
+          // Until there is a better way to get a map on Strava without faking data and potentially running 
+          // into issues about "cheating" if my fake activities end up producing super fast times for segments,
+          // we're not going to include maps in posts
+          formJson['uploadMap'] = false;
           onPost(formJson);
           onCancel(); // Just used to close window
         },
