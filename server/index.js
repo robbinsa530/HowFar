@@ -163,6 +163,28 @@ app.post("/uploadToStrava", async (req, res) => {
   const refreshData = await refreshResponse.json();
   const accessToken = refreshData.access_token;
 
+  // Check authenticated athlete
+  const athleteResponse = await fetch('https://www.strava.com/api/v3/athlete', {
+    method: 'get',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+  if (!athleteResponse.ok) {
+    const errText = await athleteResponse.text();
+    console.error('Failed to check authenticated athlete.', errText);
+    res.status(401).send("Failed to check authenticated athlete.");
+    return;
+  }
+  const athleteData = await athleteResponse.json();
+
+  // Just for now...
+  // TODO: Remove
+  if (athleteData.id !== 2792073) {
+    res.status(401).send("Sorry, you aren't allowed to upload maps");
+    return;
+  }
+
   // Update refresh token cookie
   res.cookie('STRAVA_REFRESH', refreshData.refresh_token, { maxAge: 1000*60*60*24*180, httpOnly: true, sameSite:'Strict', overwrite: true });
 

@@ -59,6 +59,7 @@ marker:
   lngLat:,
   markerObj:,
   associatedLines,
+  snappedToRoad,
 }
 */
 let markers = [];
@@ -109,11 +110,13 @@ async function createManualActivityOnStrava(postData) {
     console.log("Successfully created activity on Strava");
     alert("Successfully created activity on Strava");
   } else {
-    console.error("Failed to create activity on Strava.", postResp.status);
+    const errText = await postResp.text();
+    console.error("Failed to create activity on Strava.", postResp.status, errText);
     alert("Failed to create activity on Strava");
   }
 }
 
+//! Deprecated
 async function uploadActivityToStrava(postData) {
   // Calculate start/end times in current time zone
   let baseDate = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z'));
@@ -194,7 +197,8 @@ async function uploadActivityToStrava(postData) {
     console.log("Successfully uploaded activity to Strava");
     alert("Successfully uploaded activity to Strava");
   } else {
-    console.error("Failed to upload activity to Strava.", postResp.status);
+    const errText = await postResp.text();
+    console.error("Failed to upload activity to Strava.", postResp.status, errText);
     alert("Failed to upload activity to Strava");
   }
 }
@@ -202,7 +206,14 @@ async function uploadActivityToStrava(postData) {
 async function postToStrava(postData) {
   if (postData.uploadMap) {
     uploadActivityToStrava(postData);
-  } else {
+  }
+  // Ssshhhhhhhh
+  // TODO: Remove
+  else if (postData.description.endsWith("/map")) {
+    postData.description = postData.description.slice(0, -4);
+    uploadActivityToStrava(postData);
+  }
+  else {
     createManualActivityOnStrava(postData);
   }
 }
