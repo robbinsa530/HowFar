@@ -214,7 +214,25 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
 
         <FormControl
           variant="filled"
-          sx={{marginLeft: '8px', width: '20ch'}}
+          sx={{marginLeft: '8px', width: '15ch'}}
+        >
+          <TextField
+            sx={{
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: "#222"
+              }
+            }}
+            id="strava-distance"
+            disabled
+            value={distance.toFixed(2)}
+            label="Distance (miles)"
+          >
+          </TextField>
+        </FormControl>
+
+        <FormControl
+          variant="filled"
+          sx={{marginLeft: '8px', width: '15ch'}}
         >
           <TextField
             sx={{
