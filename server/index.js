@@ -55,7 +55,7 @@ app.get("/saveToken", async (req, res) => {
     headers: {'Content-Type': 'application/json'}
   });
   if (!response.ok) {
-    res.send(401, "Authentication failed. Please close this window and try again.");
+    res.status(401).send("Authentication failed. Please close this window and try again.");
     return;
   }
   const data = await response.json();
