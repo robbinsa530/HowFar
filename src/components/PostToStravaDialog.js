@@ -17,6 +17,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
   const [hours, setHours] = React.useState(0);
   const [mins, setMins] = React.useState(0);
   const [secs, setSecs] = React.useState(0);
+  const [distanceStr, setDistanceStr] = React.useState(distance.toFixed(2).toString() + " mi");
 
   let currDate = new Date();
   const offset = currDate.getTimezoneOffset()
@@ -224,8 +225,8 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
             }}
             id="strava-distance"
             disabled
-            value={distance.toFixed(2)}
-            label="Distance (miles)"
+            value={distanceStr}
+            label="Distance"
           >
           </TextField>
         </FormControl>

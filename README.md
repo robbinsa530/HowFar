@@ -77,4 +77,4 @@ This can be a confusing feature, but can also be helpful for mapping different t
 
 | ![Favor Roads](./assets/favor_roads.png) |
 |:-:|
-| *Routing with the slider all the way toward "Roads". The route avoids paths and stays on raods* |
+| *Routing with the slider all the way toward "Roads". The route avoids paths and stays on roads* |
