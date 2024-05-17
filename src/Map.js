@@ -84,9 +84,7 @@ function handleClearMap() {
 }
 
 async function createManualActivityOnStrava(postData) {
-  let baseDate = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z'));
-  const offset = baseDate.getTimezoneOffset();
-  const startTime = new Date(baseDate.getTime() + (offset*60*1000));
+  const startTime = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z')); // Local
   const durationInSeconds = (parseInt(postData.hours) * 3600) +
                             (parseInt(postData.minutes) * 60) +
                             (parseInt(postData.seconds));
@@ -121,7 +119,7 @@ async function uploadActivityToStrava(postData) {
   // Calculate start/end times in current time zone
   let baseDate = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z'));
   const offset = baseDate.getTimezoneOffset();
-  const startTime = new Date(baseDate.getTime() + (offset*60*1000));
+  const startTime = new Date(baseDate.getTime() + (offset*60*1000)); // UTC
   const durationInSeconds = (parseInt(postData.hours) * 3600) +
                             (parseInt(postData.minutes) * 60) +
                             (parseInt(postData.seconds));
