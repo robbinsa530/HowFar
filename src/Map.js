@@ -559,8 +559,6 @@ function Map() {
             };
             map.current.addControl(search);
 
-            map.current.setFlyTo(false);
-
             // Add zoom control and geolocate
             map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
             map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "top-right");
