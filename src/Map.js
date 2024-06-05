@@ -1,5 +1,7 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
+import { MapboxSearchBox } from '@mapbox/search-js-web';
+
 import length from '@turf/length'
 import lineChunk from '@turf/line-chunk'
 import { v4 as uuidv4 } from 'uuid';
@@ -234,6 +236,9 @@ function Map() {
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
   const walkwayBiasRef = React.useRef(walkwayBias);
+
+  const searchBoxTimerIdRef = React.useRef(0);
+  const searchBoxLastTextRef = React.useRef("");
 
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -515,12 +520,47 @@ function Map() {
               container: mapContainer.current,
               style: mapTypes[0],
               center: [-104.959730, 39.765733], // Default location, super zoomed out over CO
-              zoom: 3
+              zoom: process.env.NODE_ENV === 'production' ? 3 : 14
             });
         
             // Default cursor should be pointer
             map.current.getCanvas().style.cursor = 'crosshair';
         
+            // Add search box
+            const search = new MapboxSearchBox();
+            search.accessToken = mapboxgl.accessToken;
+            search.map = map.current;
+            search.mapboxgl = mapboxgl;
+            search.placeholder = "Search a location"
+            search.marker = false;
+            search.options = {
+              limit: 5,
+              proximity: [-104.959730, 39.765733],
+              types: "country,region,postcode,district,place,street,address"
+            };
+            // Only search when the user stops typing for 0.5s (avoids too many API calls)
+            search.interceptSearch = (text) => {
+              if (text === "" || searchBoxLastTextRef.current === text) {
+                searchBoxLastTextRef.current = "";
+                return text;
+              } else {
+                searchBoxLastTextRef.current = text;
+                clearTimeout(searchBoxTimerIdRef.current)
+                searchBoxTimerIdRef.current = setTimeout(() => {
+                  // Don't use text here b/c when deleting search string to empty,
+                  // text will contain last deleted character
+                  search.search(search.value);
+                }, 500);
+                return "";
+              }
+            };
+            search.popoverOptions = {
+              flip: true
+            };
+            map.current.addControl(search);
+
+            map.current.setFlyTo(false);
+
             // Add zoom control and geolocate
             map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
             map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "top-right");
@@ -532,19 +572,21 @@ function Map() {
             map.current.on('load', () => {
               setLoading(false);
               // Snap to users location if allowed
-              setLocating(true);
-              navigator.geolocation.getCurrentPosition(position => {
-                map.current.flyTo({
-                  center: [position.coords.longitude, position.coords.latitude],
-                  zoom: 14,
-                  essential: true,
-                  animate: false
+              if (process.env.NODE_ENV === 'production') {
+                setLocating(true);
+                navigator.geolocation.getCurrentPosition(position => {
+                  map.current.flyTo({
+                    center: [position.coords.longitude, position.coords.latitude],
+                    zoom: 14,
+                    essential: true,
+                    animate: false
+                  });
+                  setLocating(false);
+                }, err => {
+                  console.error("Failed to locate");
+                  setLocating(false);
                 });
-                setLocating(false);
-              }, err => {
-                console.error("Failed to locate");
-                setLocating(false);
-              });
+              }
               console.info("Map loaded. Adding routing functionality.");
             });
       
@@ -701,7 +743,6 @@ function Map() {
           />
         </FormControl>
       </div>
-      
       <div className="bottom-sidebar">
         <CompatibleWithStrava />
         <br/>
