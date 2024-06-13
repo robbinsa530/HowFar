@@ -1,0 +1,4 @@
+/* Not a fan of this, but the mapbox search box messes up this field for all inputs b/c they use !important*/
+#strava-title, #strava-description, #strava-date, #strava-time, #strava-hours, #strava-minutes, #strava-seconds, #strava-distance, #strava-pace {
+  box-sizing: content-box !important;
+}
