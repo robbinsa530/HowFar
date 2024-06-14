@@ -583,6 +583,23 @@ function Map() {
                 }, err => {
                   console.error("Failed to locate");
                   setLocating(false);
+                  switch (err.code) {
+                    case 1: // PERMISSION_DENIED
+                      console.error("getCurrentPosition err: PERMISSION_DENIED");
+                      alert("Failed to locate because browser does not have location permissions. Please change this in site settings.");
+                      break;
+                    case 2: // POSITION_UNAVAILABLE
+                      console.error("getCurrentPosition err: POSITION_UNAVAILABLE");
+                      alert("Failed to locate.");
+                      break;
+                    case 2: // TIMEOUT
+                      console.error("getCurrentPosition err: TIMEOUT");
+                      alert("Timed out trying to locate. Try searching your location in the search bar.");
+                      break;
+                  }
+                }, {
+                  maximumAge: 1000*60*60, // Can return cached location if < 1hr old
+                  timeout: 5000
                 });
               }
               console.info("Map loaded. Adding routing functionality.");
