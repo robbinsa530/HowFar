@@ -119,6 +119,11 @@
   color: white;
 }
 
+.sidebar-options-div {
+  color: white;
+  margin: 8px;
+}
+
 .help-footer {
   position: fixed;
   bottom: 0;

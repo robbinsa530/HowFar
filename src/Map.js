@@ -53,6 +53,19 @@ const mapTypes = [
   'mapbox://styles/mapbox/dark-v11'
 ];
 
+const chevronLayer = {
+  id: 'arrow-overlay',
+  type: 'line',
+  source: 'geojson',
+  layout: {},
+  paint: {
+      'line-pattern': 'chevron',
+      'line-width': 7,
+      'line-opacity': 1.0
+  },
+  filter: ['in', '$type', 'LineString']
+};
+
 /*
 marker:
 {
@@ -230,6 +243,7 @@ function Map() {
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
   const [mapType, setMapType] = useState(0);
   const [walkwayBias, setWalkwayBias] = useState(0);
+  const [displayChevrons, setDisplayChevrons] = useState(true);
   const mapSetupStartedRef = React.useRef(false);
   const stravaLoginWindowWasOpenedRef = React.useRef(false);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
@@ -245,6 +259,24 @@ function Map() {
   const [dist, setDist] = useState(0.0);
   const [eleUp, setEleUp] = useState(0.0);
   const [eleDown, setEleDown] = useState(0.0);
+
+  const handleSwitchDisplayChevrons = useCallback((event) => {
+    setDisplayChevrons(event.target.checked);
+    // Turning layer on
+    if (event.target.checked) {
+      // If layer is not already present (should not be)
+      if (!map.current.getLayer('arrow-overlay')) {
+        // If chevron image is loaded
+        if (map.current.hasImage('chevron')) {
+          map.current.addLayer(chevronLayer);
+        }
+      }
+    }
+    // Turning layer off
+    else {
+      map.current.removeLayer('arrow-overlay');
+    }
+  }, []);
 
   const handleSwitchAutoFollowRoads = useCallback((event) => {
     setAutoFollowRoads(event.target.checked);
@@ -368,18 +400,7 @@ function Map() {
       }
       else {
         map.current.addImage("chevron", img);
-        map.current.addLayer({
-          id: 'arrow-overlay',
-          type: 'line',
-          source: 'geojson',
-          layout: {},
-          paint: {
-              'line-pattern': 'chevron',
-              'line-width': 7,
-              'line-opacity': 1.0
-          },
-          filter: ['in', '$type', 'LineString']
-        });
+        map.current.addLayer(chevronLayer);
       }
     });
   }, []);
@@ -841,6 +862,22 @@ function Map() {
           <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
             <Button variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
           </Tooltip>
+
+          <br/>
+          <div className="sidebar-options-div">
+          <hr/><br/>
+            <Typography variant="h5">Options:</Typography>
+            <Tooltip disableInteractive title={<Typography>When enabled, route lines will show arrows to indicate direction</Typography>}>
+              <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                value="display-chevrons"
+                control={
+                  <BlueSwitch checked={displayChevrons} onChange={handleSwitchDisplayChevrons} name="displayChevrons"/>
+                }
+                label="Display Route Arrows"
+                labelPlacement="start"
+              />
+            </Tooltip>
+          </div>
 
           <a href="https://github.com/robbinsa530/HowFar/blob/main/README.md" target="_blank" rel="noreferrer" className="help-footer">Help</a>
         </Drawer>
