@@ -361,6 +361,27 @@ function Map() {
       },
       filter: ['in', '$type', 'LineString']
     });
+
+    map.current.loadImage("sprite_long.png", (err, img) => {
+      if (err) {
+        console.error("Error loading sprite, no arrows will be displayed", err);
+      }
+      else {
+        map.current.addImage("chevron", img);
+        map.current.addLayer({
+          id: 'arrow-overlay',
+          type: 'line',
+          source: 'geojson',
+          layout: {},
+          paint: {
+              'line-pattern': 'chevron',
+              'line-width': 7,
+              'line-opacity': 1.0
+          },
+          filter: ['in', '$type', 'LineString']
+        });
+      }
+    });
   }, []);
 
   async function getDirections(lngLatStart, lngLatEnd, connectDisjoint, calculateDirectionsOverride=undefined) {
