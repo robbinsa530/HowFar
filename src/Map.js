@@ -634,7 +634,7 @@ function Map() {
                       console.error("getCurrentPosition err: POSITION_UNAVAILABLE");
                       alert("Failed to locate.");
                       break;
-                    case 2: // TIMEOUT
+                    case 3: // TIMEOUT
                       console.error("getCurrentPosition err: TIMEOUT");
                       alert("Timed out trying to locate. Try searching your location in the search bar.");
                       break;
