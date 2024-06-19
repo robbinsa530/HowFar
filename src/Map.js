@@ -641,7 +641,7 @@ function Map() {
                   }
                 }, {
                   maximumAge: 1000*60*60, // Can return cached location if < 1hr old
-                  timeout: 5000
+                  timeout: 10000
                 });
               }
               console.info("Map loaded. Adding routing functionality.");
