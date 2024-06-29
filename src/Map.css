@@ -25,6 +25,21 @@
   height: calc(100vh - 16px);
   overflow-y: auto;
 }
+.sidebar-content::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+.sidebar-content::-webkit-scrollbar:horizontal {
+  height: 11px;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  border: 1px solid white;
+  background-color: rgba(0, 0, 0, .5);
+}
+.sidebar-content::-webkit-scrollbar-track { 
+  background-color: #bbb; 
+  border-radius: 0px; 
+} 
 
 .sidebar {
   background-color: rgb(35 55 75 / 90%);
