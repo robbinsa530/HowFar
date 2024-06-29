@@ -90,6 +90,9 @@ let undoActionList = [];
 // No-React flag for when window listener gets added. Avoids using state which may cause unnecessary renders
 let onFocusEventListenerAdded = false;
 
+// Prevents multiple clicks in quick succession from re-firing handleLeftRightClick before it's returned
+let mutex = false;
+
 function handleClearMap() {
   // Clear markers/lines
   undoActionList = [];
@@ -649,21 +652,8 @@ function Map() {
       
             // Place a marker on click
             map.current.on('click', async e => {
-              await handleLeftRightClick(
-                e,
-                markers,
-                geojson,
-                undoActionList,
-                map,
-                updateDistanceAndEleState,
-                getDirections,
-                false, // rightClick bool
-                (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
-              );
-            });
-      
-            map.current.on('contextmenu', async e => {
-              if (rightClickEnabledRef.current) {
+              if (!mutex) {
+                mutex = true;
                 await handleLeftRightClick(
                   e,
                   markers,
@@ -672,9 +662,30 @@ function Map() {
                   map,
                   updateDistanceAndEleState,
                   getDirections,
-                  true, // rightClick bool
+                  false, // rightClick bool
                   (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
                 );
+                mutex = false;
+              }
+            });
+      
+            map.current.on('contextmenu', async e => {
+              if (rightClickEnabledRef.current) {
+                if (!mutex) {
+                  mutex = true;
+                  await handleLeftRightClick(
+                    e,
+                    markers,
+                    geojson,
+                    undoActionList,
+                    map,
+                    updateDistanceAndEleState,
+                    getDirections,
+                    true, // rightClick bool
+                    (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
+                  );
+                  mutex = false;
+                }
               }
             });
           });
