@@ -16,16 +16,21 @@
   margin-bottom: 20px;
 }
 
-.sidebar {
-  background-color: rgb(35 55 75 / 90%);
-  color: #fff;
-  padding: 12px;
-  font-family: monospace;
+.sidebar-content {
   z-index: 1;
   position: absolute;
   top: 0;
   left: 0;
   margin: 8px;
+  height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+
+.sidebar {
+  background-color: rgb(35 55 75 / 90%);
+  color: #fff;
+  padding: 12px;
+  font-family: monospace;
   border-radius: 4px;
 }
 
