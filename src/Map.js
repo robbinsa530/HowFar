@@ -11,6 +11,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import MenuIcon from '@mui/icons-material/Menu';
+import LoopIcon from '@mui/icons-material/Loop';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
@@ -37,6 +38,8 @@ import ConnectWithStrava from './assets/ConnectWithStrava';
 import CompatibleWithStrava from './assets/CompatibleWithStrava';
 import { 
   handleLeftRightClick,
+  handleOutAndBack,
+  undoOutAndBack,
   removeMarker,
   addMarkerBack,
   moveMarkerBack } from './controllers/MapActionController';
@@ -531,6 +534,9 @@ function Map() {
     else if (lastAction.type === 'delete') {
       addMarkerBack(lastAction.info, markers, geojson, map);
     }
+    else if (lastAction.type === 'out-and-back') {
+      undoOutAndBack(lastAction.info, markers, geojson)
+    }
   }, []);
 
   // This gets attached to the focus changed listener of the window.
@@ -705,7 +711,7 @@ function Map() {
       <div className='sidebar-content'>
         <div className="sidebar">
           <div className="menu-btn-div">
-            <Tooltip disableInteractive title={<Typography>More Options</Typography>}>
+            <Tooltip disableInteractive title={<Typography>More Options (Connect to apps, display, etc.)</Typography>}>
             <IconButton onClick={() => setMenuOpen(true)} sx={{color:'white', margin:0, padding:0}}>
               <MenuIcon />
             </IconButton>
@@ -729,6 +735,22 @@ function Map() {
                 updateDistanceAndEleState();
                 map.current.getSource('geojson').setData(geojson); // Reload UI
               }} startIcon={<UndoIcon />}>Undo</Button>
+            </Tooltip>
+          </Stack>
+          <Stack className="sidebar-btn-container" spacing={2} direction="row">
+            <Tooltip disableInteractive title={<Typography>Continue route back to start point as an out-and-back</Typography>}>
+              <Button variant="contained" onClick={async () => {
+                await handleOutAndBack(
+                  markers,
+                  geojson,
+                  undoActionList,
+                  map,
+                  getDirections,
+                  updateDistanceAndEleState
+                );
+                updateDistanceAndEleState();
+                map.current.getSource('geojson').setData(geojson); // Reload UI
+              }} startIcon={<LoopIcon />}>Out & Back</Button>
             </Tooltip>
           </Stack>
 
@@ -774,23 +796,6 @@ function Map() {
                 <FormControlLabel value="add-to-end" control={<BlueRadio />} label="End" />
               </RadioGroup>
             </Tooltip>
-          </FormControl>
-          
-          <br/><hr/><br/>
-          <FormControl fullWidth>
-            <InputLabel sx={{color:"white", fontSize:"1.1em", "&.Mui-focused": {color: "white"}}}>Map type</InputLabel>
-            <BlueSelect
-              labelId="select-map-type"
-              id="select-map-type"
-              label="Map type"
-              value={mapType}
-              onChange={handleSelectMapType}
-            >
-              <MenuItem value={0}>Standard</MenuItem>
-              <MenuItem value={1}>Outdoors</MenuItem>
-              <MenuItem value={2}>Satellite</MenuItem>
-              <MenuItem value={3}>Dark Theme</MenuItem>
-            </BlueSelect>
           </FormControl>
 
           <br/><hr/>
@@ -880,7 +885,24 @@ function Map() {
           <br/>
           <div className="sidebar-options-div">
           <hr/><br/>
-            <Typography variant="h5">Options:</Typography>
+            <Typography variant="h5">Display Options:</Typography>
+            <br/>
+            <FormControl fullWidth>
+              <InputLabel sx={{color:"white", fontSize:"1.1em", "&.Mui-focused": {color: "white"}}}>Map type</InputLabel>
+              <BlueSelect
+                labelId="select-map-type"
+                id="select-map-type"
+                label="Map type"
+                value={mapType}
+                onChange={handleSelectMapType}
+              >
+                <MenuItem value={0}>Standard</MenuItem>
+                <MenuItem value={1}>Outdoors</MenuItem>
+                <MenuItem value={2}>Satellite</MenuItem>
+                <MenuItem value={3}>Dark Theme</MenuItem>
+              </BlueSelect>
+            </FormControl>
+            <br/><br/>
             <Tooltip disableInteractive title={<Typography>When enabled, route lines will show arrows to indicate direction</Typography>}>
               <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                 value="display-chevrons"

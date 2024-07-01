@@ -1,6 +1,7 @@
 import React from 'react';
 import cloneDeep from 'lodash.clonedeep';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
+import { v4 as uuidv4 } from 'uuid';
 
 //Used to move a marker back to its old spot after a move action is undone
 export function moveMarkerBack(info) {
@@ -182,33 +183,112 @@ export async function removeMarker(markerIdToRemove, markers, geojson, getDirect
   return toReturn;
 }
 
+function getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirections, updateDistanceInComponent) {
+  // Create a Mapbox Popup with delete button
+  const divRef = React.createRef();
+  const btnRef = React.createRef();
+  divRef.current = document.createElement('div');
+  btnRef.current = document.createElement('div');
+  btnRef.current.innerHTML = '<button class="marker-popup-btn">Delete point</button>';
+  divRef.current.innerHTML = '<div></div>';
+  divRef.current.appendChild(btnRef.current);
+  btnRef.current.addEventListener('click', async (e) => {
+    const undoActionInfo = await removeMarker(idToUse, markers, geojson, getDirections);
+    updateDistanceInComponent();
+    map.current.getSource('geojson').setData(geojson);
+
+    // Allows for undo of 'delete' action
+    undoActionList.push({
+      type: 'delete',
+      info: undoActionInfo
+    });
+  });
+  return divRef;
+}
+
+async function addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent) {
+  addedMarker.on('dragend', async (e) => {
+    let draggedMarkerIndex = markers.findIndex(el => el.id === idToUse);
+    let draggedMarker = markers[draggedMarkerIndex];
+    let dragActionInfo = {
+      marker: draggedMarker,
+      oldSnappedToRoad: draggedMarker.snappedToRoad,
+      oldPosition: [...draggedMarker.lngLat], // Want copy since we're about to change this
+      lines: [ // Can hold 0-2 lines.
+        // {
+        //   oldLineCopy: LineString Feature (Copy),
+        //   lineRef: LineString Feature (Reference)
+        // }
+      ]
+    };
+    draggedMarker.lngLat = [e.target._lngLat.lng, e.target._lngLat.lat];
+    if (markers.length > 1) {
+      if (draggedMarker.associatedLines.length >= 1) {
+        // Edit 1 or 2 associated lines
+        let linesToEdit = [];
+        draggedMarker.associatedLines.forEach(l => {
+          linesToEdit.push(geojson.features.find(f => f.properties.id === l));
+        });
+
+        for (const [i, l] of linesToEdit.entries()) { // CANNOT use .forEach here b/c async
+          dragActionInfo.lines.push({
+            oldLineCopy: cloneDeep(l), // Need a deep clone b/c we're about to edit this obj's nested members
+            lineRef: linesToEdit[i]
+          });
+          // Find other marker associated with line
+          const otherMarkerIndex = markers.findIndex(m => m.id !== idToUse && m.associatedLines.includes(l.properties.id));
+          // Replace old line with new one
+          let calculatedDirections, newLine;
+          if (draggedMarkerIndex < otherMarkerIndex) {
+            [calculatedDirections, newLine] = await getDirections(
+              markers[draggedMarkerIndex].lngLat,
+              markers[otherMarkerIndex].lngLat,
+              [false, !markers[otherMarkerIndex].snappedToRoad]);
+          } else {
+            [calculatedDirections, newLine] = await getDirections(
+              markers[otherMarkerIndex].lngLat,
+              markers[draggedMarkerIndex].lngLat,
+              [!markers[otherMarkerIndex].snappedToRoad, false]);
+          }
+          linesToEdit[i].properties.distance = newLine.properties.distance;
+          linesToEdit[i].properties.eleUp = newLine.properties.eleUp;
+          linesToEdit[i].properties.eleDown = newLine.properties.eleDown;
+          linesToEdit[i].geometry.coordinates = newLine.geometry.coordinates;
+
+          // Update position of marker. This is in case it wasn't dragged onto a road or path,
+          // the API will return the closest point to a road or path. That's what we wanna use
+          if (i === 0) {
+            draggedMarker.snappedToRoad = calculatedDirections;
+            const coordIndex = (draggedMarkerIndex < otherMarkerIndex) ? 0 : newLine.geometry.coordinates.length -1;
+            draggedMarker.markerObj.setLngLat(newLine.geometry.coordinates[coordIndex]);
+            draggedMarker.lngLat = newLine.geometry.coordinates[coordIndex];
+          }
+        }
+      }
+      else if (draggedMarker.associatedLines.length === 0) {
+        // Should never happen...
+        alert("Error moving point.");
+        console.error("Multiple markers exist, but dragged marker had no associated lines. Not sure how that happened...");
+      }
+      updateDistanceInComponent();
+      map.current.getSource('geojson').setData(geojson);
+    }
+    // Allows for undo of 'move' action
+    undoActionList.push({
+      type: 'move',
+      info: dragActionInfo
+    });
+  });
+}
+
 export async function handleLeftRightClick(e, markers, geojson, undoActionList, map, updateDistanceInComponent, getDirections, rightClick, addToEnd/*standard*/) {
   // If anything but a point was clicked, add a new one
   if (!markers.map(m => m.element).includes(e.originalEvent.target)) {
     // Create a new DOM node and save it to a React ref. This will be the marker element
     const ref = React.createRef();
     ref.current = document.createElement('div');
-    const idToUse = String(new Date().getTime());
-    
-    // Create a Mapbox Popup with delete button
-    const divRef = React.createRef();
-    const btnRef = React.createRef();
-    divRef.current = document.createElement('div');
-    btnRef.current = document.createElement('div');
-    btnRef.current.innerHTML = '<button class="marker-popup-btn">Delete point</button>';
-    divRef.current.innerHTML = '<div></div>';
-    divRef.current.appendChild(btnRef.current);
-    btnRef.current.addEventListener('click', async (e) => {
-      const undoActionInfo = await removeMarker(idToUse, markers, geojson, getDirections);
-      updateDistanceInComponent();
-      map.current.getSource('geojson').setData(geojson);
-
-      // Allows for undo of 'delete' action
-      undoActionList.push({
-        type: 'delete',
-        info: undoActionInfo
-      });
-    });
+    const idToUse = uuidv4();
+    const popupRef = getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirections, updateDistanceInComponent);
 
     let markerToAdd = {
       id: idToUse,
@@ -264,7 +344,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
         element: ref.current,
         draggable: true
       }).setLngLat(markerToAdd.lngLat)
-        .setPopup(new mapboxgl.Popup().setDOMContent(divRef.current))
+        .setPopup(new mapboxgl.Popup().setDOMContent(popupRef.current))
         .addTo(map.current);
 
       // Add marker to running list
@@ -316,7 +396,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
         element: ref.current,
         draggable: true
       }).setLngLat(markerToAdd.lngLat)
-        .setPopup(new mapboxgl.Popup().setDOMContent(divRef.current))
+        .setPopup(new mapboxgl.Popup().setDOMContent(popupRef.current))
         .addTo(map.current);
 
       // Add marker to running list
@@ -330,77 +410,105 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       marker: markerToAdd
     });
 
-    addedMarker.on('dragend', async (e) => {
-      let draggedMarkerIndex = markers.findIndex(el => el.id === idToUse);
-      let draggedMarker = markers[draggedMarkerIndex];
-      let dragActionInfo = {
-        marker: draggedMarker,
-        oldSnappedToRoad: draggedMarker.snappedToRoad,
-        oldPosition: [...draggedMarker.lngLat], // Want copy since we're about to change this
-        lines: [ // Can hold 0-2 lines.
-          // {
-          //   oldLineCopy: LineString Feature (Copy),
-          //   lineRef: LineString Feature (Reference)
-          // }
-        ]
-      };
-      draggedMarker.lngLat = [e.target._lngLat.lng, e.target._lngLat.lat];
-      if (markers.length > 1) {
-        if (draggedMarker.associatedLines.length >= 1) {
-          // Edit 1 or 2 associated lines
-          let linesToEdit = [];
-          draggedMarker.associatedLines.forEach(l => {
-            linesToEdit.push(geojson.features.find(f => f.properties.id === l));
-          });
-
-          for (const [i, l] of linesToEdit.entries()) { // CANNOT use .forEach here b/c async
-            dragActionInfo.lines.push({
-              oldLineCopy: cloneDeep(l), // Need a deep clone b/c we're about to edit this obj's nested members
-              lineRef: linesToEdit[i]
-            });
-            // Find other marker associated with line
-            const otherMarkerIndex = markers.findIndex(m => m.id !== idToUse && m.associatedLines.includes(l.properties.id));
-            // Replace old line with new one
-            let calculatedDirections, newLine;
-            if (draggedMarkerIndex < otherMarkerIndex) {
-              [calculatedDirections, newLine] = await getDirections(
-                markers[draggedMarkerIndex].lngLat,
-                markers[otherMarkerIndex].lngLat,
-                [false, !markers[otherMarkerIndex].snappedToRoad]);
-            } else {
-              [calculatedDirections, newLine] = await getDirections(
-                markers[otherMarkerIndex].lngLat,
-                markers[draggedMarkerIndex].lngLat,
-                [!markers[otherMarkerIndex].snappedToRoad, false]);
-            }
-            linesToEdit[i].properties.distance = newLine.properties.distance;
-            linesToEdit[i].properties.eleUp = newLine.properties.eleUp;
-            linesToEdit[i].properties.eleDown = newLine.properties.eleDown;
-            linesToEdit[i].geometry.coordinates = newLine.geometry.coordinates;
-
-            // Update position of marker. This is in case it wasn't dragged onto a road or path,
-            // the API will return the closest point to a road or path. That's what we wanna use
-            if (i === 0) {
-              draggedMarker.snappedToRoad = calculatedDirections;
-              const coordIndex = (draggedMarkerIndex < otherMarkerIndex) ? 0 : newLine.geometry.coordinates.length -1;
-              draggedMarker.markerObj.setLngLat(newLine.geometry.coordinates[coordIndex]);
-              draggedMarker.lngLat = newLine.geometry.coordinates[coordIndex];
-            }
-          }
-        }
-        else if (draggedMarker.associatedLines.length === 0) {
-          // Should never happen...
-          alert("Error moving point.");
-          console.error("Multiple markers exist, but dragged marker had no associated lines. Not sure how that happened...");
-        }
-        updateDistanceInComponent();
-        map.current.getSource('geojson').setData(geojson);
-      }
-      // Allows for undo of 'move' action
-      undoActionList.push({
-        type: 'move',
-        info: dragActionInfo
-      });
-    });
+    await addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
   }
+}
+
+export async function undoOutAndBack(info, markers, geojson) {
+  let removedMarkers = markers.splice(info.markersLength);
+  removedMarkers.forEach(m => {
+    m.markerObj.remove();
+  })
+  geojson.features.splice(info.linesLength);
+  let lastMarker = markers[markers.length - 1];
+  lastMarker.associatedLines = lastMarker.associatedLines.filter(l => l !== info.newAssocLineEndPt);
+  lastMarker.markerObj.removeClassName("marker").addClassName("end-marker");
+}
+
+export async function handleOutAndBack(markers, geojson, undoActionList, map, getDirections, updateDistanceInComponent) {
+  if (markers.length < 2) {
+    return;
+  }
+
+  // Setup for undo
+  const undoActionInfo = {
+    markersLength: markers.length,
+    linesLength: geojson.features.length
+    // newAssocLineEndPt: (Needs to be added)
+  };
+
+  // Reverse and add new linesegments
+  let newLines = [];
+  for (let i = geojson.features.length - 1; i >= 0; i--) {
+    const oldLine =  geojson.features[i];
+    let newLine = { // To be returned
+      type: 'Feature',
+      properties: {
+        id: uuidv4(),
+        distance: oldLine.properties.distance,
+        eleUp: oldLine.properties.eleDown, // Up will be down in reverse
+        eleDown: oldLine.properties.eleUp // Down will be up in reverse
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: oldLine.geometry.coordinates.slice().reverse()
+      }
+    };
+    newLines.push(newLine);
+  }
+
+  // Add first new line to associatedLines of last marker
+  markers[markers.length - 1].associatedLines.push(newLines[0].properties.id);
+  undoActionInfo.newAssocLineEndPt = newLines[0].properties.id;
+
+  // Create and place new markers
+  let newMarkers = [];
+  markers[markers.length - 1].markerObj.removeClassName("end-marker").addClassName("marker");
+  for (let i = markers.length - 2; i >= 0; i--) { // Don't repeat turnaround-point marker
+    const oldMarker = markers[i];
+
+    const ref = React.createRef();
+    ref.current = document.createElement('div');
+    const idToUse = uuidv4();
+    const popupRef = getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirections, updateDistanceInComponent);
+
+    // Will be assoc w/ newLine of same index, and the next one if it exists
+    const l1 = newMarkers.length;
+    const l2 = l1 + 1;
+    let newAssocLines = [newLines[l1].properties.id];
+    if (l2 < newLines.length) {
+      newAssocLines.push(newLines[l2].properties.id);
+    }
+    let newMarker = {
+      id: idToUse,
+      element: ref.current,
+      lngLat: oldMarker.lngLat,
+      associatedLines: newAssocLines,
+      snappedToRoad: oldMarker.snappedToRoad
+      // markerObj: (Needs to be added)
+    };
+
+    let addedMarker = new mapboxgl.Marker({
+      className: "marker",
+      element: ref.current,
+      draggable: true
+    }).setLngLat(newMarker.lngLat)
+      .setPopup(new mapboxgl.Popup().setDOMContent(popupRef.current))
+      .addTo(map.current);
+
+    await addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
+
+    // Add marker to running list
+    newMarker.markerObj = addedMarker;
+    newMarkers.push(newMarker);
+  }
+
+  geojson.features.push(...newLines);
+  markers.push(...newMarkers);
+  markers[markers.length - 1].markerObj.removeClassName("marker").addClassName("end-marker");
+
+  undoActionList.push({
+    type: 'out-and-back',
+    info: undoActionInfo
+  });
 }
