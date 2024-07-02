@@ -708,8 +708,8 @@ function Map() {
 
   return (
     <div className="Map">
-      <div className='sidebar-content'>
-        <div className="sidebar">
+      <div id="sidebar-content" className='sidebar-content'>
+        <div id="sidebar" className="sidebar">
           <div className="menu-btn-div">
             <Tooltip disableInteractive title={<Typography>More Options (Connect to apps, display, etc.)</Typography>}>
             <IconButton onClick={() => setMenuOpen(true)} sx={{color:'white', margin:0, padding:0}}>
@@ -717,7 +717,17 @@ function Map() {
             </IconButton>
             </Tooltip>
           </div>
-          <img src="how_far_logo_complete.png" width="225px"/>
+          <img src="how_far_logo_complete.png" width="225px" onLoad={() => {
+            // Prevents area below sidebar from blocking map clicks
+            // Has to be tied to this img b/c sidebar height isn't calculated fully until this img loads
+            const sidebar = document.getElementById("sidebar");
+            const sidebarContent = document.getElementById("sidebar-content");
+            let sidebarHeight = sidebar.offsetHeight;
+            if (sidebarHeight) {
+              sidebarContent.style.maxHeight = sidebarHeight.toString() + "px";
+            }
+            // No else, would rather not hardcode any px values
+          }}/>
           <br/>
           <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
           <div className="elevation-container">
