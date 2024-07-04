@@ -446,8 +446,8 @@ export async function handleOutAndBack(markers, geojson, undoActionList, map, ge
       properties: {
         id: uuidv4(),
         distance: oldLine.properties.distance,
-        eleUp: oldLine.properties.eleDown, // Up will be down in reverse
-        eleDown: oldLine.properties.eleUp // Down will be up in reverse
+        eleUp: -oldLine.properties.eleDown, // Up will be down in reverse
+        eleDown: -oldLine.properties.eleUp // Down will be up in reverse
       },
       geometry: {
         type: 'LineString',
