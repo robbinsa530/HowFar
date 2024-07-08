@@ -1,3 +1,11 @@
+/*
+Ugly z-index ordering
+- 4: side bar/bottom sidebar. Should always show on top of map features
+- 3: marker popups. Should show on top of markers but behind sidebars
+- 2: markers. Should show on top of add-new-in-line marker
+- 1: add-new-in-line-marker
+*/
+
 .map-container {
   width: 100vw;
   height: 100vh;
@@ -17,7 +25,7 @@
 }
 
 .sidebar-content {
-  z-index: 1;
+  z-index: 4;
   position: absolute;
   top: 0;
   left: 0;
@@ -54,7 +62,7 @@
   font-family: monospace;
   background-color: rgb(35 55 75 / 90%);
   padding: 2px 2px;
-  z-index: 1;
+  z-index: 4;
   position: absolute;
   bottom: 12px;
   right: 0;
@@ -135,6 +143,10 @@
   margin-left: -1px;
   border-right: 2px solid #333;
   position: absolute;
+}
+
+.mapboxgl-popup {
+  z-index: 3;
 }
 
 .marker-popup-btn {
