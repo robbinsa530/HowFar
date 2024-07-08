@@ -1,11 +1,3 @@
-/*
-Ugly z-index ordering
-- 4: side bar/bottom sidebar. Should always show on top of map features
-- 3: marker popups. Should show on top of markers but behind sidebars
-- 2: markers. Should show on top of add-new-in-line marker
-- 1: add-new-in-line-marker
-*/
-
 .map-container {
   width: 100vw;
   height: 100vh;
@@ -25,7 +17,7 @@ Ugly z-index ordering
 }
 
 .sidebar-content {
-  z-index: 4;
+  z-index: 2;
   position: absolute;
   top: 0;
   left: 0;
@@ -62,7 +54,7 @@ Ugly z-index ordering
   font-family: monospace;
   background-color: rgb(35 55 75 / 90%);
   padding: 2px 2px;
-  z-index: 4;
+  z-index: 2;
   position: absolute;
   bottom: 12px;
   right: 0;
@@ -99,7 +91,7 @@ Ugly z-index ordering
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
-  z-index: 2; /* So add-new-marker won't block */
+  z-index: 1; /* So add-new-marker won't block */
 }
 
 .start-marker {
@@ -108,7 +100,7 @@ Ugly z-index ordering
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
-  z-index: 2; /* So add-new-marker won't block */
+  z-index: 1; /* So add-new-marker won't block */
 }
 
 .end-marker {
@@ -117,7 +109,7 @@ Ugly z-index ordering
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
-  z-index: 2; /* So add-new-marker won't block */
+  z-index: 1; /* So add-new-marker won't block */
 }
 
 .add-new-marker {
@@ -127,7 +119,7 @@ Ugly z-index ordering
   display: inline-block;
   border-radius: 50%;
   cursor: pointer;
-  z-index: 1;
+  z-index: 0;
 }
 
 .marker-line-h {
@@ -146,7 +138,7 @@ Ugly z-index ordering
 }
 
 .mapboxgl-popup {
-  z-index: 3;
+  z-index: 1;
 }
 
 .marker-popup-btn {
