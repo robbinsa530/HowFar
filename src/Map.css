@@ -68,6 +68,7 @@
 
 .sidebar-elevation {
   font-size: 1.2em;
+  margin: 10px 0px;
 }
 
 .elevation-container {
@@ -90,6 +91,7 @@
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
+  z-index: 2; /* So add-new-marker won't block */
 }
 
 .start-marker {
@@ -98,6 +100,7 @@
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
+  z-index: 2; /* So add-new-marker won't block */
 }
 
 .end-marker {
@@ -106,6 +109,32 @@
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
+  z-index: 2; /* So add-new-marker won't block */
+}
+
+.add-new-marker {
+  background-color: #bbbc;
+  border: 2px solid #555d; /* Slightly darker & less opaque than bkg*/
+  padding: 5px;
+  display: inline-block;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.marker-line-h {
+  width: 8px;
+  margin-top: -1px;
+  margin-left: -4px;
+  border-bottom: 2px solid #333;
+  position: absolute;
+}
+.marker-line-v {
+  height: 8px;
+  margin-top: -4px;
+  margin-left: -1px;
+  border-right: 2px solid #333;
+  position: absolute;
 }
 
 .marker-popup-btn {

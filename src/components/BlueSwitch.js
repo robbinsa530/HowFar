@@ -2,7 +2,7 @@ import { alpha, styled } from '@mui/material/styles';
 import { blue } from '@mui/material/colors';
 import Switch from '@mui/material/Switch';
 
-const BlueSwitch =  styled(Switch)(({ theme }) => ({
+const BlueSwitch = styled(Switch)(({ theme }) => ({
   '& .MuiSwitch-switchBase.Mui-checked': {
     color: blue[200],
     '&:hover': {

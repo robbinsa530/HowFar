@@ -4,6 +4,7 @@ import { MapboxSearchBox } from '@mapbox/search-js-web';
 
 import length from '@turf/length'
 import lineChunk from '@turf/line-chunk'
+import nearestPointOnLine from '@turf/nearest-point-on-line'
 import { v4 as uuidv4 } from 'uuid';
 import UndoIcon from '@mui/icons-material/Undo';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -38,6 +39,8 @@ import ConnectWithStrava from './assets/ConnectWithStrava';
 import CompatibleWithStrava from './assets/CompatibleWithStrava';
 import { 
   handleLeftRightClick,
+  addNewMarkerInLine,
+  undoAddMarkerInLine,
   handleOutAndBack,
   undoOutAndBack,
   removeMarker,
@@ -81,6 +84,11 @@ marker:
 }
 */
 let markers = [];
+
+// Used as a display when hovering over line segment to add new marker
+let addNewMarker = null;
+let addNewMarkerDiv = null;
+let newMarkerLineToSplit = null;
 
 const geojson = {
   'type': 'FeatureCollection',
@@ -246,6 +254,7 @@ function Map() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [autoFollowRoads, setAutoFollowRoads] = useState(true);
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
+  const [addMarkerInLineEnabled, setAddMarkerInLineEnabled] = useState(false);
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
   const [mapType, setMapType] = useState(0);
   const [walkwayBias, setWalkwayBias] = useState(0);
@@ -254,6 +263,7 @@ function Map() {
   const stravaLoginWindowWasOpenedRef = React.useRef(false);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
+  const addMarkerInLineEnabledRef = React.useRef(addMarkerInLineEnabled);
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
   const walkwayBiasRef = React.useRef(walkwayBias);
 
@@ -292,6 +302,15 @@ function Map() {
   const handleSwitchRightClickEnabled = useCallback((event) => {
     setRightClickEnabled(event.target.checked);
     rightClickEnabledRef.current = event.target.checked;
+  }, []);
+
+  const handleSwitchAddMarkerInLineEnabled = useCallback((event) => {
+    setAddMarkerInLineEnabled(event.target.checked);
+    addMarkerInLineEnabledRef.current = event.target.checked;
+
+    if (!event.target.checked) {
+      removeAddNewMarker();
+    }
   }, []);
 
   const handleToggleStartEnd = useCallback((event) => {
@@ -537,6 +556,28 @@ function Map() {
     else if (lastAction.type === 'out-and-back') {
       undoOutAndBack(lastAction.info, markers, geojson)
     }
+    else if (lastAction.type === 'add-marker-in-line') {
+      undoAddMarkerInLine(lastAction.info, markers, geojson)
+    }
+  }, []);
+
+  // Return distance between a mouse event and the add-new-markrt
+  // Returns squared distance for faster computing
+  const getMouseToAddNewMarkerSqDistance = useCallback((e) => {
+    const markerPt = map.current.project(addNewMarker.getLngLat()); // LngLat -> X/Y
+    const xDist = (e.point.x - markerPt.x);
+    const yDist = (e.point.y - markerPt.y);
+    return (xDist*xDist) + (yDist*yDist);
+  }, []);
+
+  // Used to remove add-new-marker
+  const removeAddNewMarker = useCallback(() => {
+    map.current.getCanvas().style.cursor = 'crosshair';
+    if (addNewMarker) {
+      addNewMarker.remove();
+      addNewMarker = null;
+      newMarkerLineToSplit = null;
+    }
   }, []);
 
   // This gets attached to the focus changed listener of the window.
@@ -616,6 +657,50 @@ function Map() {
 
             map.current.on('style.load', () => {
               applyMapStyles();
+
+              // Marker used to show user they can add a new marker on an existing line
+              addNewMarkerDiv = React.createRef();
+              addNewMarkerDiv.current = document.createElement('div');
+              const markerHLineDiv = document.createElement('div');
+              const markerVLineDiv = document.createElement('div');
+              markerHLineDiv.className = "marker-line-h";
+              markerVLineDiv.className = "marker-line-v";
+              addNewMarkerDiv.current.appendChild(markerHLineDiv);
+              addNewMarkerDiv.current.appendChild(markerVLineDiv);
+
+              addNewMarkerDiv.current.addEventListener('mouseleave', (e) => {
+                removeAddNewMarker();
+              });
+
+              map.current.on('mousemove', 'measure-lines', (e) => {
+                if (addMarkerInLineEnabledRef.current && e.features.length > 0) {
+                  newMarkerLineToSplit = e.features[0].properties.id;
+                  map.current.getCanvas().style.cursor = 'pointer'
+
+                  // Calculate point centered on line closest to mouse
+                  // Prevents marker from moving along the width of the line as the mouse moves
+                  const mousePt = {
+                    type: 'Feature',
+                    geometry: {
+                      type: 'Point',
+                      coordinates: [e.lngLat.lng, e.lngLat.lat]
+                    }
+                  }
+                  const snapped = nearestPointOnLine(e.features[0], mousePt, {units: 'miles'});
+
+                  // Add or move marker
+                  if (addNewMarker) {
+                    addNewMarker.setLngLat(snapped.geometry.coordinates);
+                  }
+                  else {
+                    addNewMarker = new mapboxgl.Marker({
+                      className: "add-new-marker",
+                      element: addNewMarkerDiv.current
+                    }).setLngLat(snapped.geometry.coordinates)
+                      .addTo(map.current);
+                  }
+                }
+              });
             });
 
             map.current.on('load', () => {
@@ -653,28 +738,58 @@ function Map() {
                   timeout: 10000
                 });
               }
-              console.info("Map loaded. Adding routing functionality.");
+              console.info("Map loaded.");
             });
-      
+
+            // Used to fix an issue where the add-new-marker sometimes doesn't get removed
+            map.current.on('mousemove', (e) => {
+              if (addNewMarker) {
+                // Calculate distance between mouse and add-new-marker.
+                // If dist > radius of marker, "remove on mouseleave" has failed. Remove manually.
+                // Fixes an issue where mouseleave isn't fired on the marker when the mouse is moving too fast
+                const dist = getMouseToAddNewMarkerSqDistance(e);
+                if (dist > 64) { // 64 is sorta made up. Roughly the radius of the rendered marker squared
+                  removeAddNewMarker();
+                }
+              }
+            });
+
             // Place a marker on click
             map.current.on('click', async e => {
               if (!mutex) {
                 mutex = true;
-                await handleLeftRightClick(
-                  e,
-                  markers,
-                  geojson,
-                  undoActionList,
-                  map,
-                  updateDistanceAndEleState,
-                  getDirections,
-                  false, // rightClick bool
-                  (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
-                );
+
+                // If the add-new-marker was clicked, add a new marker in the middle of selected line
+                if (addMarkerInLineEnabledRef.current && addNewMarker && (getMouseToAddNewMarkerSqDistance(e) < 64)) {
+                  await addNewMarkerInLine(
+                    e,
+                    addNewMarker.getLngLat(),
+                    markers,
+                    geojson,
+                    newMarkerLineToSplit,
+                    undoActionList,
+                    map,
+                    updateDistanceAndEleState,
+                    getDirections);
+                  removeAddNewMarker();
+                }
+                else {
+                  await handleLeftRightClick(
+                    e,
+                    markers,
+                    geojson,
+                    undoActionList,
+                    map,
+                    updateDistanceAndEleState,
+                    getDirections,
+                    false, // rightClick bool
+                    (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
+                  );
+                }
                 mutex = false;
               }
             });
-      
+
             map.current.on('contextmenu', async e => {
               if (rightClickEnabledRef.current) {
                 if (!mutex) {
@@ -784,6 +899,17 @@ function Map() {
                     <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
                   }
                   label="Right click enabled"
+                  labelPlacement="start"
+                />
+              </Tooltip>
+
+              <Tooltip disableInteractive title={<Typography>When enabled, clicking on one of your route's line segments will insert a new waypoint into the middle of that segment instead of at the end/beginning of the route</Typography>}>
+                <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                  value={"add-marker-in-line-enabled"}
+                  control={
+                    <BlueSwitch checked={addMarkerInLineEnabled} onChange={handleSwitchAddMarkerInLineEnabled} name="addMarkerInLineEnabled"/>
+                  }
+                  label="Edit lines on click"
                   labelPlacement="start"
                 />
               </Tooltip>

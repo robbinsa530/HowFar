@@ -414,7 +414,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
   }
 }
 
-export async function undoOutAndBack(info, markers, geojson) {
+export function undoOutAndBack(info, markers, geojson) {
   let removedMarkers = markers.splice(info.markersLength);
   removedMarkers.forEach(m => {
     m.markerObj.remove();
@@ -509,6 +509,128 @@ export async function handleOutAndBack(markers, geojson, undoActionList, map, ge
 
   undoActionList.push({
     type: 'out-and-back',
+    info: undoActionInfo
+  });
+}
+
+export function undoAddMarkerInLine(info, markers, geojson) {
+  const associatedMarkers = [
+    markers[info.addedMarkerIndex - 1],
+    markers[info.addedMarkerIndex + 1],
+  ];
+  markers[info.addedMarkerIndex].markerObj.remove();
+  markers.splice(info.addedMarkerIndex, 1);
+
+  let addedLineIndices = [];
+  geojson.features.forEach((f,i) => {
+    if (info.addedLineIds.includes(f.properties.id)) {
+      addedLineIndices.push(i);
+    }
+  });
+  // 2 added lines will always be next to each other
+  geojson.features.splice(Math.min(...addedLineIndices), 2, info.removedLine);
+
+  associatedMarkers.forEach(m => {
+    m.associatedLines = m.associatedLines.filter(l => ((l !== info.addedLineIds[0]) && (l !== info.addedLineIds[1])));
+    m.associatedLines.push(info.removedLine.properties.id);
+  });
+}
+
+export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, lineToSplit, undoActionList, map, updateDistanceInComponent, getDirections) {
+  // If existing point was clicked, do nothing
+  if (markers.map(m => m.element).includes(e.originalEvent.target)) {
+    return;
+  }
+
+  // Find markers associated with line we will remove
+  let markersToEdit = [];
+  let markersToEditIndices = [];
+  markers.forEach((m,i) => {
+    if (m.associatedLines.includes(lineToSplit)) {
+      markersToEdit.push(m);
+      markersToEditIndices.push(i);
+    }
+  });
+  if (markersToEdit.length !== 2) {
+    console.error(`Somehow, line-to-be-split has ${markersToEdit.length} associated markers. Should have 2. Aborting`);
+    alert("Failed to add new point.");
+    return;
+  }
+
+  // Remove line associations from markers
+  markersToEdit.forEach(m => {
+    m.associatedLines = m.associatedLines.filter(l => l !== lineToSplit);
+  });
+
+  // Set up new marker
+  // Create a new DOM node and save it to a React ref. This will be the marker element
+  const ref = React.createRef();
+  ref.current = document.createElement('div');
+  const idToUse = uuidv4();
+  const popupRef = getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirections, updateDistanceInComponent);
+  let markerToAdd = {
+    id: idToUse,
+    element: ref.current,
+    lngLat: [newMarkerLngLat.lng, newMarkerLngLat.lat],
+    associatedLines: []
+    // snappedToRoad: (Needs to be added)
+    // markerObj: (Needs to be added)
+  };
+
+  // Create 2 new lines
+  const [calculatedDirections, newLine1] = await getDirections(
+    markersToEdit[0].lngLat,
+    markerToAdd.lngLat,
+    [!markersToEdit[0].snappedToRoad, false],
+    undefined
+  );
+  markerToAdd.snappedToRoad = calculatedDirections;
+  markersToEdit[0].associatedLines.push(newLine1.properties.id);
+  markerToAdd.associatedLines.push(newLine1.properties.id);
+
+  // Update position of marker. This is in case click wasn't on a road or path,
+  // the API will return the closest point to a road or path. That's what we wanna use
+  markerToAdd.lngLat = newLine1.geometry.coordinates[newLine1.geometry.coordinates.length -1];
+
+  const [_, newLine2] = await getDirections(
+    markerToAdd.lngLat,
+    markersToEdit[1].lngLat,
+    [!markerToAdd.snappedToRoad, !markersToEdit[1].snappedToRoad],
+    undefined
+  );
+  markerToAdd.associatedLines.push(newLine2.properties.id);
+  markersToEdit[1].associatedLines.push(newLine2.properties.id);
+
+  const lineToSplitIndex = geojson.features.findIndex(f => f.properties.id === lineToSplit);
+  const removedLine = geojson.features.splice(lineToSplitIndex, 1, newLine1, newLine2)[0];
+  updateDistanceInComponent();
+
+  // Add new marker
+  let addedMarker = new mapboxgl.Marker({
+    className: "marker",
+    element: ref.current,
+    draggable: true
+  }).setLngLat(markerToAdd.lngLat)
+    .setPopup(new mapboxgl.Popup().setDOMContent(popupRef.current))
+    .addTo(map.current);
+
+  // Add marker to running list
+  markerToAdd.markerObj = addedMarker;
+  markers.splice(markersToEditIndices[1], 0, markerToAdd);
+
+  // Redraw lines on map
+  map.current.getSource('geojson').setData(geojson);
+
+  await addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
+
+  const undoActionInfo = {
+    addedMarkerIndex: markersToEditIndices[1],
+    addedLineIds: [newLine1.properties.id, newLine2.properties.id],
+    removedLine: removedLine
+  };
+
+  undoActionList.push({
+    type: 'add-marker-in-line',
     info: undoActionInfo
   });
 }
