@@ -207,7 +207,13 @@ function getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirec
 }
 
 async function addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent) {
-  addedMarker.on('dragend', async (e) => {
+  addedMarker.markerObj.on('dragstart', async (e) => {
+    addedMarker.isDragging = true;
+  });
+
+  addedMarker.markerObj.on('dragend', async (e) => {
+    addedMarker.isDragging = false;
+
     let draggedMarkerIndex = markers.findIndex(el => el.id === idToUse);
     let draggedMarker = markers[draggedMarkerIndex];
     let dragActionInfo = {
@@ -282,6 +288,14 @@ async function addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUs
 }
 
 export async function handleLeftRightClick(e, markers, geojson, undoActionList, map, updateDistanceInComponent, getDirections, rightClick, addToEnd/*standard*/) {
+  // Check that a marker wasnt being dragged when click happened
+  let draggingMarker = markers.find(m => m.isDragging);
+  if (draggingMarker) {
+    draggingMarker.markerObj.setLngLat(draggingMarker.lngLat);
+    draggingMarker.isDragging = false;
+    return;
+  }
+
   // If anything but a point was clicked, add a new one
   if (!markers.map(m => m.element).includes(e.originalEvent.target)) {
     // Create a new DOM node and save it to a React ref. This will be the marker element
@@ -294,7 +308,8 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       id: idToUse,
       element: ref.current,
       lngLat: [e.lngLat.lng, e.lngLat.lat],
-      associatedLines: []
+      associatedLines: [],
+      isDragging: false
       // snappedToRoad: (Needs to be added)
       // markerObj: (Needs to be added)
     };
@@ -410,7 +425,7 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       marker: markerToAdd
     });
 
-    await addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
+    await addDragHandlerToMarker(markerToAdd, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
   }
 }
 
@@ -484,6 +499,7 @@ export async function handleOutAndBack(markers, geojson, undoActionList, map, ge
       element: ref.current,
       lngLat: oldMarker.lngLat,
       associatedLines: newAssocLines,
+      isDragging: false,
       snappedToRoad: oldMarker.snappedToRoad
       // markerObj: (Needs to be added)
     };
@@ -496,11 +512,11 @@ export async function handleOutAndBack(markers, geojson, undoActionList, map, ge
       .setPopup(new mapboxgl.Popup().setDOMContent(popupRef.current))
       .addTo(map.current);
 
-    await addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
-
     // Add marker to running list
     newMarker.markerObj = addedMarker;
     newMarkers.push(newMarker);
+
+    await addDragHandlerToMarker(newMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
   }
 
   geojson.features.push(...newLines);
@@ -572,7 +588,8 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
     id: idToUse,
     element: ref.current,
     lngLat: [newMarkerLngLat.lng, newMarkerLngLat.lat],
-    associatedLines: []
+    associatedLines: [],
+    isDragging: false
     // snappedToRoad: (Needs to be added)
     // markerObj: (Needs to be added)
   };
@@ -621,7 +638,7 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
   // Redraw lines on map
   map.current.getSource('geojson').setData(geojson);
 
-  await addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
+  await addDragHandlerToMarker(markerToAdd, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent);
 
   const undoActionInfo = {
     addedMarkerIndex: markersToEditIndices[1],
