@@ -177,10 +177,17 @@
   margin: 8px;
 }
 
-.help-footer {
+.footer-link {
   position: fixed;
   bottom: 0;
   text-align: center;
-  padding-bottom: 20px;
   color: white;
+}
+
+.help-footer {
+  padding-bottom: 50px;
+}
+
+.donate-footer {
+  padding-bottom: 20px;
 }
