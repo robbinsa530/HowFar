@@ -28,6 +28,17 @@ As you map, your routes distance and estimated elevation gain and loss are updat
 |:-:|
 | *Displayed distance and estimated elevation change* |
 
+### Add Waypoints in Line Segments
+Enabling the "Edit lines ln click" will allow you to edit existing line segments within your route. When disabled (which is the default) clicking on part of your route will simply add a new waypoint to the end of beginning of the route (depending on the "Add new points to beginning/end" option). But when this setting is enabled, hovering the mouse over a line will reveal a gray "add new" waypoint. Clicking on the line will add a waypoint at that point in the middle of the line, allowing it to be dragged/edited.
+
+| ![Add Point In Line Hover Marker](./assets/add_point_in_line_marker.png) |
+|:-:|
+| *Hovering the mouse over a line reveals the "add new waypoint in line" marker. Click to add a new waypoint at that point on your route and split the line in two* |
+
+| ![Add Point In Line Edit](./assets/add_new_point_in_line_edit.png) |
+|:-:|
+| *After the point has been added, it can be moved, editing that section of your route in place* |
+
 ###  Map Types
 HowFar has multiple map types.
 
@@ -49,7 +60,7 @@ HowFar has multiple map types.
 
 
 ### Post to Strava
-Clicking into the menu at the top left of the sidebar brings up two buttons. "Connect with Strava" and "Post Activity". Before an activity can be posted to Strava, you must first connect using the "Connect with Strava" button. This will bring up a Strava controlled login window. Note that HowFar never sees and does not save your login info, but it does save a token safely in the browser which will prevent you from having to re-login to Strava every time you open the app. The token lasts 6 months and can be deleted by clearing your cookies.
+Clicking into the menu at the top left of the sidebar brings connection and display settings. The first two buttons in the sidebar are "Connect with Strava" and "Post Activity". Before an activity can be posted to Strava, you must first connect using the "Connect with Strava" button. This will bring up a Strava controlled login window. Note that HowFar never sees and does not save your login info, but it does save a token safely in the browser which will prevent you from having to re-login to Strava every time you open the app. The token lasts 6 months and can be deleted by clearing your cookies.
 
 Underneath the "Connect with Strava" button you will see your connection status. If you are connected, you will see a green check. This indicates that you have already logged in and are able to post your activity. If you see a red X, you will need to login.
 
