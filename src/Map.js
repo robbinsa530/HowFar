@@ -1015,7 +1015,7 @@ function Map() {
           </div>}
           <br/>
           <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
-            <Button variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
+            <Button sx={{margin:"0 16px"}} variant="contained" onClick={handlePostToStravaClick}>Post Activity</Button>
           </Tooltip>
 
           <br/>
