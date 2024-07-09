@@ -17,7 +17,7 @@
 }
 
 .sidebar-content {
-  z-index: 2;
+  z-index: 1;
   position: absolute;
   top: 0;
   left: 0;
@@ -54,7 +54,7 @@
   font-family: monospace;
   background-color: rgb(35 55 75 / 90%);
   padding: 2px 2px;
-  z-index: 2;
+  z-index: 1;
   position: absolute;
   bottom: 12px;
   right: 0;
@@ -91,7 +91,6 @@
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
-  z-index: 1; /* So add-new-marker won't block */
 }
 
 .start-marker {
@@ -100,7 +99,6 @@
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
-  z-index: 1; /* So add-new-marker won't block */
 }
 
 .end-marker {
@@ -109,7 +107,6 @@
   padding: 5px;
   display: inline-block;
   border-radius: 50%;
-  z-index: 1; /* So add-new-marker won't block */
 }
 
 .add-new-marker {
@@ -119,7 +116,6 @@
   display: inline-block;
   border-radius: 50%;
   cursor: pointer;
-  z-index: 0;
 }
 
 .marker-line-h {
@@ -135,10 +131,6 @@
   margin-left: -1px;
   border-right: 2px solid #333;
   position: absolute;
-}
-
-.mapboxgl-popup {
-  z-index: 1;
 }
 
 .marker-popup-btn {

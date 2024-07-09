@@ -563,8 +563,8 @@ function Map() {
 
   // Return distance between a mouse event and the add-new-markrt
   // Returns squared distance for faster computing
-  const getMouseToAddNewMarkerSqDistance = useCallback((e) => {
-    const markerPt = map.current.project(addNewMarker.getLngLat()); // LngLat -> X/Y
+  const getMouseToMarkerSqDistance = useCallback((e, markerObj) => {
+    const markerPt = map.current.project(markerObj.getLngLat()); // LngLat -> X/Y
     const xDist = (e.point.x - markerPt.x);
     const yDist = (e.point.y - markerPt.y);
     return (xDist*xDist) + (yDist*yDist);
@@ -675,6 +675,17 @@ function Map() {
               map.current.on('mousemove', 'measure-lines', (e) => {
                 if (addMarkerInLineEnabledRef.current && e.features.length > 0) {
                   newMarkerLineToSplit = e.features[0].properties.id;
+
+                  // If over real marker, don't show
+                  const lineEndPtMarkers = markers.filter(m => m.associatedLines.includes(newMarkerLineToSplit));
+                  for (const m of lineEndPtMarkers) {
+                    if (getMouseToMarkerSqDistance(e, m.markerObj) < 64) {
+                      removeAddNewMarker();
+                      return;
+                    }
+                  }
+
+                  // Set cursor to pointer finger
                   map.current.getCanvas().style.cursor = 'pointer'
 
                   // Calculate point centered on line closest to mouse
@@ -747,7 +758,7 @@ function Map() {
                 // Calculate distance between mouse and add-new-marker.
                 // If dist > radius of marker, "remove on mouseleave" has failed. Remove manually.
                 // Fixes an issue where mouseleave isn't fired on the marker when the mouse is moving too fast
-                const dist = getMouseToAddNewMarkerSqDistance(e);
+                const dist = getMouseToMarkerSqDistance(e, addNewMarker);
                 if (dist > 64) { // 64 is sorta made up. Roughly the radius of the rendered marker squared
                   removeAddNewMarker();
                 }
@@ -760,7 +771,7 @@ function Map() {
                 mutex = true;
 
                 // If the add-new-marker was clicked, add a new marker in the middle of selected line
-                if (addMarkerInLineEnabledRef.current && addNewMarker && (getMouseToAddNewMarkerSqDistance(e) < 64)) {
+                if (addMarkerInLineEnabledRef.current && addNewMarker && (getMouseToMarkerSqDistance(e, addNewMarker) < 64)) {
                   await addNewMarkerInLine(
                     e,
                     addNewMarker.getLngLat(),
