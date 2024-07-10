@@ -4,7 +4,7 @@
 
 ## Key Features
 - No login required! You don't need to make an account to use HowFar. I don't want your data and I know how annoying it is to be forced to create an account to do something simple like map a run. The only time you will need to login to anything is to post a mapped activity to Strava (more on that later).
-- All the mapping features you've come to expect from the other activity mapping tools on the internet. Auto follow roads, edit, undo functionality, clear route, multiple map views (street, satellite, trails, dark).
+- All the mapping features you've come to expect from the other activity mapping tools on the internet. Auto follow roads, edit, undo functionality, clear route, out and back, multiple map views (street, satellite, trails, dark), etc.
 - Right click to quickly bypass the auto follow roads feature for smooth transition between following established routes and (for example) hopping curbs, mapping through parks, etc.
 - Append route segments to both the beginning and end of the route. Helpful in case you've mapped a complex route and want to edit the start.
 - Road/walkway preference for fine-tuning routes.
@@ -29,7 +29,7 @@ As you map, your routes distance and estimated elevation gain and loss are updat
 | *Displayed distance and estimated elevation change* |
 
 ### Add Waypoints in Line Segments
-Enabling the "Edit lines ln click" will allow you to edit existing line segments within your route. When disabled (which is the default) clicking on part of your route will simply add a new waypoint to the end of beginning of the route (depending on the "Add new points to beginning/end" option). But when this setting is enabled, hovering the mouse over a line will reveal a gray "add new" waypoint. Clicking on the line will add a waypoint at that point in the middle of the line, allowing it to be dragged/edited.
+Enabling the "Edit lines on click" will allow you to edit existing line segments within your route. When disabled (which is the default) clicking on a part of your route will simply add a new waypoint to the end of beginning of the route (depending on the "Add new points to beginning/end" option). But when this setting is enabled, hovering the mouse over a line will reveal a gray "add new" waypoint. Clicking on the line will add a waypoint at that point in the middle of the line, allowing it to be dragged/edited.
 
 | ![Add Point In Line Hover Marker](./assets/add_point_in_line_marker.png) |
 |:-:|
