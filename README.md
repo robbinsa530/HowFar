@@ -24,6 +24,8 @@ Create a route by clicking on the map. As you click, the most efficient route be
 
 As you map, your routes distance and estimated elevation gain and loss are updated and displayed at the top of the side bar. Adding, moving or deleting points will update these values, and clearing your route will reset all values to 0.
 
+__Note: Distances are very accurate, but elevation gain and loss are rough estimates and should not be trusted for official use__
+
 | ![Distance and Elevation](./assets/distance_ele.png) |
 |:-:|
 | *Displayed distance and estimated elevation change* |

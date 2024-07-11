@@ -80,7 +80,9 @@ marker:
   lngLat:,
   markerObj:,
   associatedLines,
+  isDragging,
   snappedToRoad,
+  elevation,
 }
 */
 let markers = [];
@@ -430,10 +432,13 @@ function Map() {
     });
   }, []);
 
-  async function getDirections(lngLatStart, lngLatEnd, connectDisjoint, calculateDirectionsOverride=undefined) {
+  async function getDirections(startMarker, endMarker, connectDisjoint, calculateDirectionsOverride=undefined) {
     const calculateDirections = (calculateDirectionsOverride !== undefined) ?
                                   calculateDirectionsOverride
                                   : autoFollowRoadsRef.current;
+    let lngLatStart = startMarker.lngLat;
+    let lngLatEnd = endMarker.lngLat;
+    let elevStart = startMarker.elevation
     let jsonData;
     if (calculateDirections) {
       jsonData = await getRouteBetweenPoints(
@@ -507,17 +512,25 @@ function Map() {
     }
     //Calculate elevation gain/loss
     const chunks = lineChunk(newLine, 0.02/*km*/).features;
-    const elevations = [ // In meters
+    let elevations = [ // In meters
       ...chunks.map((feature) => {
           return map.current.queryTerrainElevation(
-              feature.geometry.coordinates[0]
+              feature.geometry.coordinates[0],
+              { exaggerated: false }
           );
       }),
       // do not forget the last coordinate
       map.current.queryTerrainElevation(
-          chunks[chunks.length - 1].geometry.coordinates[1]
+          chunks[chunks.length - 1].geometry.coordinates[1],
+          { exaggerated: false }
       )
     ];
+
+    // Fix a bug where if the start point is off screen, you'll get a bunch of
+    // nulls back from queryTerrainElevation
+    elevations.unshift(elevStart);
+    elevations = elevations.filter(e => (e !== undefined && e != null));
+
     let up = 0.0;
     let down = 0.0;
     let prevEle;
