@@ -51,6 +51,7 @@ import { checkUserHasToken } from './controllers/StravaController';
 
 const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1:3001"
 let STRAVA_CLIENT_ID;
+let IP_GEO_KEY;
 
 const mapTypes = [
   'mapbox://styles/mapbox/streets-v12',
@@ -620,6 +621,7 @@ function Map() {
           apiCodesResp.json().then(data => {
             STRAVA_CLIENT_ID = data.STRAVA_CLIENT_ID;
             mapboxgl.accessToken = data.MAPBOX_PUB_KEY;
+            IP_GEO_KEY = data.IP_GEO_KEY;
 
             map.current = new mapboxgl.Map({
               container: mapContainer.current,
@@ -760,11 +762,11 @@ function Map() {
                   }
                   if (window.confirm(errMsg + "\n\nWould you like to try locating by IP?")) {
                     setLocating(true);
-                    fetch("http://ip-api.com/json").then(info => {
+                    fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${IP_GEO_KEY}`).then(info => {
                       if (info.ok) {
                         info.json().then(data => {
-                          const lat = data.lat;
-                          const lon = data.lon;
+                          const lat = data.latitude;
+                          const lon = data.longitude;
                           if (lat && lon) {
                             map.current.flyTo({
                               center: [lon, lat],

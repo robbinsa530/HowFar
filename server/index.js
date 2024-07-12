@@ -32,7 +32,8 @@ app.get("/checkHasToken", async (req, res) => {
 app.get("/getApiTokens", async (req, res) => {
   res.json({ 
     STRAVA_CLIENT_ID: strava.client_id,
-    MAPBOX_PUB_KEY: process.env.MAPBOX_PUB_KEY
+    MAPBOX_PUB_KEY: process.env.MAPBOX_PUB_KEY,
+    IP_GEO_KEY: process.env.IP_GEO_KEY
    });
 });
 
