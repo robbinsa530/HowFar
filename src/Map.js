@@ -742,7 +742,7 @@ function Map() {
                     animate: false
                   });
                   setLocating(false);
-                }, err => {
+                }, async err => {
                   console.error("Failed to locate using navigator.geolocation.getCurrentPosition");
                   setLocating(false);
                   let errMsg;
@@ -762,33 +762,33 @@ function Map() {
                   }
                   if (window.confirm(errMsg + "\n\nWould you like to try locating by IP?")) {
                     setLocating(true);
-                    fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${IP_GEO_KEY}`).then(info => {
+                    try {
+                      let info = await fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${IP_GEO_KEY}`);
                       if (info.ok) {
-                        info.json().then(data => {
-                          const lat = data.latitude;
-                          const lon = data.longitude;
-                          if (lat && lon) {
-                            map.current.flyTo({
-                              center: [lon, lat],
-                              zoom: 14,
-                              essential: true,
-                              animate: false
-                            });
-                          }
-                          setLocating(false);
-                        })
-                        .catch(() => { // Probably won't happen if response.ok == true, but just in case
-                          setLocating(false);
-                          alert("Failed to locate with IP. Try searching your location in the search bar.")
-                        })
+                        let data = await info.json();
+                        const lat = data.latitude;
+                        const lon = data.longitude;
+                        if (lat && lon) {
+                          map.current.flyTo({
+                            center: [lon, lat],
+                            zoom: 14,
+                            essential: true,
+                            animate: false
+                          });
+                        }
+                        setLocating(false);
                       }
                       else {
                         setLocating(false);
-                        alert("Failed to locate with IP. Try searching your location in the search bar.")
+                        alert("Failed to locate with IP. Try searching your location in the search bar.");
                       }
-                    });
+                    } catch (error) {
+                      setLocating(false);
+                      alert("Failed to locate with IP. Try searching your location in the search bar.");
+                      console.error("Failed to get location by IP. Err:", error);
+                    }
                   } else {
-                    alert("You can also search your location in the search bar.")
+                    alert("You can also search your location in the search bar.");
                   }
                 }, {
                   maximumAge: 1000*60*60, // Can return cached location if < 1hr old

@@ -2,7 +2,15 @@ const BASEDIR = 'https://api.mapbox.com/directions/v5/mapbox/walking/';
 
 async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, token) {
   const endpoint = `${BASEDIR}${lngLatStart[0]},${lngLatStart[1]};${lngLatEnd[0]},${lngLatEnd[1]}?exclude=ferry&geometries=geojson&access_token=${token}&overview=full&walkway_bias=${walkwayBias}`;
-  const query = await fetch(endpoint, { method: 'GET' });
+  let query;
+  try {
+    query = await fetch(endpoint, { method: 'GET' });
+  }
+  catch (error) {
+    console.error(error);
+    return { routes: [] };
+  }
+
   if (query.ok) {
     return await query.json();
   } else {
