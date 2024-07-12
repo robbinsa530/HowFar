@@ -741,25 +741,56 @@ function Map() {
                   });
                   setLocating(false);
                 }, err => {
-                  console.error("Failed to locate");
+                  console.error("Failed to locate using navigator.geolocation.getCurrentPosition");
                   setLocating(false);
+                  let errMsg;
                   switch (err.code) {
                     case 1: // PERMISSION_DENIED
                       console.error("getCurrentPosition err: PERMISSION_DENIED");
-                      alert("Failed to locate because browser does not have location permissions. Please change this in site settings.");
+                      errMsg = "Location permissions denied. Please change this in site settings in your browser.";
                       break;
                     case 2: // POSITION_UNAVAILABLE
                       console.error("getCurrentPosition err: POSITION_UNAVAILABLE");
-                      alert("Failed to locate.");
+                      errMsg = "Failed to locate.";
                       break;
                     case 3: // TIMEOUT
                       console.error("getCurrentPosition err: TIMEOUT");
-                      alert("Timed out trying to locate. Try searching your location in the search bar.");
+                      errMsg = "Timed out trying to locate.";
                       break;
+                  }
+                  if (window.confirm(errMsg + "\n\nWould you like to try locating by IP?")) {
+                    setLocating(true);
+                    fetch("http://ip-api.com/json").then(info => {
+                      if (info.ok) {
+                        info.json().then(data => {
+                          const lat = data.lat;
+                          const lon = data.lon;
+                          if (lat && lon) {
+                            map.current.flyTo({
+                              center: [lon, lat],
+                              zoom: 14,
+                              essential: true,
+                              animate: false
+                            });
+                          }
+                          setLocating(false);
+                        })
+                        .catch(() => { // Probably won't happen if response.ok == true, but just in case
+                          setLocating(false);
+                          alert("Failed to locate with IP. Try searching your location in the search bar.")
+                        })
+                      }
+                      else {
+                        setLocating(false);
+                        alert("Failed to locate with IP. Try searching your location in the search bar.")
+                      }
+                    });
+                  } else {
+                    alert("You can also search your location in the search bar.")
                   }
                 }, {
                   maximumAge: 1000*60*60, // Can return cached location if < 1hr old
-                  timeout: 10000
+                  timeout: 7000 // 7 Seconds. 5 seems short but 10 seems long. idk
                 });
               }
               console.info("Map loaded.");
