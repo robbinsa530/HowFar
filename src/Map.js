@@ -158,14 +158,17 @@ async function uploadActivityToStrava(postData) {
   const endTime = new Date(startTime.getTime() + (durationInSeconds*1000));
 
   // Calculate points array from route
-  let points = geojson.features.reduce((accum, currLine) => {
+  let points = [];
+  geojson.features.forEach(f => {
+    // (Avoid any kind of deep copy)
     // All but the last pt (last pt of each line is 1st pt of next line)
-    const currLinePts = currLine.geometry.coordinates.slice(0, -1);
-    accum.push(...currLinePts);
-    return accum;
-  }, []);
+    f.geometry.coordinates.slice(0, -1).forEach(coord => {
+      points.push([...coord]);
+    });
+  });
+
   const lastLineGeomArrayLength = geojson.features[geojson.features.length -1].geometry.coordinates.length;
-  points.push(geojson.features[geojson.features.length -1].geometry.coordinates[lastLineGeomArrayLength - 1]); // Cuz we missed the actual last point
+  points.push([...geojson.features[geojson.features.length -1].geometry.coordinates[lastLineGeomArrayLength - 1]]); // Cuz we missed the actual last point
 
   let tempLine = {
     type: 'Feature',
