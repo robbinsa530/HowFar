@@ -692,10 +692,12 @@ function Map() {
 
               map.current.on('mousemove', 'measure-lines', (e) => {
                 if (addMarkerInLineEnabledRef.current && e.features.length > 0) {
-                  newMarkerLineToSplit = e.features[0].properties.id;
+                  newMarkerLineToSplit = e.features[0].properties.id; // Top most feature (line)
 
                   // If over real marker, don't show
-                  const lineEndPtMarkers = markers.filter(m => m.associatedLines.includes(newMarkerLineToSplit));
+                  const idsUnderMouse = e.features.map(f => f.properties.id);
+                  const lineEndPtMarkers = markers.filter(m => m.associatedLines.some(l => idsUnderMouse.includes(l)));
+
                   for (const m of lineEndPtMarkers) {
                     if (getMouseToMarkerSqDistance(e, m.markerObj) < 64) {
                       removeAddNewMarker();
