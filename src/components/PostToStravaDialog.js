@@ -12,7 +12,6 @@ import Select from '@mui/material/Select';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import './PostToStravaDialog.css';
@@ -384,7 +383,6 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
                 : (fetchingGear
                   ? <p>Fetching Gear...</p>
                   : <>
-                    <Tooltip disableInteractive title={<Typography>Leave blank to not attach a gear item to this activity</Typography>}>
                     <FormControl
                       variant="filled"
                     >
@@ -402,7 +400,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
                         }
                       </Select>
                     </FormControl>
-                    </Tooltip>
+                    <Typography variant="caption">Leave blank to attach no gear</Typography>
                   </>)
               }
           </div>
