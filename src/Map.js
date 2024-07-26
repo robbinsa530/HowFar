@@ -132,7 +132,8 @@ async function createManualActivityOnStrava(postData) {
         startTime: startTime.toISOString(),
         duration: durationInSeconds,
         distance: postData.distance.toFixed(2),
-        sportType: postData.sportType
+        sportType: postData.sportType,
+        gearId: postData.gearId
       })
     }
   );
@@ -142,7 +143,11 @@ async function createManualActivityOnStrava(postData) {
   } else {
     const errText = await postResp.text();
     console.error("Failed to create activity on Strava.", postResp.status, errText);
-    alert("Failed to create activity on Strava");
+    if (postResp.status >= 400 && postResp.status < 500) {
+      alert(errText);
+    } else {
+      alert("Failed to create activity on Strava.")
+    }
   }
 }
 
@@ -222,7 +227,8 @@ async function uploadActivityToStrava(postData) {
         description: postData.description,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        sportType: postData.sportType
+        sportType: postData.sportType,
+        gearId: postData.gearId
       })
     }
   );
@@ -232,7 +238,11 @@ async function uploadActivityToStrava(postData) {
   } else {
     const errText = await postResp.text();
     console.error("Failed to upload activity to Strava.", postResp.status, errText);
-    alert("Failed to upload activity to Strava");
+    if (postResp.status >= 400 && postResp.status < 500) {
+      alert(errText);
+    } else {
+      alert("Failed to upload activity to Strava");
+    }
   }
 }
 
@@ -368,7 +378,7 @@ function Map() {
       } else {
         // Force Strava sign-in
         stravaLoginWindowWasOpenedRef.current = true;
-        window.open(`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${SERVER_ADDR}/saveToken&response_type=code&approval_prompt=auto&scope=read,activity:write`, "_blank");
+        window.open(`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${SERVER_ADDR}/saveToken&response_type=code&approval_prompt=auto&scope=read,profile:read_all,activity:write`, "_blank");
       }
     }  else {
       console.error("Error checking Strava user status.");

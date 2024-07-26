@@ -7,6 +7,12 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const FormData = require('form-data');
 
+const {
+  checkForRefreshToken,
+  fetchAccessToken,
+  fetchAuthenticatedAthlete
+} = require('./utils')
+
 const PORT = process.env.PORT || 3001;
 const app = express();
 
@@ -68,27 +74,45 @@ app.get("/saveToken", async (req, res) => {
   res.send("Authentication complete. You may close this tab. Don't worry, you shouldn't have to do this again.");
 });
 
-app.post("/postManualActivityToStrava", async (req, res) => {
+app.get("/stravaUser", async (req, res) => {
   // 1. Check for refresh token and request access token
-  const hasToken = req.cookies.STRAVA_REFRESH != undefined;
-  if (!hasToken) {
-    console.error('User must login first.');
+  if (!checkForRefreshToken(req)) {
     res.status(401).send('User must login first.');
     return;
   }
 
   // 2. We request an access token every time because it's easier than checking if old access token is still valid
-  const refreshBody = {
-    client_id: strava.client_id,
-    client_secret: strava.client_secret,
-    grant_type: 'refresh_token',
-    refresh_token: req.cookies.STRAVA_REFRESH
-  };
-  const refreshResponse = await fetch('https://www.strava.com/api/v3/oauth/token', {
-    method: 'post',
-    body: JSON.stringify(refreshBody),
-    headers: {'Content-Type': 'application/json'}
-  });
+  const refreshResponse = await fetchAccessToken(strava, req);
+  if (!refreshResponse.ok) {
+    const errText = await refreshResponse.text();
+    console.error('Authentication failed.', errText);
+    res.status(401).send("Authentication failed.");
+    return;
+  }
+  const refreshData = await refreshResponse.json();
+  const accessToken = refreshData.access_token;
+
+  // Get authenticated athlete
+  const athleteResponse = await fetchAuthenticatedAthlete(accessToken);
+  if (!athleteResponse.ok) {
+    const errText = await athleteResponse.text();
+    console.error('Failed to check authenticated athlete.', errText);
+    res.status(401).send("Failed to check authenticated athlete.");
+    return;
+  }
+  const athleteData = await athleteResponse.json();
+  res.json(athleteData);
+});
+
+app.post("/postManualActivityToStrava", async (req, res) => {
+  // 1. Check for refresh token and request access token
+  if (!checkForRefreshToken(req)) {
+    res.status(401).send('User must login first.');
+    return;
+  }
+
+  // 2. We request an access token every time because it's easier than checking if old access token is still valid
+  const refreshResponse = await fetchAccessToken(strava, req);
   if (!refreshResponse.ok) {
     const errText = await refreshResponse.text();
     console.error('Authentication failed.', errText);
@@ -107,15 +131,26 @@ app.post("/postManualActivityToStrava", async (req, res) => {
   const startTime = req.body.startTime; // Format: 2016-06-17T23:41:03Z
   const durationInSeconds = req.body.duration;
   const sportType = req.body.sportType;
+  const gearId = req.body.gearId;
 
-  const activityBody = {
+  let activityBody = {
     name: title,
     description,
-    type: sportType,
+    sport_type: sportType,
     start_date_local: startTime,
     elapsed_time: durationInSeconds,
     distance: distanceInMiles * 1609.344
   };
+
+  if (gearId === "none") { // User specified no gear, no default
+    activityBody.gear_id = "";
+  }
+  else if (gearId) { // User specified a piece of gear
+    activityBody.gear_id = gearId;
+  }
+  // else, user specified default gear (empty string)
+  // Simply do not include field in body for this
+
   const postResponse = await fetch('https://www.strava.com/api/v3/activities', {
     method: 'post',
     body: JSON.stringify(activityBody),
@@ -126,35 +161,56 @@ app.post("/postManualActivityToStrava", async (req, res) => {
   });
 
   if (postResponse.ok) {
+    /*
+      This part should be necessary since the API docs don't say gear_id can be
+      specified on activity creation, but rather that it must be updated after...
+      But somehow it just works. Keeping this code just in case though.
+
+      Note: The code below seems totally valid to me, but actually returns an error?
+            But worst case its a good jumping off point. Someone else posted about
+            the same error here: 
+      https://communityhub.strava.com/t5/developer-discussions/updateactivitybyid-resource-not-found-error/m-p/27952
+    */
+    // If the user specified gear, upload that too
+    // const gearId = req.body.gearId;
+    // if (gearId) { // if not undefined and has string value
+    //   const activityInfo = await postResponse.json();
+    //   const activityId = activityInfo.id;
+    //   const updateResponse = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+    //     method: 'put',
+    //     body: JSON.stringify({
+    //       gear_id: gearId
+    //     }),
+    //     headers: {
+    //       'Authorization': `Bearer ${accessToken}`,
+    //       'Content-Type': 'application/json'
+    //     }
+    //   });
+    //   if (!updateResponse.ok) {
+    //     const errText = await updateResponse.text();
+    //     console.error("adding gear to activity failed.", errText);
+    //     res.status(400).send("Adding gear to activity failed. Activity was still created (with default gear if applicable).");
+    //     return;
+    //   }
+    // }
+
     res.status(200).send("Success");
   } else {
     const errText = await postResponse.text();
     console.error("post activity failed.", errText);
-    res.status(400).send("Post activity failed.");
+    res.status(400).send("Failed to create Activity.");
   }
 });
 
 app.post("/uploadToStrava", async (req, res) => {
   // 1. Check for refresh token and request access token
-  const hasToken = req.cookies.STRAVA_REFRESH != undefined;
-  if (!hasToken) {
-    console.error('User must login first.');
+  if (!checkForRefreshToken(req)) {
     res.status(401).send('User must login first.');
     return;
   }
 
   // 2. We request an access token every time because it's easier than checking if old access token is still valid
-  const refreshBody = {
-    client_id: strava.client_id,
-    client_secret: strava.client_secret,
-    grant_type: 'refresh_token',
-    refresh_token: req.cookies.STRAVA_REFRESH
-  };
-  const refreshResponse = await fetch('https://www.strava.com/api/v3/oauth/token', {
-    method: 'post',
-    body: JSON.stringify(refreshBody),
-    headers: {'Content-Type': 'application/json'}
-  });
+  const refreshResponse = await fetchAccessToken(strava, req);
   if (!refreshResponse.ok) {
     const errText = await refreshResponse.text();
     console.error('Authentication failed.', errText);
@@ -165,12 +221,7 @@ app.post("/uploadToStrava", async (req, res) => {
   const accessToken = refreshData.access_token;
 
   // Check authenticated athlete
-  const athleteResponse = await fetch('https://www.strava.com/api/v3/athlete', {
-    method: 'get',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`
-    }
-  });
+  const athleteResponse = await fetchAuthenticatedAthlete(accessToken);
   if (!athleteResponse.ok) {
     const errText = await athleteResponse.text();
     console.error('Failed to check authenticated athlete.', errText);
@@ -197,6 +248,7 @@ app.post("/uploadToStrava", async (req, res) => {
   const endTime = req.body.endTime;
   const sportType = req.body.sportType;
   const externalId = uuidv4();
+  const gearId = req.body.gearId;
 
   // 3. Create GPX file in memory
   let gpxString = '<?xml version="1.0" encoding="UTF-8"?> ' +
@@ -223,6 +275,15 @@ app.post("/uploadToStrava", async (req, res) => {
   fileForm.append("sport_type", sportType);
   fileForm.append("external_id", externalId);
 
+  if (gearId === "none") { // User specified no gear, no default
+    fileForm.append("gear_id", "");
+  }
+  else if (gearId) { // User specified a piece of gear
+    fileForm.append("gear_id", gearId);
+  }
+  // else, user specified default gear (empty string)
+  // Simply do not include field in body for this
+
   const postResponse = await fetch('https://www.strava.com/api/v3/uploads', {
     method: 'post',
     body: fileForm,
@@ -236,7 +297,7 @@ app.post("/uploadToStrava", async (req, res) => {
   } else {
     const errText = await postResponse.text();
     console.error("upload failed.", errText);
-    res.status(400).send("Upload failed.");
+    res.status(400).send("Failed to upload activity.");
   }
 });
 
