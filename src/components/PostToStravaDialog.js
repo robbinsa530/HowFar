@@ -23,13 +23,19 @@ const SHOE_TYPE = "SHOE_TYPE";
 const BIKE_TYPE = "BIKE_TYPE";
 const OTHER_TYPE = "OTHER_TYPE";
 
-function PostToStravaDialog({ distance, onPost, onCancel, open }) {
+function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
   const [activityType, setActivityType] = React.useState('Run');
   const [pace, setPace] = React.useState('');
   const [hours, setHours] = React.useState(0);
   const [mins, setMins] = React.useState(0);
   const [secs, setSecs] = React.useState(0);
-  const [distanceStr, setDistanceStr] = React.useState(distance.toFixed(2).toString() + " mi");
+  let distStrInUnits = "";
+  if (units === "imperial") {
+    distStrInUnits = distance.toFixed(2).toString() + " mi";
+  } else { // metric
+    distStrInUnits = (distance * 1.60934).toFixed(2).toString() + " km";
+  }
+  const [distanceStr, setDistanceStr] = React.useState(distStrInUnits);
   const [gear, setGear] = React.useState("");
   const [allGear, setAllGear] = React.useState({
     shoes: [],
@@ -146,11 +152,22 @@ function PostToStravaDialog({ distance, onPost, onCancel, open }) {
       setPace('');
       return;
     }
-    let paceFrac = totalTime / distance; // secs per mile
+
+    let divisor;
+    let unitStr;
+    if (units === "imperial") {
+      divisor = distance;
+      unitStr = "mi";
+    } else { // metric
+      divisor = distance * 1.60934;
+      unitStr = "km";
+    }
+
+    let paceFrac = totalTime / divisor; // secs per mile or km
     let paceMins = Math.floor(paceFrac / 60);
     let paceSecs = Math.round(paceFrac % 60);
 
-    setPace(paceMins + ":" + ("0" + paceSecs).slice(-2) + " min/mi");
+    setPace(paceMins + ":" + ("0" + paceSecs).slice(-2) + ` min/${unitStr}`);
   }, [hours, mins, secs])
 
   // Update eligible gear based on activity type

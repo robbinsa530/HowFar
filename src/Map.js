@@ -273,6 +273,7 @@ function Map() {
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
   const [addMarkerInLineEnabled, setAddMarkerInLineEnabled] = useState(false);
   const [addToStartOrEnd, setAddToStartOrEnd] = useState("add-to-end");
+  const [imperialOrMetric, setImperialOrMetric] = useState("imperial");
   const [mapType, setMapType] = useState(0);
   const [walkwayBias, setWalkwayBias] = useState(0);
   const [displayChevrons, setDisplayChevrons] = useState(true);
@@ -333,6 +334,10 @@ function Map() {
   const handleToggleStartEnd = useCallback((event) => {
     setAddToStartOrEnd(event.target.value);
     addToStartOrEndRef.current = event.target.value;
+  }, []);
+
+  const handleToggleImpOrMetric = useCallback((event) => {
+    setImperialOrMetric(event.target.value);
   }, []);
 
   const handleSelectMapType = useCallback((event) => {
@@ -915,10 +920,18 @@ function Map() {
             // No else, would rather not hardcode any px values
           }}/>
           <br/>
-          <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
+          {
+            imperialOrMetric === "imperial"
+            ? <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
+            : <p className="sidebar-distance">Distance: {(dist * 1.60934).toFixed(2)} km</p>
+          }
           <div className="elevation-container">
             <p className="sidebar-elevation">Elevation Gain/Loss:</p>
-            <p className="sidebar-elevation">{eleUp.toFixed(2)}/{eleDown.toFixed(2)} Ft</p>
+            {
+              imperialOrMetric === "imperial"
+              ? <p className="sidebar-elevation">{eleUp.toFixed(2)}/{eleDown.toFixed(2)} Ft</p>
+              : <p className="sidebar-elevation">{(eleUp / 3.28084).toFixed(2)}/{(eleDown / 3.28084).toFixed(2)} m</p>
+            }
           </div>
 
           <Stack className="sidebar-btn-container" spacing={2} direction="row">
@@ -1050,6 +1063,7 @@ function Map() {
         { stravaDialogOpen && <PostToStravaDialog
           distance={dist}
           open={stravaDialogOpen}
+          units={imperialOrMetric}
           onPost={(data) => {
             postToStrava(data);
             setMenuOpen(false);
@@ -1110,6 +1124,23 @@ function Map() {
               </BlueSelect>
             </FormControl>
             <br/><br/>
+            <FormControl>
+              <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Display Distances As:</FormLabel>
+              <Tooltip disableInteractive title={<Typography>Choose whether to use mi/ft or km/m</Typography>}>
+                <RadioGroup
+                  row
+                  aria-labelledby="metric-or-imperial-radio-group"
+                  defaultValue="imperial"
+                  name="metric-or-imperial-radio-buttons-group"
+                  value={imperialOrMetric}
+                  onChange={handleToggleImpOrMetric}
+                >
+                  <FormControlLabel value="imperial" control={<BlueRadio />} label="Imperial" />
+                  <FormControlLabel value="metric" control={<BlueRadio />} label="Metric" />
+                </RadioGroup>
+              </Tooltip>
+            </FormControl>
+            <br/>
             <Tooltip disableInteractive title={<Typography>When enabled, route lines will show arrows to indicate direction</Typography>}>
               <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                 value="display-chevrons"
