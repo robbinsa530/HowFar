@@ -25,6 +25,24 @@
   height: calc(100vh - 16px);
   overflow-y: auto;
 }
+.arrow-down {
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  display: none;
+  padding: 3px;
+  transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+}
+@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+  .sidebar-content {
+    height: 190px;
+    margin-top: 50px;
+  }
+  .arrow-down {
+    display: inline-block;
+  }
+}
+
 .sidebar-content::-webkit-scrollbar {
   -webkit-appearance: none;
 }

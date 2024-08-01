@@ -925,6 +925,10 @@ function Map() {
             ? <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
             : <p className="sidebar-distance">Distance: {(dist * 1.60934).toFixed(2)} km</p>
           }
+
+          {/* Dumb little arrow for mobile to show that there's more below */}
+          <p><i className="arrow-down"></i></p>
+
           <div className="elevation-container">
             <p className="sidebar-elevation">Elevation Gain/Loss:</p>
             {
