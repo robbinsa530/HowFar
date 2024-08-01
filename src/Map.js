@@ -48,6 +48,7 @@ import {
   moveMarkerBack } from './controllers/MapActionController';
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 import { checkUserHasToken } from './controllers/StravaController';
+import { getErrorMsgFromPositionError } from './utils/location';
 
 const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1:3001"
 let STRAVA_CLIENT_ID;
@@ -681,7 +682,19 @@ function Map() {
 
             // Add zoom control and geolocate
             map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-            map.current.addControl(new mapboxgl.GeolocateControl({showAccuracyCircle: false, showUserLocation: false}), "top-right");
+            const mapboxGeolocateControl = new mapboxgl.GeolocateControl({
+              showAccuracyCircle: false,
+              showUserLocation: false,
+              positionOptions: {
+                maximumAge: 1000*60*60, // Can return cached location if < 1hr old
+                timeout: 7000 // 7 Seconds. 5 seems short but 10 seems long. idk
+              }
+            });
+            map.current.addControl(mapboxGeolocateControl, "top-right");
+            mapboxGeolocateControl.on("error", err => {
+              let errMsg = getErrorMsgFromPositionError(err);
+              alert(errMsg + " Try searching your location in the search bar.")
+            });
 
             map.current.on('style.load', () => {
               applyMapStyles();
@@ -760,21 +773,7 @@ function Map() {
                 }, async err => {
                   console.error("Failed to locate using navigator.geolocation.getCurrentPosition");
                   setLocating(false);
-                  let errMsg;
-                  switch (err.code) {
-                    case 1: // PERMISSION_DENIED
-                      console.error("getCurrentPosition err: PERMISSION_DENIED");
-                      errMsg = "Location permissions denied. Please change this in site settings in your browser.";
-                      break;
-                    case 2: // POSITION_UNAVAILABLE
-                      console.error("getCurrentPosition err: POSITION_UNAVAILABLE");
-                      errMsg = "Failed to locate.";
-                      break;
-                    case 3: // TIMEOUT
-                      console.error("getCurrentPosition err: TIMEOUT");
-                      errMsg = "Timed out trying to locate.";
-                      break;
-                  }
+                  let errMsg = getErrorMsgFromPositionError(err);
                   if (window.confirm(errMsg + "\n\nWould you like to try locating by IP?")) {
                     setLocating(true);
                     try {
