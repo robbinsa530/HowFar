@@ -1123,6 +1123,7 @@ function Map() {
           </div>
 
           <a href="https://github.com/robbinsa530/HowFar/blob/main/README.md" target="_blank" rel="noreferrer" className="footer-link help-footer">Help</a>
+          <a href="https://github.com/robbinsa530/HowFar/blob/main/FAQ.md" target="_blank" rel="noreferrer" className="footer-link faq-footer">FAQ</a>
           <a href="https://www.paypal.me/AlexRobbins662" target="_blank" rel="noreferrer" className="footer-link donate-footer">Donate</a>
         </Drawer>
     </div>
