@@ -232,7 +232,7 @@ app.post("/uploadToStrava", async (req, res) => {
 
   // Just for now...
   // TODO: Remove
-  if (athleteData.id !== 2792073) {
+  if (![2792073, 35794954].includes(athleteData.id)) {
     res.status(401).send("Sorry, you aren't allowed to upload maps");
     return;
   }
