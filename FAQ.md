@@ -17,6 +17,9 @@ HowFar allows a user to connect to Strava by logging in using the "Connect with 
 ## Does HowFar save any of my data?
 HowFar saves a single piece of information about you, and it only does so if you choose to connect to Strava on the site using the "Connect with Strava" button in the menu. If you do this, a refresh token will be saved in your browser. This allows HowFar to keep you connected to Strava without you having to re-log-in every time you want to post an activity. This token is saved for 180 days (meaning you will need to re-log-in to Strava every 180 days).
 
+## Does HowFar work on mobile?
+Technically yes, but the site is developed for desktop first and that's where you'll have the better experience. I do plan on developing proper mobile app versions (for Android and iOS) in the future.
+
 ## I really don't need a user account?
 Nope! No one wants to make an account to do something as trivial as mapping a run or a bike ride. There is no reason you should have to setup a whole account for something so simple.
 
