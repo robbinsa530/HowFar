@@ -1,14 +1,10 @@
 import React from 'react';
 import cloneDeep from 'lodash.clonedeep';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
+import pointToLineDistance from "@turf/point-to-line-distance";
+import length from '@turf/length'
 import { v4 as uuidv4 } from 'uuid';
-
-function updateMarkerElevation(map, marker) {
-  marker.elevation = map.current.queryTerrainElevation(
-    marker.lngLat,
-    { exaggerated: false }
-);
-}
+import { getElevationChange, updateMarkerElevation } from './GeoController';
 
 //Used to move a marker back to its old spot after a move action is undone
 export function moveMarkerBack(info) {
@@ -575,7 +571,7 @@ export function undoAddMarkerInLine(info, markers, geojson) {
   });
 }
 
-export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, lineToSplit, undoActionList, map, updateDistanceInComponent, getDirections) {
+export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, lineToSplitId, undoActionList, map, updateDistanceInComponent, getDirections) {
   // If existing point was clicked, do nothing
   if (markers.map(m => m.element).includes(e.originalEvent.target)) {
     return;
@@ -585,7 +581,7 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
   let markersToEdit = [];
   let markersToEditIndices = [];
   markers.forEach((m,i) => {
-    if (m.associatedLines.includes(lineToSplit)) {
+    if (m.associatedLines.includes(lineToSplitId)) {
       markersToEdit.push(m);
       markersToEditIndices.push(i);
     }
@@ -598,7 +594,7 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
 
   // Remove line associations from markers
   markersToEdit.forEach(m => {
-    m.associatedLines = m.associatedLines.filter(l => l !== lineToSplit);
+    m.associatedLines = m.associatedLines.filter(l => l !== lineToSplitId);
   });
 
   // Set up new marker
@@ -618,33 +614,96 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
     // elevation: (Needs to be added)
   };
 
+  /*
+    Split line around point
+
+    Turf line-split doesn't always work here due to a known problem, so go with a super 
+    primitive approach of just finding the segment which the point is closest to. Luckily
+    this works super well and pretty fast.
+
+    Turf issues:
+    https://github.com/Turfjs/turf/issues/2206
+    https://github.com/Turfjs/turf/issues/852
+  */
+  const lineToSplitIndex = geojson.features.findIndex(f => f.properties.id === lineToSplitId);
+  const lineToSplit = geojson.features[lineToSplitIndex];
+  const geoPt = {
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: [newMarkerLngLat.lng, newMarkerLngLat.lat]
+    }
+  };
+
+  let prevPt = lineToSplit.geometry.coordinates[0];
+  let minDist;
+  let minDistIndex = -1;
+  lineToSplit.geometry.coordinates.forEach((coords, i) => {
+    if (i === 0) {
+      return;
+    }
+    let tempLine = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [prevPt, coords]
+      }
+    };
+    let ptToLineDist = pointToLineDistance(geoPt, tempLine);
+    if ((minDistIndex < 0) || (ptToLineDist < minDist)) {
+      minDist = ptToLineDist;
+      minDistIndex = i;
+    }
+    prevPt = coords;
+  });
+
+  // Get 2 new coordinate sets
+  let lCoords = lineToSplit.geometry.coordinates.slice(0, minDistIndex);
+  let rCoords = lineToSplit.geometry.coordinates.slice(minDistIndex);
+  lCoords.push(markerToAdd.lngLat);
+  rCoords.unshift(markerToAdd.lngLat);
+
   // Create 2 new lines
-  const [calculatedDirections, newLine1] = await getDirections(
-    markersToEdit[0],
-    markerToAdd,
-    [!markersToEdit[0].snappedToRoad, false],
-    undefined
-  );
-  markerToAdd.snappedToRoad = calculatedDirections;
+  let newLine1 = { 
+    type: 'Feature',
+    geometry: {
+      type: 'LineString',
+      coordinates: lCoords
+    }
+  };
+  const [up1, down1] = getElevationChange(map, newLine1, markersToEdit[0].elevation);
+  const dist1 = length(newLine1, {units: 'miles'});
+  newLine1.properties = {
+    id: uuidv4(),
+    distance: dist1,
+    eleUp: up1,
+    eleDown: down1
+  };
+  markerToAdd.snappedToRoad = markersToEdit[1].snappedToRoad;
   markersToEdit[0].associatedLines.push(newLine1.properties.id);
   markerToAdd.associatedLines.push(newLine1.properties.id);
 
-  // Update position of marker. This is in case click wasn't on a road or path,
-  // the API will return the closest point to a road or path. That's what we wanna use
-  markerToAdd.lngLat = newLine1.geometry.coordinates[newLine1.geometry.coordinates.length -1];
   updateMarkerElevation(map, markerToAdd);
 
-  const [_, newLine2] = await getDirections(
-    markerToAdd,
-    markersToEdit[1],
-    [!markerToAdd.snappedToRoad, !markersToEdit[1].snappedToRoad],
-    undefined
-  );
+  let newLine2 = { 
+    type: 'Feature',
+    geometry: {
+      type: 'LineString',
+      coordinates: rCoords
+    }
+  };
+  const [up2, down2] = getElevationChange(map, newLine2, markerToAdd.elevation);
+  const dist2 = length(newLine2, {units: 'miles'});
+  newLine2.properties = {
+    id: uuidv4(),
+    distance: dist2,
+    eleUp: up2,
+    eleDown: down2
+  };
   markerToAdd.associatedLines.push(newLine2.properties.id);
   markersToEdit[1].associatedLines.push(newLine2.properties.id);
 
-  const lineToSplitIndex = geojson.features.findIndex(f => f.properties.id === lineToSplit);
-  const removedLine = geojson.features.splice(lineToSplitIndex, 1, newLine1, newLine2)[0];
+  const removedLine = geojson.features.splice(lineToSplitIndex, 1, newLine1, newLine2)[0]; // Returns same line as "lineToSplit" var
   updateDistanceInComponent();
 
   // Add new marker

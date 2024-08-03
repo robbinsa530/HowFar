@@ -3,7 +3,6 @@ import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-load
 import { MapboxSearchBox } from '@mapbox/search-js-web';
 
 import length from '@turf/length'
-import lineChunk from '@turf/line-chunk'
 import nearestPointOnLine from '@turf/nearest-point-on-line'
 import { v4 as uuidv4 } from 'uuid';
 import UndoIcon from '@mui/icons-material/Undo';
@@ -49,6 +48,7 @@ import {
 import { getRouteBetweenPoints } from './controllers/DirectionsController';
 import { checkUserHasToken } from './controllers/StravaController';
 import { getErrorMsgFromPositionError } from './utils/location';
+import { getElevationChange } from './controllers/GeoController';
 
 const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1:3001"
 let STRAVA_CLIENT_ID;
@@ -531,40 +531,7 @@ function Map() {
       }
     }
     //Calculate elevation gain/loss
-    const chunks = lineChunk(newLine, 0.02/*km*/).features;
-    let elevations = [ // In meters
-      ...chunks.map((feature) => {
-          return map.current.queryTerrainElevation(
-              feature.geometry.coordinates[0],
-              { exaggerated: false }
-          );
-      }),
-      // do not forget the last coordinate
-      map.current.queryTerrainElevation(
-          chunks[chunks.length - 1].geometry.coordinates[1],
-          { exaggerated: false }
-      )
-    ];
-
-    // Fix a bug where if the start point is off screen, you'll get a bunch of
-    // nulls back from queryTerrainElevation
-    elevations.unshift(elevStart);
-    elevations = elevations.filter(e => (e !== undefined && e != null));
-
-    let up = 0.0;
-    let down = 0.0;
-    let prevEle;
-    elevations.forEach((ele,i) => {
-      if (i > 0) {
-        const change = ele - prevEle;
-        if (change < 0) {
-          down += change;
-        } else {
-          up += change;
-        }
-      }
-      prevEle = ele;
-    });
+    const [up, down] = getElevationChange(map, newLine, elevStart);
     newLine.properties.eleUp = up;
     newLine.properties.eleDown = down;
 
@@ -722,6 +689,14 @@ function Map() {
                 if (addMarkerInLineEnabledRef.current && e.features.length > 0) {
                   newMarkerLineToSplit = e.features[0].properties.id; // Top most feature (line)
 
+                  // Use this b/c e.features[0] only returns rendered geometry, not complete
+                  const lineUnderMouse = geojson.features.find(f => f.properties.id === newMarkerLineToSplit);
+                  // Happens for a split second right after line is split, geojson has new ids, but rendered map still has old ones
+                  if (!lineUnderMouse) {
+                    removeAddNewMarker();
+                    return;
+                  }
+
                   // If over real marker, don't show
                   const idsUnderMouse = e.features.map(f => f.properties.id);
                   const lineEndPtMarkers = markers.filter(m => m.associatedLines.some(l => idsUnderMouse.includes(l)));
@@ -745,7 +720,7 @@ function Map() {
                       coordinates: [e.lngLat.lng, e.lngLat.lat]
                     }
                   }
-                  const snapped = nearestPointOnLine(e.features[0], mousePt, {units: 'miles'});
+                  const snapped = nearestPointOnLine(lineUnderMouse, mousePt);
 
                   // Add or move marker
                   if (addNewMarker) {
