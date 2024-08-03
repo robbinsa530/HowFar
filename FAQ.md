@@ -15,7 +15,7 @@ __If you would like to vote to change this, please consider giving kudos to [thi
 HowFar allows a user to connect to Strava by logging in using the "Connect with Strava" button in the menu. Then, you can post manual activities to Strava which will be auto populated with the distance of your mapped route. This is done using the "Post Activity" button in the menu.
 
 ## Does HowFar save any of my data?
-HowFar saves a single piece of information about you, and it only does so if you choose to connect to Strava on the site using the "Connect with Strava" button in the menu. If you do this, a refresh token will be saved in your browser. This allows HowFar to keep you connected to Strava without you having to re-log-in every time you want to post an activity. This token is saved for 180 days (meaning you will need to re-log-in to Strava every 180 days).
+HowFar saves a single piece of information about you, and it only does so if you choose to connect to Strava on the site using the "Connect with Strava" button in the menu. If you do this, a refresh token will be saved in your browser. This allows HowFar to keep you connected to Strava without you having to re-log-in every time you want to post an activity. This token is saved for 180 days (meaning you will need to re-log-in to Strava every 180 days). If you would like to delete this token, simply clear cookies/site-data for HowFar in your browser.
 
 ## Does HowFar work on mobile?
 Technically yes, but the site is developed for desktop first and that's where you'll have the better experience. I do plan on developing proper mobile app versions (for Android and iOS) in the future.
