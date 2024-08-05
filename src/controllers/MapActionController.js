@@ -640,6 +640,11 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
   let minDist;
   let minDistIndex = -1;
 
+  /*
+    Search in reverse so that if a the line segment being split (lineToSplit)
+    overlaps itself (only possible on import) the later segment, and thus the
+    top-rendered one will be returned.
+  */
   for (let i = ltsLen - 2; i >= 0; i--) {
     let coords = lineToSplit.geometry.coordinates[i];
     let tempLine = {
