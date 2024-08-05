@@ -635,18 +635,18 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
     }
   };
 
-  let prevPt = lineToSplit.geometry.coordinates[0];
+  const ltsLen = lineToSplit.geometry.coordinates.length;
+  let prevPt = lineToSplit.geometry.coordinates[ltsLen - 1];
   let minDist;
   let minDistIndex = -1;
-  lineToSplit.geometry.coordinates.forEach((coords, i) => {
-    if (i === 0) {
-      return;
-    }
+
+  for (let i = ltsLen - 2; i >= 0; i--) {
+    let coords = lineToSplit.geometry.coordinates[i];
     let tempLine = {
       type: 'Feature',
       geometry: {
         type: 'LineString',
-        coordinates: [prevPt, coords]
+        coordinates: [coords, prevPt] // prevPt 2nd b/c we're iterating in reverse (doesn't really matter)
       }
     };
     let ptToLineDist = pointToLineDistance(geoPt, tempLine);
@@ -655,11 +655,11 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
       minDistIndex = i;
     }
     prevPt = coords;
-  });
+  }
 
   // Get 2 new coordinate sets
-  let lCoords = lineToSplit.geometry.coordinates.slice(0, minDistIndex);
-  let rCoords = lineToSplit.geometry.coordinates.slice(minDistIndex);
+  let lCoords = lineToSplit.geometry.coordinates.slice(0, minDistIndex + 1);
+  let rCoords = lineToSplit.geometry.coordinates.slice(minDistIndex + 1);
   lCoords.push(markerToAdd.lngLat);
   rCoords.unshift(markerToAdd.lngLat);
 
