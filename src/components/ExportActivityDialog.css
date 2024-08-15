@@ -1,0 +1,29 @@
+#activity-filename {
+  box-sizing: content-box !important;
+}
+
+.export-grid-container {
+  display: grid;
+  grid-template-columns: repeat(6, [col] 1fr);
+}
+
+.export-cell {
+  padding: 2px;
+  flex-direction: column;
+  display: flex;
+}
+
+.grid-item-filename {
+  grid-column: col / span 5;
+}
+
+.grid-item-gpx {
+  grid-column: col 6 / span 1;
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 12px;
+}
+
+.gpx-text {
+  align-self: flex-end;
+}

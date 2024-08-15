@@ -3,13 +3,13 @@
   box-sizing: content-box !important;
 }
 
-.grid-container {
+.strava-grid-container {
   display: grid;
   grid-template-columns: repeat(24, [col] 1fr);
   max-width: 500px;
 }
 
-.cell {
+.strava-cell {
   padding: 2px;
   flex-direction: column;
   display: flex;

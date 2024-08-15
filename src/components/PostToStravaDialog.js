@@ -219,8 +219,8 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
       <DialogTitle>Post route as activity to Strava</DialogTitle>
       <DialogContent>
 
-        <div className='grid-container'>
-          <div className="cell grid-item-title">
+        <div className='strava-grid-container'>
+          <div className="strava-cell grid-item-title">
             <TextField
               autoFocus
               required
@@ -232,7 +232,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
               variant="filled"
             />
           </div>
-          <div className="cell grid-item-desc">
+          <div className="strava-cell grid-item-desc">
             <TextField
               margin="dense"
               id="strava-description"
@@ -245,7 +245,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
             />
           </div>
 
-          <div className="cell grid-date">
+          <div className="strava-cell grid-date">
             <TextField
               required
               margin="dense"
@@ -257,7 +257,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
               defaultValue={currDate}
             />
           </div>
-          <div className="cell grid-time">
+          <div className="strava-cell grid-time">
             <TextField
               required
               margin="dense"
@@ -270,7 +270,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
             />
           </div>
 
-          <div className="cell grid-hours">
+          <div className="strava-cell grid-hours">
             <TextField
               required
               margin="dense"
@@ -287,7 +287,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
               }}
             />
           </div>
-          <div className="cell grid-mins">
+          <div className="strava-cell grid-mins">
             <TextField
               required
               margin="dense"
@@ -304,7 +304,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
               }}
             />
           </div>
-          <div className="cell grid-secs">
+          <div className="strava-cell grid-secs">
             <TextField
               required
               margin="dense"
@@ -322,7 +322,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
             />
           </div>
 
-          <div className="cell grid-activity">
+          <div className="strava-cell grid-activity">
             <FormControl
               variant="filled"
               required
@@ -343,7 +343,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
               </Select>
             </FormControl>
           </div>
-          <div className="cell grid-distance">
+          <div className="strava-cell grid-distance">
             <FormControl
               variant="filled"
             >
@@ -361,7 +361,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
               </TextField>
             </FormControl>
           </div>
-          <div className="cell grid-pace">
+          <div className="strava-cell grid-pace">
             <FormControl
               variant="filled"
             >
@@ -380,7 +380,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
             </FormControl>
           </div>
 
-          <div className="cell grid-use-gear">
+          <div className="strava-cell grid-use-gear">
             <FormGroup
               id="strava-use-gear"
             >
@@ -393,7 +393,7 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
               />
             </FormGroup>
           </div>
-          <div className="cell grid-gear">
+          <div className="strava-cell grid-gear">
               {
                 useDefaultGear
                 ? null

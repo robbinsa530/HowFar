@@ -9,6 +9,7 @@
 - Append route segments to both the beginning and end of the route. Helpful in case you've mapped a complex route and want to edit the start.
 - Road/walkway preference for fine-tuning routes.
 - Strava integration to post your route as an activity to your Strava account (requires Strava login).
+- Export activities to GPX files (import coming soon...)
 
 ## Selected Features Explained
 ### Mapping Functionality
@@ -91,3 +92,18 @@ This can be a confusing feature, but can also be helpful for mapping different t
 | ![Favor Roads](./assets/favor_roads.png) |
 |:-:|
 | *Routing with the slider all the way toward "Roads". The route avoids paths and stays on roads* |
+
+### Export Activity
+Activities (routes) can be exported to GPX files for portability with other applications. To do this, click on the menu icon in the top left of the sidebar and find and click the "Export Activity" button. Then just enter a file name and click "Export".
+
+File names can only contain letters, numbers, dashes (-), underscores (_), and periods (.)
+
+__Note:__ Exported routes will only contain geographic data, and not time data (i.e. the file will describe a *route*, not a *timed activity*)
+
+| ![Export Button](./assets/import_export_btn.png) |
+|:-:|
+| *Export activities by clicking the Export button* |
+
+| ![Export Add Name](./assets/export_add_name.png) |
+|:-:|
+| *Choose a custom filename before exporting an activity so you can easily find it later* |

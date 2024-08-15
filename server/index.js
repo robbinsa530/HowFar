@@ -10,7 +10,8 @@ const FormData = require('form-data');
 const {
   checkForRefreshToken,
   fetchAccessToken,
-  fetchAuthenticatedAthlete
+  fetchAuthenticatedAthlete,
+  getGpxFromActivityData
 } = require('./utils')
 
 const PORT = process.env.PORT || 3001;
@@ -240,27 +241,13 @@ app.post("/uploadToStrava", async (req, res) => {
   // Update refresh token cookie
   res.cookie('STRAVA_REFRESH', refreshData.refresh_token, { maxAge: 1000*60*60*24*180, httpOnly: true, sameSite:'Strict', overwrite: true });
 
-  // Grab data from req
-  const points = req.body.points;
+  // 3. Get data from body, and gpx string to turn into a file
   const title = req.body.title;
   const description = req.body.description;
-  const startTime = req.body.startTime; // Format: 2016-06-17T23:41:03Z
-  const endTime = req.body.endTime;
   const sportType = req.body.sportType;
   const externalId = uuidv4();
   const gearId = req.body.gearId;
-
-  // 3. Create GPX file in memory
-  let gpxString = '<?xml version="1.0" encoding="UTF-8"?> ' +
-    '<gpx creator="HowFar" version="1.1" ' +
-    'xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/11.xsd" ' +
-    'xmlns:ns3="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" ' +
-    'xmlns="http://www.topografix.com/GPX/1/1" ' +
-    'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns2="http://www.garmin.com/xmlschemas/GpxExtensions/v3">' +
-    `<metadata><time>${startTime}</time></metadata><trk><name>${title}</name><trkseg>`;
-  
-  points.forEach(pt => gpxString += `<trkpt lat="${pt[1]}" lon="${pt[0]}"><time>${pt[2]}</time></trkpt>`);
-  gpxString += '</trkseg></trk></gpx>';
+  const gpxString = getGpxFromActivityData(req.body, true);
 
   // 4. Post run to strava
   const content = Buffer.from(gpxString);
@@ -299,6 +286,11 @@ app.post("/uploadToStrava", async (req, res) => {
     console.error("upload failed.", errText);
     res.status(400).send("Failed to upload activity.");
   }
+});
+
+app.post("/exportGpx", async (req, res) => {
+  const gpxString = getGpxFromActivityData(req.body, false);
+  res.status(200).send({gpx: gpxString});
 });
 
 app.listen(PORT, () => {
