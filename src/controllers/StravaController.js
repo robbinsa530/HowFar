@@ -40,7 +40,7 @@ export async function createManualActivityOnStrava(postData) {
   }
 }
 
-function geojsonToPointsForGpx(geojson) {
+export function geojsonToPointsForGpx(geojson) {
   // Calculate points array from route
   let points = [];
   geojson.features.forEach(f => {
@@ -140,35 +140,4 @@ export async function uploadActivityToStrava(postData, geojson) {
       alert("Failed to upload activity to Strava");
     }
   }
-}
-
-export async function downloadActivityGpx(data, geojson) {
-  const points = geojsonToPointsForGpx(geojson);
-  const postResp = await fetch("/exportGpx",
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        points,
-        title: data.filename,
-      })
-    }
-  );
-  if (!postResp.ok) {
-    const errText = await postResp.text();
-    console.error("Failed to export activity to GPX.", postResp.status, errText);
-    alert("Failed to export activity to GPX");
-    return;
-  }
-  const postRespJson = await postResp.json();
-  const gpxText = postRespJson.gpx;
-
-  var element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(gpxText));
-  element.setAttribute('download', data.filename + ".gpx");
-  element.style.display = 'none';
-  document.body.appendChild(element);
-  element.click();
-  document.body.removeChild(element);
 }

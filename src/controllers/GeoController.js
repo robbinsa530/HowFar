@@ -1,7 +1,7 @@
 import lineChunk from '@turf/line-chunk'
 
 export function getElevationChange(map, line, elevStart) {
-  const chunks = lineChunk(line, 0.02/*km*/).features;
+  const chunks = lineChunk(line, 0.1/*km*/).features;
   let elevations = [ // In meters
     ...chunks.map((feature) => {
         return map.current.queryTerrainElevation(

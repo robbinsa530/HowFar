@@ -2,6 +2,9 @@
 
 ### HowFar is an activity mapping app that makes mapping runs, hikes, bikes and more a quick and easy process.
 
+## Site
+[HowFar.run](https://howfar.run)
+
 ## Key Features
 - No login required! You don't need to make an account to use HowFar. I don't want your data and I know how annoying it is to be forced to create an account to do something simple like map a run. The only time you will need to login to anything is to post a mapped activity to Strava (more on that later).
 - All the mapping features you've come to expect from the other activity mapping tools on the internet. Auto follow roads, edit, undo functionality, clear route, out and back, multiple map views (street, satellite, trails, dark), etc.
@@ -107,3 +110,12 @@ __Note:__ Exported routes will only contain geographic data, and not time data (
 | ![Export Add Name](./assets/export_add_name.png) |
 |:-:|
 | *Choose a custom filename before exporting an activity so you can easily find it later* |
+
+### Import Activity
+Routes can be imported into HowFar from a GPX file. These GPX files can be ones that were exported from HowFar, from a watch, or other place. As long as it is a valid GPX file it can be imported to HowFar. Once imported, routes can be edited as normal.
+
+To import a route, click on the menu icon in the top left of the sidebar and find and click the "Import Activity" button. Then just choose a file and click "Import".
+
+| ![Import Dialog](./assets/import_dialog.png) |
+|:-:|
+| *Import activities by clicking the Import button* |

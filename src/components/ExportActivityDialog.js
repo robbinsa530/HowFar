@@ -11,7 +11,7 @@ import './ExportActivityDialog.css';
 
 const ALLOWED_CHARS = /^[a-zA-Z0-9_.-]/;
 
-function ExportActivityDialog({ onPost, onCancel, open }) {
+function ExportActivityDialog({ onExport, onCancel, open }) {
   const [filename, setFilename] = React.useState('my_activity');
   const [errorMessage, setErrorMessage] = React.useState('');
 
@@ -51,7 +51,7 @@ function ExportActivityDialog({ onPost, onCancel, open }) {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
           const formJson = Object.fromEntries(formData.entries());
-          onPost(formJson);
+          onExport(formJson);
           onCancel(); // Just used to close window
         },
       }}

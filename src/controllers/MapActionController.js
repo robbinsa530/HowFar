@@ -187,7 +187,7 @@ export async function removeMarker(markerIdToRemove, markers, geojson, getDirect
   return toReturn;
 }
 
-function getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirections, updateDistanceInComponent) {
+export function getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirections, updateDistanceInComponent) {
   // Create a Mapbox Popup with delete button
   const divRef = React.createRef();
   const btnRef = React.createRef();
@@ -210,7 +210,7 @@ function getMarkerPopup(idToUse, map, markers, geojson, undoActionList, getDirec
   return divRef;
 }
 
-async function addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent) {
+export async function addDragHandlerToMarker(addedMarker, markers, map, geojson, idToUse, undoActionList, getDirections, updateDistanceInComponent) {
   addedMarker.markerObj.on('dragstart', async (e) => {
     addedMarker.isDragging = true;
   });

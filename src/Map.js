@@ -31,6 +31,7 @@ import AreYouSureDialog from './components/AreYouSureDialog'
 import SimpleDialog from './components/SimpleDialog'
 import PostToStravaDialog from './components/PostToStravaDialog'
 import ExportActivityDialog from './components/ExportActivityDialog';
+import ImportActivityDialog from './components/ImportActivityDialog';
 import BlueSwitch from './components/BlueSwitch'
 import BlueRadio from './components/BlueRadio'
 import BlueSelect from './components/BlueSelect'
@@ -50,9 +51,12 @@ import { getRouteBetweenPoints } from './controllers/DirectionsController';
 import { 
   checkUserHasToken,
   createManualActivityOnStrava,
-  downloadActivityGpx,
   uploadActivityToStrava
 } from './controllers/StravaController';
+import { 
+  downloadActivityGpx,
+  importRouteFromGpx
+} from './controllers/ImportExportController';
 import { getErrorMsgFromPositionError } from './utils/location';
 import { getElevationChange } from './controllers/GeoController';
 
@@ -144,6 +148,7 @@ function Map() {
   const [connectedToStrava, setConnectedToStrava] = useState(null);
   const [stravaDialogOpen, setStravaDialogOpen] = useState(false);
   const [exportActivityDialogOpen, setExportActivityDialogOpen] = useState(false);
+  const [importActivityDialogOpen, setImportActivityDialogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [autoFollowRoads, setAutoFollowRoads] = useState(true);
   const [rightClickEnabled, setRightClickEnabled] = useState(true);
@@ -291,6 +296,10 @@ function Map() {
       return;
     }
     setExportActivityDialogOpen(true);
+  }, []);
+
+  const handleImportActivityClick = useCallback(() => {
+    setImportActivityDialogOpen(true);
   }, []);
 
   const applyMapStyles = useCallback(() => {
@@ -938,12 +947,24 @@ function Map() {
         />}
         { exportActivityDialogOpen && <ExportActivityDialog
           open={exportActivityDialogOpen}
-          onPost={(data) => {
+          onExport={(data) => {
             downloadActivityGpx(data, geojson);
             setMenuOpen(false);
           }}
           onCancel={() => {
             setExportActivityDialogOpen(false);
+            setMenuOpen(false);
+          }}
+        />}
+        { importActivityDialogOpen && <ImportActivityDialog
+          open={importActivityDialogOpen}
+          onImport={(file) => {
+            handleClearMap();
+            importRouteFromGpx(file, markers, geojson, map, undoActionList, getDirections, updateDistanceAndEleState, setLoading);
+            setMenuOpen(false);
+          }}
+          onCancel={() => {
+            setImportActivityDialogOpen(false);
             setMenuOpen(false);
           }}
         />}
@@ -1033,6 +1054,12 @@ function Map() {
             <Typography variant="h6">Import / Export:</Typography>
             <br/>
             <div className="import-export-drawer-div">
+              <Tooltip disableInteractive title={<Typography>Import a route from a .gpx file</Typography>}>
+                <Button className="drawer-button" variant="contained" onClick={handleImportActivityClick}>Import Activity</Button>
+              </Tooltip>
+              <br/>
+              <br/>
+
               <Tooltip disableInteractive title={<Typography>Export route as a .gpx file</Typography>}>
                 <Button className="drawer-button" variant="contained" onClick={handleExportActivityClick}>Export Activity</Button>
               </Tooltip>
