@@ -506,7 +506,8 @@ function Map() {
               container: mapContainer.current,
               style: mapTypes[0],
               center: [-104.959730, 39.765733], // Default location, super zoomed out over CO
-              zoom: process.env.NODE_ENV === 'production' ? 3 : 14
+              zoom: process.env.NODE_ENV === 'production' ? 3 : 14,
+              pitchWithRotate: false
             });
         
             // Default cursor should be pointer
