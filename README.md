@@ -12,7 +12,7 @@
 - Append route segments to both the beginning and end of the route. Helpful in case you've mapped a complex route and want to edit the start.
 - Road/walkway preference for fine-tuning routes.
 - Strava integration to post your route as an activity to your Strava account (requires Strava login).
-- Export activities to GPX files (import coming soon...)
+- Import and export activities from/to GPX files
 
 ## Selected Features Explained
 ### Mapping Functionality

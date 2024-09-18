@@ -62,3 +62,7 @@
 .grid-gear {
   grid-column: col 13 / span 12;
 }
+
+.map-question-link {
+  grid-column: col / span 24;
+}

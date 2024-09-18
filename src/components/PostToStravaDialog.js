@@ -421,6 +421,9 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
                   </>)
               }
           </div>
+          <div className='strava-cell map-question-link'>
+          <a href="https://github.com/robbinsa530/HowFar/blob/main/FAQ.md#why-doesnt-my-map-show-up-on-strava" target="_blank" rel="noreferrer">Why does my map not show up on Strava?</a>
+          </div>
         </div>
 
       </DialogContent>

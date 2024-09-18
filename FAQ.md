@@ -3,13 +3,13 @@
 ## Why doesn't my map show up on Strava?
 Strava only allows maps to be uploaded as `.gpx` files, like the ones produced by a GPS watch. When these files are uploaded to Strava, their time and position data are used to determine pace at each point along the route. This is how Strava determines things like segment records and crowns.
 
-Since HowFar has no way of knowing your pace along each segment of a route, the best it could do is average your pace along the entire route based on total time and distance, and create a `.gpx` file from that.
+Since HowFar has no way of knowing your pace along each segment of a route, the best it could do is average your pace along the entire route based on total time and distance, and create & upload a "fake" `.gpx` file made from that small amount of info.
 
-Unfortunately, while this is possible, that method has no way of accounting for things like hills, or an athlete speeding up/slowing down. So oftentimes when doing this, an activity can get awarded Strava accoladates that aren't actually deserved. This is a big problem.
+Unfortunately, while this is possible, this method has no way of accounting for things like hills, or an athlete speeding up/slowing down. Even though your pace may have varied throughout your activity, it will be averaged (which means the file will overestimate your pace for parts and underestimate your pace for parts). So oftentimes when doing this, an activity can get awarded Strava accoladates that aren't actually deserved. This is a big problem that would create a bad reputation for HowFar.
 
-Because there's no way around that problem, maps are not uploaded. Rather HowFar uploads all activities as manual Strava activities with just total time and distance.
+Because there's no way around this problem at the moment, maps can not be uploaded from HowFar. Rather HowFar uploads all activities as manual Strava activities with just total time, distance and text info.
 
-__If you would like to vote to change this, please consider giving kudos to [this Strava Community post](https://communityhub.strava.com/t5/ideas/add-the-ability-for-athletes-to-use-route-course-files-no-time/idi-p/31322).__
+__If you would like to vote to change this, allowing your maps to be posted to Strava in an easy, fair way, please consider giving kudos to [this Strava Community post](https://communityhub.strava.com/t5/ideas/add-the-ability-for-athletes-to-use-route-course-files-no-time/idi-p/31322).__
 
 ## How is HowFar compatible with Strava?
 HowFar allows a user to connect to Strava by logging in using the "Connect with Strava" button in the menu. Then, you can post manual activities to Strava which will be auto populated with the distance of your mapped route. This is done using the "Post Activity" button in the menu.

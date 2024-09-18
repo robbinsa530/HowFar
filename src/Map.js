@@ -820,7 +820,7 @@ function Map() {
             </Tooltip>
           </Stack>
           <Stack className="sidebar-btn-container" spacing={2} direction="row">
-            <Tooltip disableInteractive title={<Typography>Continue route back to start point as an out-and-back</Typography>}>
+            <Tooltip disableInteractive title={<Typography>Return to start point along the same route</Typography>}>
               <Button variant="contained" onClick={async () => {
                 await handleOutAndBack(
                   markers,
