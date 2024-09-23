@@ -167,6 +167,12 @@ function PostToStravaDialog({ distance, onPost, onCancel, open, units }) {
     let paceMins = Math.floor(paceFrac / 60);
     let paceSecs = Math.round(paceFrac % 60);
 
+    // In case seconds get rounded to 60
+    if (paceSecs === 60) {
+      paceMins += 1;
+      paceSecs = 0;
+    }
+
     setPace(paceMins + ":" + ("0" + paceSecs).slice(-2) + ` min/${unitStr}`);
   }, [hours, mins, secs])
 
