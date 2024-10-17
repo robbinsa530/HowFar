@@ -58,7 +58,10 @@ import {
   importRouteFromGpx
 } from './controllers/ImportExportController';
 import { getErrorMsgFromPositionError } from './utils/location';
-import { getElevationChange } from './controllers/GeoController';
+import {
+  getElevationChange,
+  splitLineWithPoint
+} from './controllers/GeoController';
 
 const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1:3001"
 let STRAVA_CLIENT_ID;
@@ -158,11 +161,15 @@ function Map() {
   const [mapType, setMapType] = useState(0);
   const [walkwayBias, setWalkwayBias] = useState(0);
   const [displayChevrons, setDisplayChevrons] = useState(true);
+  const [displayDistancePopup, setDisplayDistancePopup] = useState(true);
+  const [distancePopupVisible, setDistancePopupVisible] = useState(false);
+  const [popupDistances, setPopupDistances] = useState([]);
   const mapSetupStartedRef = React.useRef(false);
   const stravaLoginWindowWasOpenedRef = React.useRef(false);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
   const rightClickEnabledRef = React.useRef(rightClickEnabled);
   const addMarkerInLineEnabledRef = React.useRef(addMarkerInLineEnabled);
+  const displayDistancePopupRef = React.useRef(displayDistancePopup);
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
   const walkwayBiasRef = React.useRef(walkwayBias);
 
@@ -190,6 +197,16 @@ function Map() {
     // Turning layer off
     else {
       map.current.removeLayer('arrow-overlay');
+    }
+  }, []);
+
+  const handleSwitchDisplayDistancePopup = useCallback((event) => {
+    setDisplayDistancePopup(event.target.checked);
+    displayDistancePopupRef.current = event.target.checked;
+
+    if (!event.target.checked) {
+      setDistancePopupVisible(false);
+      setPopupDistances([]);
     }
   }, []);
 
@@ -579,53 +596,122 @@ function Map() {
                 removeAddNewMarker();
               });
 
+              // Remove distance popup when mouse leaves route line
+              map.current.on('mouseleave', 'measure-lines', (e) => {
+                setDistancePopupVisible(false);
+                setPopupDistances([]);
+              });
+
               map.current.on('mousemove', 'measure-lines', (e) => {
-                if (addMarkerInLineEnabledRef.current && e.features.length > 0) {
-                  newMarkerLineToSplit = e.features[0].properties.id; // Top most feature (line)
+                /*
+                  The code in this event handler takes care of two things:
+                  1. Showing/hiding the temporary marker used to show a user when they can "split" a line on their route.
+                     This is also called the "edit line on click" feature.
+                  2. Showing/hiding the little popup box to show the distance along the route under the mouse when the user
+                     hovers their mouse over a line segment on the route.
+                */
+               let snapped;
+               let lineUnderMouse;
+               let linesAndIndicesUnderMouse = [];
+                if (e.features.length > 0) {
+                  // Do what both things will need
+                  if (addMarkerInLineEnabledRef.current || displayDistancePopupRef.current) {
+                    e.features.forEach((mouse_f,i) => {
+                      // Use this b/c e.features[0] only returns rendered geometry, not complete
+                      const idx = geojson.features.findIndex(f => f.properties.id === mouse_f.properties.id);
+                      const ln = geojson.features[idx];
+                      linesAndIndicesUnderMouse.push([idx, ln]);
 
-                  // Use this b/c e.features[0] only returns rendered geometry, not complete
-                  const lineUnderMouse = geojson.features.find(f => f.properties.id === newMarkerLineToSplit);
-                  // Happens for a split second right after line is split, geojson has new ids, but rendered map still has old ones
-                  if (!lineUnderMouse) {
-                    removeAddNewMarker();
-                    return;
-                  }
+                      // Save info of top most feature (line)
+                      if (i === 0) {
+                        newMarkerLineToSplit = mouse_f.properties.id;
+                        lineUnderMouse = ln;
+                      }
+                    });
 
-                  // If over real marker, don't show
-                  const idsUnderMouse = e.features.map(f => f.properties.id);
-                  const lineEndPtMarkers = markers.filter(m => m.associatedLines.some(l => idsUnderMouse.includes(l)));
-
-                  for (const m of lineEndPtMarkers) {
-                    if (getMouseToMarkerSqDistance(e, m.markerObj) < 64) {
+                    // Happens for a split second right after line is split, geojson has new ids, but rendered map still has old ones
+                    if (!lineUnderMouse) {
                       removeAddNewMarker();
+                      setDistancePopupVisible(false);
+                      setPopupDistances([]);
                       return;
                     }
-                  }
 
-                  // Set cursor to pointer finger
-                  map.current.getCanvas().style.cursor = 'pointer'
-
-                  // Calculate point centered on line closest to mouse
-                  // Prevents marker from moving along the width of the line as the mouse moves
-                  const mousePt = {
-                    type: 'Feature',
-                    geometry: {
-                      type: 'Point',
-                      coordinates: [e.lngLat.lng, e.lngLat.lat]
+                    // Calculate point centered on line closest to mouse
+                    // Prevents marker from moving along the width of the line as the mouse moves
+                    const mousePt = {
+                      type: 'Feature',
+                      geometry: {
+                        type: 'Point',
+                        coordinates: [e.lngLat.lng, e.lngLat.lat]
+                      }
                     }
+                    snapped = nearestPointOnLine(lineUnderMouse, mousePt);
                   }
-                  const snapped = nearestPointOnLine(lineUnderMouse, mousePt);
 
-                  // Add or move marker
-                  if (addNewMarker) {
-                    addNewMarker.setLngLat(snapped.geometry.coordinates);
+                  // Handle showing distance under mouse
+                  if (displayDistancePopupRef.current) {
+                    let partialDistances = [];
+                    let idsChecked = []; // Sometimes the same line is returned twice
+                    linesAndIndicesUnderMouse.forEach(value => {
+                      const [idx, ln] = value;
+                      if (idsChecked.includes(ln.properties.id)) {
+                        return; // continue
+                      }
+
+                      // Calculate distance from start of route to segment mouse is in
+                      let partialDist = 0.0;
+                      for (let i = 0; i < idx; i++) {
+                        partialDist += geojson.features[i].properties.distance;
+                      }
+
+                      // Calculate distance from start of split segment to mouse
+                      const [lCoords, _] = splitLineWithPoint(ln, snapped.geometry.coordinates);
+                      let partialLine = {
+                        type: 'Feature',
+                        geometry: {
+                          type: 'LineString',
+                          coordinates: lCoords
+                        }
+                      };
+                      partialDist += length(partialLine, {units: 'miles'});
+
+                      // Usually returns double of the same when hovering over junction between segments
+                      if (partialDistances.length === 0 || Math.abs(partialDist - partialDistances[partialDistances.length - 1]) > 0.005) {
+                        partialDistances.push(partialDist);
+                      }
+                      idsChecked.push(ln.properties.id);
+                    });
+                    setDistancePopupVisible(true);
+                    setPopupDistances(partialDistances);
                   }
-                  else {
-                    addNewMarker = new mapboxgl.Marker({
-                      className: "add-new-marker",
-                      element: addNewMarkerDiv.current
-                    }).setLngLat(snapped.geometry.coordinates)
-                      .addTo(map.current);
+
+                  // Handle the "add new/edit line on click" marker
+                  if (addMarkerInLineEnabledRef.current) {
+                    // If over real marker, don't show
+                    const idsUnderMouse = e.features.map(f => f.properties.id);
+                    const lineEndPtMarkers = markers.filter(m => m.associatedLines.some(l => idsUnderMouse.includes(l)));
+                    for (const m of lineEndPtMarkers) {
+                      if (getMouseToMarkerSqDistance(e, m.markerObj) < 64) {
+                        removeAddNewMarker();
+                        return;
+                      }
+                    }
+
+                    // Set cursor to pointer finger
+                    map.current.getCanvas().style.cursor = 'pointer'
+
+                    // Add or move marker
+                    if (addNewMarker) {
+                      addNewMarker.setLngLat(snapped.geometry.coordinates);
+                    }
+                    else {
+                      addNewMarker = new mapboxgl.Marker({
+                        className: "add-new-marker",
+                        element: addNewMarkerDiv.current
+                      }).setLngLat(snapped.geometry.coordinates)
+                        .addTo(map.current);
+                    }
                   }
                 }
               });
@@ -920,6 +1006,14 @@ function Map() {
         <small>All Rights Reserved.</small>
       </div>
 
+      {displayDistancePopup && distancePopupVisible && popupDistances.length > 0 && <div className="distance-popup">
+        {
+          imperialOrMetric === "imperial"
+          ? <p>{popupDistances.toReversed().map(d => d.toFixed(2)).join("mi, ") + "mi"}</p>
+          : <p>{popupDistances.toReversed().map(d => (d*1.60934).toFixed(2)).join("km, ") + "km"}</p>
+        }
+      </div> }
+
       <div ref={mapContainer} className="map-container" />
       { loading && <SimpleDialog open={loading} text="Loading..." /> }
       { locating && <SimpleDialog open={locating} text="Locating..." /> }
@@ -1041,12 +1135,23 @@ function Map() {
             </FormControl>
             <br/>
             <Tooltip disableInteractive title={<Typography>When enabled, route lines will show arrows to indicate direction</Typography>}>
-              <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+              <FormControlLabel sx={{marginLeft:0, marginRight:0, width:"100%", justifyContent:'space-between'}}
                 value="display-chevrons"
                 control={
                   <BlueSwitch checked={displayChevrons} onChange={handleSwitchDisplayChevrons} name="displayChevrons"/>
                 }
-                label="Display Route Arrows"
+                label="Route Arrows"
+                labelPlacement="start"
+              />
+            </Tooltip>
+            <br/>
+            <Tooltip disableInteractive title={<Typography>When enabled, hovering over your route will display the distance along the route of the point under your mouse</Typography>}>
+              <FormControlLabel sx={{marginLeft:0, marginRight:0, width:"100%", justifyContent:'space-between'}}
+                value="display-chevrons"
+                control={
+                  <BlueSwitch checked={displayDistancePopup} onChange={handleSwitchDisplayDistancePopup} name="displayDistancePopup"/>
+                }
+                label="Distance on Hover"
                 labelPlacement="start"
               />
             </Tooltip>

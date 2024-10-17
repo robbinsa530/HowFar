@@ -1,10 +1,13 @@
 import React from 'react';
 import cloneDeep from 'lodash.clonedeep';
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
-import pointToLineDistance from "@turf/point-to-line-distance";
 import length from '@turf/length'
 import { v4 as uuidv4 } from 'uuid';
-import { getElevationChange, updateMarkerElevation } from './GeoController';
+import {
+  getElevationChange,
+  splitLineWithPoint,
+  updateMarkerElevation
+} from './GeoController';
 
 //Used to move a marker back to its old spot after a move action is undone
 export function moveMarkerBack(info) {
@@ -614,59 +617,10 @@ export async function addNewMarkerInLine(e, newMarkerLngLat, markers, geojson, l
     // elevation: (Needs to be added)
   };
 
-  /*
-    Split line around point
-
-    Turf line-split doesn't always work here due to a known problem, so go with a super 
-    primitive approach of just finding the segment which the point is closest to. Luckily
-    this works super well and pretty fast.
-
-    Turf issues:
-    https://github.com/Turfjs/turf/issues/2206
-    https://github.com/Turfjs/turf/issues/852
-  */
+  // Split line around point
   const lineToSplitIndex = geojson.features.findIndex(f => f.properties.id === lineToSplitId);
   const lineToSplit = geojson.features[lineToSplitIndex];
-  const geoPt = {
-    type: "Feature",
-    geometry: {
-      type: "Point",
-      coordinates: [newMarkerLngLat.lng, newMarkerLngLat.lat]
-    }
-  };
-
-  const ltsLen = lineToSplit.geometry.coordinates.length;
-  let prevPt = lineToSplit.geometry.coordinates[ltsLen - 1];
-  let minDist;
-  let minDistIndex = -1;
-
-  /*
-    Search in reverse so that if a the line segment being split (lineToSplit)
-    overlaps itself (only possible on import) the later segment, and thus the
-    top-rendered one will be returned.
-  */
-  for (let i = ltsLen - 2; i >= 0; i--) {
-    let coords = lineToSplit.geometry.coordinates[i];
-    let tempLine = {
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: [coords, prevPt] // prevPt 2nd b/c we're iterating in reverse (doesn't really matter)
-      }
-    };
-    let ptToLineDist = pointToLineDistance(geoPt, tempLine);
-    if ((minDistIndex < 0) || (ptToLineDist < minDist)) {
-      minDist = ptToLineDist;
-      minDistIndex = i;
-    }
-    prevPt = coords;
-  }
-
-  // Get 2 new coordinate sets
-  let lCoords = lineToSplit.geometry.coordinates.slice(0, minDistIndex + 1);
-  let rCoords = lineToSplit.geometry.coordinates.slice(minDistIndex + 1);
-  lCoords.push(markerToAdd.lngLat);
-  rCoords.unshift(markerToAdd.lngLat);
+  const [lCoords, rCoords] = splitLineWithPoint(lineToSplit, markerToAdd.lngLat);
 
   // Create 2 new lines
   let newLine1 = { 

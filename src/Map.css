@@ -221,3 +221,19 @@
 .footer-link-div {
   margin-bottom: 4px;
 }
+
+.distance-popup {
+  z-index: 1;
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
+  background-color: rgb(35 55 75 / 90%);
+  color: #fff;
+  padding: 2px 8px;
+  font-family: monospace;
+  border-radius: 4px;
+}

@@ -1,4 +1,5 @@
 import lineChunk from '@turf/line-chunk'
+import pointToLineDistance from "@turf/point-to-line-distance";
 
 export function getElevationChange(map, line, elevStart) {
   const chunks = lineChunk(line, 0.1/*km*/).features;
@@ -43,4 +44,61 @@ export function updateMarkerElevation(map, marker) {
     marker.lngLat,
     { exaggerated: false }
   );
+}
+
+export function splitLineWithPoint(lineToSplit, pointLngLat) {
+  /*
+    Split line around point
+
+    Turf line-split doesn't always work here due to a known problem, so go with a super 
+    primitive approach of just finding the segment which the point is closest to. Luckily
+    this works super well and pretty fast.
+
+    Turf issues:
+    https://github.com/Turfjs/turf/issues/2206
+    https://github.com/Turfjs/turf/issues/852
+  */
+
+  const point = {
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: pointLngLat
+    }
+  };
+
+  const ltsLen = lineToSplit.geometry.coordinates.length;
+  let prevPt = lineToSplit.geometry.coordinates[ltsLen - 1];
+  let minDist;
+  let minDistIndex = -1;
+
+  /*
+    Search in reverse so that if a the line segment being split (lineToSplit)
+    overlaps itself (only possible on import) the later segment, and thus the
+    top-rendered one will be returned.
+  */
+  for (let i = ltsLen - 2; i >= 0; i--) {
+    let coords = lineToSplit.geometry.coordinates[i];
+    let tempLine = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [coords, prevPt] // prevPt 2nd b/c we're iterating in reverse (doesn't really matter)
+      }
+    };
+    let ptToLineDist = pointToLineDistance(point, tempLine);
+    if ((minDistIndex < 0) || (ptToLineDist < minDist)) {
+      minDist = ptToLineDist;
+      minDistIndex = i;
+    }
+    prevPt = coords;
+  }
+
+  // Get 2 new coordinate sets
+  let lCoords = lineToSplit.geometry.coordinates.slice(0, minDistIndex + 1);
+  let rCoords = lineToSplit.geometry.coordinates.slice(minDistIndex + 1);
+  lCoords.push(pointLngLat);
+  rCoords.unshift(pointLngLat);
+
+  return [lCoords, rCoords];
 }
