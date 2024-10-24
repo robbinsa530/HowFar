@@ -319,8 +319,8 @@ export async function handleLeftRightClick(e, markers, geojson, undoActionList, 
       element: ref.current,
       lngLat: [e.lngLat.lng, e.lngLat.lat],
       associatedLines: [],
-      isDragging: false
-      // snappedToRoad: (Needs to be added)
+      isDragging: false,
+      snappedToRoad: true // default to true, seems to work?
       // markerObj: (Needs to be added)
       // elevation: (Needs to be added)
     };

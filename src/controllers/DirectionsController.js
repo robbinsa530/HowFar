@@ -1,7 +1,25 @@
-const BASEDIR = 'https://api.mapbox.com/directions/v5/mapbox/walking/';
+// const BASEDIR = 'https://api.mapbox.com/directions/v5/mapbox/walking/';
+// async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, token) {
+//   const endpoint = `${BASEDIR}${lngLatStart[0]},${lngLatStart[1]};${lngLatEnd[0]},${lngLatEnd[1]}?exclude=ferry&geometries=geojson&access_token=${token}&overview=full&walkway_bias=${walkwayBias}`;
+//   let query;
+//   try {
+//     query = await fetch(endpoint, { method: 'GET' });
+//   }
+//   catch (error) {
+//     console.error(error);
+//     return { routes: [] };
+//   }
 
+//   if (query.ok) {
+//     return await query.json();
+//   } else {
+//     return { routes: [] };
+//   }
+// }
+
+const BASEDIR = 'https://api.mapbox.com/optimized-trips/v1/mapbox/walking/'
 async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, token) {
-  const endpoint = `${BASEDIR}${lngLatStart[0]},${lngLatStart[1]};${lngLatEnd[0]},${lngLatEnd[1]}?exclude=ferry&geometries=geojson&access_token=${token}&overview=full&walkway_bias=${walkwayBias}`;
+  const endpoint = `${BASEDIR}${lngLatStart[0]},${lngLatStart[1]};${lngLatEnd[0]},${lngLatEnd[1]}?source=first&destination=last&roundtrip=false&geometries=geojson&overview=full&access_token=${token}`; // &exclude=ferry&walkway_bias=${walkwayBias}
   let query;
   try {
     query = await fetch(endpoint, { method: 'GET' });
@@ -12,7 +30,10 @@ async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, token)
   }
 
   if (query.ok) {
-    return await query.json();
+    let result = await query.json();
+    result.routes = result.trips;
+    delete result.trips;
+    return result;
   } else {
     return { routes: [] };
   }
