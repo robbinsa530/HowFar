@@ -983,16 +983,17 @@ function Map() {
             <BlueSlider
               aria-label="Walkway-Bias"
               value={walkwayBias}
-              onChange={handleChangeWalkwayBias}
+              // onChange={handleChangeWalkwayBias} // TODO: Put back when directions API is fixed
               defaultValue={0}
               shiftStep={0.5}
               step={0.1}
               min={-1}
               max={1}
-              tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
-                      roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
-                      as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
-                      favor both equally</>}
+              // tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
+              //         roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
+              //         as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
+              //         favor both equally</>}
+              tooltip="Temporarily Disabled"
             />
           </FormControl>
         </div>

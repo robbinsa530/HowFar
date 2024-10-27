@@ -17,6 +17,7 @@
 //   }
 // }
 
+// TODO: Go back to the directions API once it is fixed
 const BASEDIR = 'https://api.mapbox.com/optimized-trips/v1/mapbox/walking/'
 async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, token) {
   const endpoint = `${BASEDIR}${lngLatStart[0]},${lngLatStart[1]};${lngLatEnd[0]},${lngLatEnd[1]}?source=first&destination=last&roundtrip=false&geometries=geojson&overview=full&access_token=${token}`; // &exclude=ferry&walkway_bias=${walkwayBias}
