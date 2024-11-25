@@ -65,4 +65,5 @@
 
 .map-question-link {
   grid-column: col / span 24;
+  width: fit-content;
 }

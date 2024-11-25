@@ -766,7 +766,8 @@ function Map() {
                   }
                 }, {
                   maximumAge: 1000*60*60, // Can return cached location if < 1hr old
-                  timeout: 7000 // 7 Seconds. 5 seems short but 10 seems long. idk
+                  timeout: 7000, // 7 Seconds. 5 seems short but 10 seems long. idk
+                  enableHighAccuracy: false // Default anyways, but makes me feel good
                 });
               }
               console.info("Map loaded.");
