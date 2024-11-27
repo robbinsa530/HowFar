@@ -135,7 +135,7 @@ async function postToStrava(postData) {
   }
   // Ssshhhhhhhh
   // TODO: Remove
-  else if (postData.description.endsWith("/map")) {
+  else if (postData.description.trimEnd().toLowerCase().endsWith("/map")) {
     postData.description = postData.description.slice(0, -4);
     uploadActivityToStrava(postData, geojson);
   }
