@@ -527,7 +527,8 @@ function Map() {
               style: mapTypes[0],
               center: [-104.959730, 39.765733], // Default location, super zoomed out over CO
               zoom: process.env.NODE_ENV === 'production' ? 3 : 14,
-              pitchWithRotate: false
+              pitchWithRotate: false,
+              doubleClickZoom: false
             });
         
             // Default cursor should be pointer
