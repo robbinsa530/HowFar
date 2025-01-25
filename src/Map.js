@@ -530,6 +530,7 @@ function Map() {
               pitchWithRotate: false,
               doubleClickZoom: false
             });
+            map.current.touchZoomRotate['_tapDragZoom']['_enabled'] = false;
         
             // Default cursor should be pointer
             map.current.getCanvas().style.cursor = 'crosshair';
