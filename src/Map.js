@@ -25,6 +25,8 @@ import RadioGroup from '@mui/material/RadioGroup';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Drawer from '@mui/material/Drawer';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloseIcon from '@mui/icons-material/Close';
 
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
@@ -164,6 +166,7 @@ function Map() {
   const [displayDistancePopup, setDisplayDistancePopup] = useState(true);
   const [distancePopupVisible, setDistancePopupVisible] = useState(false);
   const [popupDistances, setPopupDistances] = useState([]);
+  const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const mapSetupStartedRef = React.useRef(false);
   const stravaLoginWindowWasOpenedRef = React.useRef(false);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
@@ -857,145 +860,276 @@ function Map() {
     <div className="Map">
       <div id="sidebar-content" className='sidebar-content'>
         <div id="sidebar" className="sidebar">
-          <div className="menu-btn-div">
-            <Tooltip disableInteractive title={<Typography>More Options (Connect to apps, display, etc.)</Typography>}>
-            <IconButton onClick={() => setMenuOpen(true)} sx={{color:'white', margin:0, padding:0}}>
-              <MenuIcon />
-            </IconButton>
-            </Tooltip>
+          <div className="mobile-controls">
+            <div className="menu-btn-div">
+              <Tooltip disableInteractive title={<Typography>More Options (Connect to apps, display, etc.)</Typography>}>
+                <IconButton onClick={() => setMenuOpen(true)} sx={{color:'white', margin:0, padding:0}}>
+                  <MenuIcon />
+                </IconButton>
+              </Tooltip>
+            </div>
+            
+            <div className="mobile-action-buttons">
+              <Tooltip disableInteractive title={<Typography>Clear route</Typography>}>
+                <IconButton onClick={() => setClearMap(true)} sx={{color:'white'}}>
+                  <ClearIcon />
+                </IconButton>
+              </Tooltip>
+              
+              <Tooltip disableInteractive title={<Typography>Undo last action</Typography>}>
+                <IconButton onClick={() => {
+                  handleUndo();
+                  updateDistanceAndEleState();
+                  map.current.getSource('geojson').setData(geojson);
+                }} sx={{color:'white'}}>
+                  <UndoIcon />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip disableInteractive title={<Typography>Out and back</Typography>}>
+                <IconButton onClick={async () => {
+                  await handleOutAndBack(
+                    markers,
+                    geojson,
+                    undoActionList,
+                    map,
+                    getDirections,
+                    updateDistanceAndEleState
+                  );
+                  updateDistanceAndEleState();
+                  map.current.getSource('geojson').setData(geojson);
+                }} sx={{color:'white'}}>
+                  <LoopIcon />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip disableInteractive title={<Typography>More controls</Typography>}>
+                <IconButton onClick={() => setMobileControlsOpen(!mobileControlsOpen)} sx={{color:'white'}}>
+                  <MoreVertIcon />
+                </IconButton>
+              </Tooltip>
+            </div>
+
+            <div className={`mobile-controls-popup ${mobileControlsOpen ? 'open' : ''}`}>
+              <div className="mobile-controls-popup-header">
+                <IconButton
+                  onClick={() => setMobileControlsOpen(false)}
+                  sx={{color:'white', padding: '4px'}}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </div>
+              <FormControl component="fieldset">
+                <FormGroup aria-label="boolean-switches">
+                  <Tooltip disableInteractive title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
+                    <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                      value="auto-follow-roads"
+                      control={
+                        <BlueSwitch checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
+                      }
+                      label="Auto follow roads"
+                      labelPlacement="start"
+                    />
+                  </Tooltip>
+                  <Tooltip disableInteractive title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
+                    <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                      value={"right-click-enabled"}
+                      control={
+                        <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
+                      }
+                      label="Right click enabled"
+                      labelPlacement="start"
+                    />
+                  </Tooltip>
+                  <Tooltip disableInteractive title={<Typography>When enabled, clicking on one of your route's line segments will insert a new waypoint into the middle of that segment instead of at the end/beginning of the route</Typography>}>
+                    <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                      value={"add-marker-in-line-enabled"}
+                      control={
+                        <BlueSwitch checked={addMarkerInLineEnabled} onChange={handleSwitchAddMarkerInLineEnabled} name="addMarkerInLineEnabled"/>
+                      }
+                      label="Edit lines on click"
+                      labelPlacement="start"
+                    />
+                  </Tooltip>
+                </FormGroup>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to:</FormLabel>
+                <Tooltip disableInteractive title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
+                  <RadioGroup
+                    row
+                    aria-labelledby="add-to-start-or-end-radio-group"
+                    defaultValue="add-to-end"
+                    name="add-to-start-or-end-radio-buttons-group"
+                    value={addToStartOrEnd}
+                    onChange={handleToggleStartEnd}
+                    sx={{ marginLeft: '-12px' }} // Hack to make radio buttons align with label
+                  >
+                    <FormControlLabel value="add-to-start" control={<BlueRadio />} label="Beginning" />
+                    <FormControlLabel value="add-to-end" control={<BlueRadio />} label="End" />
+                  </RadioGroup>
+                </Tooltip>
+              </FormControl>
+
+              <FormControl fullWidth>
+                <FormLabel sx={{textAlign: "left", color:"white"}}>When routing, favor:</FormLabel>
+                <BlueSlider
+                  aria-label="Walkway-Bias"
+                  value={walkwayBias}
+                  onChange={handleChangeWalkwayBias}
+                  defaultValue={0}
+                  shiftStep={0.5}
+                  step={0.1}
+                  min={-1}
+                  max={1}
+                  tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
+                          roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
+                          as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
+                          favor both equally</>}
+                />
+              </FormControl>
+            </div>
           </div>
-          <img src="how_far_logo_complete.png" width="225px" onLoad={() => {
-            // Prevents area below sidebar from blocking map clicks
-            // Has to be tied to this img b/c sidebar height isn't calculated fully until this img loads
-            const sidebar = document.getElementById("sidebar");
-            const sidebarContent = document.getElementById("sidebar-content");
-            let sidebarHeight = sidebar.offsetHeight;
-            if (sidebarHeight) {
-              sidebarContent.style.maxHeight = sidebarHeight.toString() + "px";
-            }
-            // No else, would rather not hardcode any px values
-          }}/>
-          <br/>
-          {
-            imperialOrMetric === "imperial"
-            ? <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
-            : <p className="sidebar-distance">Distance: {(dist * 1.60934).toFixed(2)} km</p>
-          }
 
-          {/* Dumb little arrow for mobile to show that there's more below */}
-          <p><i className="arrow-down"></i></p>
-
-          <div className="elevation-container">
-            <p className="sidebar-elevation">Elevation Gain/Loss:</p>
+          <div className="desktop-controls">
+            <div className="menu-btn-div">
+              <Tooltip disableInteractive title={<Typography>More Options (Connect to apps, display, etc.)</Typography>}>
+              <IconButton onClick={() => setMenuOpen(true)} sx={{color:'white', margin:0, padding:0}}>
+                <MenuIcon />
+              </IconButton>
+              </Tooltip>
+            </div>
+            <img src="how_far_logo_complete.png" width="225px" onLoad={() => {
+              // Prevents area below sidebar from blocking map clicks
+              // Has to be tied to this img b/c sidebar height isn't calculated fully until this img loads
+              const sidebar = document.getElementById("sidebar");
+              const sidebarContent = document.getElementById("sidebar-content");
+              let sidebarHeight = sidebar.offsetHeight;
+              if (sidebarHeight) {
+                sidebarContent.style.maxHeight = sidebarHeight.toString() + "px";
+              }
+              // No else, would rather not hardcode any px values
+            }}/>
+            <br/>
             {
               imperialOrMetric === "imperial"
-              ? <p className="sidebar-elevation">{eleUp.toFixed(2)}/{eleDown.toFixed(2)} Ft</p>
-              : <p className="sidebar-elevation">{(eleUp / 3.28084).toFixed(2)}/{(eleDown / 3.28084).toFixed(2)} m</p>
+              ? <p className="sidebar-distance">Distance: {dist.toFixed(2)} Miles</p>
+              : <p className="sidebar-distance">Distance: {(dist * 1.60934).toFixed(2)} km</p>
             }
+
+            <div className="elevation-container">
+              <p className="sidebar-elevation">Elevation Gain/Loss:</p>
+              {
+                imperialOrMetric === "imperial"
+                ? <p className="sidebar-elevation">{eleUp.toFixed(2)}/{eleDown.toFixed(2)} Ft</p>
+                : <p className="sidebar-elevation">{(eleUp / 3.28084).toFixed(2)}/{(eleDown / 3.28084).toFixed(2)} m</p>
+              }
+            </div>
+
+            <Stack className="sidebar-btn-container" spacing={2} direction="row">
+              <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
+                <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
+              </Tooltip>
+              <Tooltip disableInteractive title={<Typography>Undo last action</Typography>}>
+                <Button variant="contained" onClick={() => {
+                  handleUndo();
+                  updateDistanceAndEleState();
+                  map.current.getSource('geojson').setData(geojson);
+                }} startIcon={<UndoIcon />}>Undo</Button>
+              </Tooltip>
+            </Stack>
+            <Stack className="sidebar-btn-container" spacing={2} direction="row">
+              <Tooltip disableInteractive title={<Typography>Return to start point along the same route</Typography>}>
+                <Button variant="contained" onClick={async () => {
+                  await handleOutAndBack(
+                    markers,
+                    geojson,
+                    undoActionList,
+                    map,
+                    getDirections,
+                    updateDistanceAndEleState
+                  );
+                  updateDistanceAndEleState();
+                  map.current.getSource('geojson').setData(geojson);
+                }} startIcon={<LoopIcon />}>Out & Back</Button>
+              </Tooltip>
+            </Stack>
+
+            <hr/>
+            <FormControl component="fieldset">
+              <FormGroup aria-label="boolean-switches">
+                <Tooltip disableInteractive title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
+                  <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                    value="auto-follow-roads"
+                    control={
+                      <BlueSwitch checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
+                    }
+                    label="Auto follow roads"
+                    labelPlacement="start"
+                  />
+                </Tooltip>
+                <Tooltip disableInteractive title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
+                  <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                    value={"right-click-enabled"}
+                    control={
+                      <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
+                    }
+                    label="Right click enabled"
+                    labelPlacement="start"
+                  />
+                </Tooltip>
+
+                <Tooltip disableInteractive title={<Typography>When enabled, clicking on one of your route's line segments will insert a new waypoint into the middle of that segment instead of at the end/beginning of the route</Typography>}>
+                  <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
+                    value={"add-marker-in-line-enabled"}
+                    control={
+                      <BlueSwitch checked={addMarkerInLineEnabled} onChange={handleSwitchAddMarkerInLineEnabled} name="addMarkerInLineEnabled"/>
+                    }
+                    label="Edit lines on click"
+                    labelPlacement="start"
+                  />
+                </Tooltip>
+              </FormGroup>
+            </FormControl>
+
+            <br/><hr/>
+            <FormControl>
+              <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to:</FormLabel>
+              <Tooltip disableInteractive title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
+                <RadioGroup
+                  row
+                  aria-labelledby="add-to-start-or-end-radio-group"
+                  defaultValue="add-to-end"
+                  name="add-to-start-or-end-radio-buttons-group"
+                  value={addToStartOrEnd}
+                  onChange={handleToggleStartEnd}
+                >
+                  <FormControlLabel value="add-to-start" control={<BlueRadio />} label="Beginning" />
+                  <FormControlLabel value="add-to-end" control={<BlueRadio />} label="End" />
+                </RadioGroup>
+              </Tooltip>
+            </FormControl>
+
+            <br/><hr/>
+            <FormControl fullWidth>
+              <FormLabel sx={{textAlign: "left", color:"white"}}>When routing, favor:</FormLabel>
+              <BlueSlider
+                aria-label="Walkway-Bias"
+                value={walkwayBias}
+                onChange={handleChangeWalkwayBias}
+                defaultValue={0}
+                shiftStep={0.5}
+                step={0.1}
+                min={-1}
+                max={1}
+                tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
+                        roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
+                        as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
+                        favor both equally</>}
+              />
+            </FormControl>
           </div>
-
-          <Stack className="sidebar-btn-container" spacing={2} direction="row">
-            <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
-              <Button variant="contained" onClick={() => setClearMap(true) } startIcon={<ClearIcon />}>Clear</Button>
-            </Tooltip>
-            <Tooltip disableInteractive title={<Typography>Undo last action</Typography>}>
-              <Button variant="contained" onClick={() => {
-                handleUndo();
-                updateDistanceAndEleState();
-                map.current.getSource('geojson').setData(geojson); // Reload UI
-              }} startIcon={<UndoIcon />}>Undo</Button>
-            </Tooltip>
-          </Stack>
-          <Stack className="sidebar-btn-container" spacing={2} direction="row">
-            <Tooltip disableInteractive title={<Typography>Return to start point along the same route</Typography>}>
-              <Button variant="contained" onClick={async () => {
-                await handleOutAndBack(
-                  markers,
-                  geojson,
-                  undoActionList,
-                  map,
-                  getDirections,
-                  updateDistanceAndEleState
-                );
-                updateDistanceAndEleState();
-                map.current.getSource('geojson').setData(geojson); // Reload UI
-              }} startIcon={<LoopIcon />}>Out & Back</Button>
-            </Tooltip>
-          </Stack>
-
-          <hr/>
-          <FormControl component="fieldset">
-            <FormGroup aria-label="boolean-switches">
-              <Tooltip disableInteractive title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
-                <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
-                  value="auto-follow-roads"
-                  control={
-                    <BlueSwitch checked={autoFollowRoads} onChange={handleSwitchAutoFollowRoads} name="autoFollowRoads"/>
-                  }
-                  label="Auto follow roads"
-                  labelPlacement="start"
-                />
-              </Tooltip>
-              <Tooltip disableInteractive title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
-                <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
-                  value={"right-click-enabled"}
-                  control={
-                    <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
-                  }
-                  label="Right click enabled"
-                  labelPlacement="start"
-                />
-              </Tooltip>
-
-              <Tooltip disableInteractive title={<Typography>When enabled, clicking on one of your route's line segments will insert a new waypoint into the middle of that segment instead of at the end/beginning of the route</Typography>}>
-                <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
-                  value={"add-marker-in-line-enabled"}
-                  control={
-                    <BlueSwitch checked={addMarkerInLineEnabled} onChange={handleSwitchAddMarkerInLineEnabled} name="addMarkerInLineEnabled"/>
-                  }
-                  label="Edit lines on click"
-                  labelPlacement="start"
-                />
-              </Tooltip>
-            </FormGroup>
-          </FormControl>
-
-          <br/><hr/>
-          <FormControl>
-            <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to:</FormLabel>
-            <Tooltip disableInteractive title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
-              <RadioGroup
-                row
-                aria-labelledby="add-to-start-or-end-radio-group"
-                defaultValue="add-to-end"
-                name="add-to-start-or-end-radio-buttons-group"
-                value={addToStartOrEnd}
-                onChange={handleToggleStartEnd}
-              >
-                <FormControlLabel value="add-to-start" control={<BlueRadio />} label="Beginning" />
-                <FormControlLabel value="add-to-end" control={<BlueRadio />} label="End" />
-              </RadioGroup>
-            </Tooltip>
-          </FormControl>
-
-          <br/><hr/>
-          <FormControl fullWidth>
-            <FormLabel sx={{textAlign: "left", color:"white"}}>When routing, favor:</FormLabel>
-            <BlueSlider
-              aria-label="Walkway-Bias"
-              value={walkwayBias}
-              onChange={handleChangeWalkwayBias}
-              defaultValue={0}
-              shiftStep={0.5}
-              step={0.1}
-              min={-1}
-              max={1}
-              tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
-                      roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
-                      as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
-                      favor both equally</>}
-            />
-          </FormControl>
         </div>
       </div>
 
@@ -1187,6 +1321,24 @@ function Map() {
             </div>
           </div>
         </Drawer>
+
+        <div className="mobile-stats">
+          <div className="mobile-stats-distance">
+            {imperialOrMetric === "imperial" 
+              ? <span>{dist.toFixed(2)} mi</span>
+              : <span>{(dist * 1.60934).toFixed(2)} km</span>
+            }
+          </div>
+          <div className="mobile-stats-logo">
+            <img src="how_far_logo_complete.png" alt="HowFar Logo" />
+          </div>
+          <div className="mobile-stats-elevation">
+            {imperialOrMetric === "imperial"
+              ? <span>↑{eleUp.toFixed(0)}/↓{eleDown.toFixed(0)} ft</span> 
+              : <span>↑{(eleUp / 3.28084).toFixed(0)}/↓{(eleDown / 3.28084).toFixed(0)} m</span>
+            }
+          </div>
+        </div>
     </div>
   );
 }

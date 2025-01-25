@@ -25,23 +25,6 @@
   height: calc(100vh - 16px);
   overflow-y: auto;
 }
-.arrow-down {
-  border: solid white;
-  border-width: 0 3px 3px 0;
-  display: none;
-  padding: 3px;
-  transform: rotate(45deg);
-  -webkit-transform: rotate(45deg);
-}
-@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
-  .sidebar-content {
-    height: 190px;
-    margin-top: 50px;
-  }
-  .arrow-down {
-    display: inline-block;
-  }
-}
 
 .sidebar-content::-webkit-scrollbar {
   -webkit-appearance: none;
@@ -236,4 +219,144 @@
   padding: 2px 8px;
   font-family: monospace;
   border-radius: 4px;
+}
+
+/* Mobile styling */
+@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+  .desktop-controls {
+    display: none;
+  }
+
+  .mobile-controls {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+  }
+
+  .mobile-action-buttons {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+    background: rgb(35 55 75 / 90%);
+    padding: 5px;
+    border-radius: 4px;
+  }
+
+  .mobile-action-buttons .MuiIconButton-root {
+    margin: 2px 0;
+  }
+
+  .mobile-stats {
+    display: flex;
+    flex-direction: row;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgb(35 55 75 / 90%);
+    color: white;
+    padding: 8px 16px;
+    font-family: monospace;
+    z-index: 2;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mobile-stats-main {
+    display: flex;
+    flex: 1;
+    justify-content: space-between;
+    font-size: 1.2em;
+    align-items: center;
+    z-index: 2;
+  }
+
+  .mobile-stats-logo {
+    padding: 0 12px;
+  }
+
+  .mobile-stats-logo img {
+    height: 20px;
+    opacity: 0.8;
+  }
+
+  .mobile-stats-distance,
+  .mobile-stats-elevation {
+    flex: 1;
+    text-align: center;
+  }
+
+  .sidebar {
+    background-color: #0000; 
+  }
+
+  .sidebar-content {
+    height: auto;
+    margin-top: 0;
+  }
+
+  .menu-btn-div {
+    background: rgb(35 55 75 / 90%);
+    padding: 5px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bottom-sidebar {
+    display: none;
+  }
+
+  .mobile-controls-popup {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    right: 0;
+    background: rgb(35 55 75 / 95%);
+    color: white;
+    padding: 24px 16px;
+    transition: bottom 0.3s ease-in-out;
+    z-index: 2;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .mobile-controls-popup.open {
+    bottom: 0;
+  }
+
+  /* Make form controls more touch-friendly */
+  .mobile-controls-popup .MuiFormControlLabel-root {
+    margin: 0px;
+  }
+
+  .mobile-controls-popup .MuiSwitch-root,
+  .mobile-controls-popup .MuiRadio-root {
+    padding: 12px;
+  }
+
+  .mobile-controls-popup .MuiFormControl-root {
+    margin: 16px 0;
+  }
+
+  .mobile-controls-popup-header {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+  }
+}
+
+/* Hide mobile elements on desktop */
+@media only screen and (min-device-width: 481px) {
+  .mobile-controls {
+    display: none;
+  }
+  
+  .mobile-stats {
+    display: none;
+  }
 }
