@@ -175,6 +175,7 @@ function Map() {
   const displayDistancePopupRef = React.useRef(displayDistancePopup);
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
   const walkwayBiasRef = React.useRef(walkwayBias);
+  const touchTimeoutRef = React.useRef(null);
 
   const searchBoxTimerIdRef = React.useRef(0);
   const searchBoxLastTextRef = React.useRef("");
@@ -827,6 +828,37 @@ function Map() {
               }
             });
 
+            map.current.on("touchstart", (e) => {
+              touchTimeoutRef.current = setTimeout(async () => {
+                if (rightClickEnabledRef.current) {
+                  if (!mutex) {
+                    mutex = true;
+                    await handleLeftRightClick(
+                      e,
+                      markers,
+                      geojson,
+                      undoActionList,
+                      map,
+                      updateDistanceAndEleState,
+                      getDirections,
+                      true, // rightClick bool
+                      (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
+                    );
+                    mutex = false;
+                  }
+                }
+              }, 500);
+            });
+            map.current.on("touchend", (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on("touchcancel", (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on("touchmove", (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on('pointerdrag', (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on('pointermove', (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on('moveend', (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on('gesturestart', (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on('gesturechange', (e) => { clearTimeout(touchTimeoutRef.current); });
+            map.current.on('gestureend', (e) => { clearTimeout(touchTimeoutRef.current); });
+
             map.current.on('contextmenu', async e => {
               if (rightClickEnabledRef.current) {
                 if (!mutex) {
@@ -933,13 +965,13 @@ function Map() {
                       labelPlacement="start"
                     />
                   </Tooltip>
-                  <Tooltip disableInteractive title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
+                  <Tooltip disableInteractive title={<Typography>When enabled, tap + hold (on desktop, right click) will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
                     <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                       value={"right-click-enabled"}
                       control={
                         <BlueSwitch checked={rightClickEnabled} onChange={handleSwitchRightClickEnabled} name="rightClickEnabled"/>
                       }
-                      label="Right click enabled"
+                      label="Tap + hold enabled"
                       labelPlacement="start"
                     />
                   </Tooltip>
@@ -1071,7 +1103,7 @@ function Map() {
                     labelPlacement="start"
                   />
                 </Tooltip>
-                <Tooltip disableInteractive title={<Typography>When enabled, right clicks will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
+                <Tooltip disableInteractive title={<Typography>When enabled, right clicks (on mobile, tap + hold) will connect points with straight lines, bypassing any roads or obstacles</Typography>}>
                   <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                     value={"right-click-enabled"}
                     control={
