@@ -1001,10 +1001,6 @@ function Map() {
 
       <div className="bottom-sidebar">
         <CompatibleWithStrava />
-        <br/>
-        <small>&copy; Copyright 2024 - {new Date().getFullYear()} A. Robbins</small>
-        <br/>
-        <small>All Rights Reserved.</small>
       </div>
 
       {displayDistancePopup && distancePopupVisible && popupDistances.length > 0 && <div className="distance-popup">
@@ -1182,6 +1178,12 @@ function Map() {
             </div>
             <div className="footer-link-div">
               <a href="https://www.paypal.me/AlexRobbins662" target="_blank" rel="noreferrer" className="footer-link">Donate</a>
+            </div>
+
+            <div style={{display:'flex', flexDirection:'column', alignItems:'center', color:'lightgray'}}>
+              <small><small>&copy; Copyright 2024-{new Date().getFullYear()}</small></small>
+              <small><small>Alex Robbins</small></small>
+              <small><small>All Rights Reserved.</small></small>
             </div>
           </div>
         </Drawer>
