@@ -323,15 +323,17 @@
     border-top-right-radius: 16px;
     max-height: 80vh;
     overflow-y: auto;
+    max-width: 400px;
+    margin: 0 auto;
   }
 
   .mobile-controls-popup.open {
     bottom: 0;
   }
 
-  /* Make form controls more touch-friendly */
   .mobile-controls-popup .MuiFormControlLabel-root {
     margin: 0px;
+    justify-content: space-between;
   }
 
   .mobile-controls-popup .MuiSwitch-root,
@@ -340,13 +342,32 @@
   }
 
   .mobile-controls-popup .MuiFormControl-root {
+    min-width: 100%;
+    max-width: 100%;
     margin: 16px 0;
+  }
+
+  .mobile-controls-popup .MuiFormGroup-root {
+    min-width: 100%;
+    max-width: 100%;
+    align-items: center;
+  }
+
+  .mobile-controls-popup .MuiRadioGroup-root {
+    min-width: 100%;
+    max-width: 100%;
+    justify-content: center;
   }
 
   .mobile-controls-popup-header {
     position: absolute;
     top: 8px;
     left: 8px;
+  }
+
+  .mobile-controls-popup .MuiFormLabel-root {
+    text-align: center;
+    width: 100%;
   }
 }
 
