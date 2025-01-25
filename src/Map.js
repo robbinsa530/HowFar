@@ -829,25 +829,28 @@ function Map() {
             });
 
             map.current.on("touchstart", (e) => {
-              touchTimeoutRef.current = setTimeout(async () => {
-                if (rightClickEnabledRef.current) {
-                  if (!mutex) {
-                    mutex = true;
-                    await handleLeftRightClick(
-                      e,
-                      markers,
-                      geojson,
-                      undoActionList,
-                      map,
-                      updateDistanceAndEleState,
-                      getDirections,
-                      true, // rightClick bool
-                      (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
-                    );
-                    mutex = false;
+              // Only trigger for single-finger touch (prevent triggering on pinch-to-zoom)
+              if (e.originalEvent.touches.length === 1) {
+                touchTimeoutRef.current = setTimeout(async () => {
+                  if (rightClickEnabledRef.current) {
+                    if (!mutex) {
+                      mutex = true;
+                      await handleLeftRightClick(
+                        e,
+                        markers,
+                        geojson,
+                        undoActionList,
+                        map,
+                        updateDistanceAndEleState,
+                        getDirections,
+                        true, // rightClick bool
+                        (addToStartOrEndRef.current === "add-to-end") // Else, adding to start
+                      );
+                      mutex = false;
+                    }
                   }
-                }
-              }, 500);
+                }, 500);
+              }
             });
             map.current.on("touchend", (e) => { clearTimeout(touchTimeoutRef.current); });
             map.current.on("touchcancel", (e) => { clearTimeout(touchTimeoutRef.current); });
