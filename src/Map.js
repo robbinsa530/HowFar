@@ -851,7 +851,7 @@ function Map() {
                       mutex = false;
                     }
                   }
-                }, 400);
+                }, 333);
               }
             });
             map.current.on("touchend", (e) => { clearTimeout(touchTimeoutRef.current); });
