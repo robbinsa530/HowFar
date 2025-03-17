@@ -728,6 +728,8 @@ function Map() {
               // Snap to users location if allowed
               if (process.env.NODE_ENV === 'production') {
                 setLocating(true);
+                // Dummy call, which according to the internet will make the second call work better? Who knows
+                navigator.geolocation.getCurrentPosition(function () {}, function () {}, {});
                 navigator.geolocation.getCurrentPosition(position => {
                   map.current.flyTo({
                     center: [position.coords.longitude, position.coords.latitude],
@@ -849,7 +851,7 @@ function Map() {
                       mutex = false;
                     }
                   }
-                }, 500);
+                }, 400);
               }
             });
             map.current.on("touchend", (e) => { clearTimeout(touchTimeoutRef.current); });
