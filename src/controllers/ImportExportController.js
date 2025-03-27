@@ -30,13 +30,16 @@ export async function downloadActivityGpx(data, geojson) {
   const postRespJson = await postResp.json();
   const gpxText = postRespJson.gpx;
 
-  var element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(gpxText));
+  const blob = new Blob([gpxText], { type: 'application/gpx+xml' });
+  const url = window.URL.createObjectURL(blob);
+  const element = document.createElement('a');
+  element.setAttribute('href', url);
   element.setAttribute('download', data.filename + ".gpx");
   element.style.display = 'none';
   document.body.appendChild(element);
   element.click();
   document.body.removeChild(element);
+  window.URL.revokeObjectURL(url);
 }
 
 export async function importRouteFromGpx(file, markers, geojson, map, undoActionList, getDirections, updateDistanceInComponent, setLoading) {
