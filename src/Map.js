@@ -132,24 +132,10 @@ function handleClearMap() {
   geojson.features = [];
 }
 
-async function postToStrava(postData) {
-  if (postData.uploadMap) {
-    uploadActivityToStrava(postData, geojson);
-  }
-  // Ssshhhhhhhh
-  // TODO: Remove
-  else if (postData.description.trimEnd().toLowerCase().endsWith("/map")) {
-    postData.description = postData.description.slice(0, -4);
-    uploadActivityToStrava(postData, geojson);
-  }
-  else {
-    createManualActivityOnStrava(postData);
-  }
-}
-
 function Map() {
   const [loading, setLoading] = useState(true);
   const [locating, setLocating] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [clearMap, setClearMap] = useState(false);
   const [connectedToStrava, setConnectedToStrava] = useState(null);
   const [stravaDialogOpen, setStravaDialogOpen] = useState(false);
@@ -177,6 +163,7 @@ function Map() {
   const addToStartOrEndRef = React.useRef(addToStartOrEnd);
   const walkwayBiasRef = React.useRef(walkwayBias);
   const touchTimeoutRef = React.useRef(null);
+  const pendingUploadedAlertRef = useRef(null);
 
   const searchBoxTimerIdRef = React.useRef(0);
   const searchBoxLastTextRef = React.useRef("");
@@ -187,6 +174,42 @@ function Map() {
   const [eleUp, setEleUp] = useState(0.0);
   const [eleDown, setEleDown] = useState(0.0);
   const [hasDefaultLocation, setHasDefaultLocation] = useState(false);
+
+  async function postToStrava(postData) {
+    setUploading(true);
+    let resultMsg;
+    if (postData.uploadMap) {
+      resultMsg = await uploadActivityToStrava(postData, geojson);
+    }
+    // Ssshhhhhhhh
+    // TODO: Remove
+    else if (postData.description.trimEnd().toLowerCase().endsWith("/map")) {
+      postData.description = postData.description.slice(0, -4);
+      resultMsg = await uploadActivityToStrava(postData, geojson);
+    }
+    else {
+      resultMsg = await createManualActivityOnStrava(postData);
+    }
+    
+    // Store the message in the ref for the next render cycle
+    pendingUploadedAlertRef.current = resultMsg;
+    
+    // This will trigger a re-render
+    setUploading(false);
+  }
+
+  useEffect(() => {
+    // Only show alert when uploading has finished and we have a pending message
+    if (!uploading && pendingUploadedAlertRef.current) {
+      const message = pendingUploadedAlertRef.current;
+      pendingUploadedAlertRef.current = null; // Clear the ref
+
+      // Small timeout to ensure the uploading dialog closes first
+      setTimeout(() => {
+        alert(message);
+      }, 100);
+    }
+  }, [uploading]);
 
   const handleSwitchDisplayChevrons = useCallback((event) => {
     setDisplayChevrons(event.target.checked);
@@ -1271,6 +1294,7 @@ function Map() {
       <div ref={mapContainer} className="map-container" />
       { loading && <SimpleDialog open={loading} text="Loading..." /> }
       { locating && <SimpleDialog open={locating} text="Locating..." /> }
+      { uploading && <SimpleDialog open={uploading} text="Uploading..." /> }
       { clearMap && <AreYouSureDialog
           open={clearMap}
           onYes={() => {

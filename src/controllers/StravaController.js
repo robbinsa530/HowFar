@@ -28,14 +28,14 @@ export async function createManualActivityOnStrava(postData) {
   );
   if (postResp.ok) {
     console.log("Successfully created activity on Strava");
-    alert("Successfully created activity on Strava");
+    return "Successfully created activity on Strava";
   } else {
     const errText = await postResp.text();
     console.error("Failed to create activity on Strava.", postResp.status, errText);
     if (postResp.status >= 400 && postResp.status < 500) {
-      alert(errText);
+      return errText;
     } else {
-      alert("Failed to create activity on Strava.")
+      return "Failed to create activity on Strava.";
     }
   }
 }
@@ -130,14 +130,14 @@ export async function uploadActivityToStrava(postData, geojson) {
   );
   if (postResp.ok) {
     console.log("Successfully uploaded activity to Strava");
-    alert("Successfully uploaded activity to Strava");
+    return "Successfully uploaded activity to Strava";
   } else {
     const errText = await postResp.text();
     console.error("Failed to upload activity to Strava.", postResp.status, errText);
     if (postResp.status >= 400 && postResp.status < 500) {
-      alert(errText);
+      return errText;
     } else {
-      alert("Failed to upload activity to Strava");
+      return "Failed to upload activity to Strava";
     }
   }
 }
