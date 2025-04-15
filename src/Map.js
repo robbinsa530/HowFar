@@ -27,6 +27,8 @@ import MenuItem from '@mui/material/MenuItem';
 import Drawer from '@mui/material/Drawer';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import LocationOffIcon from '@mui/icons-material/LocationOff';
 
 import './Map.css';
 import AreYouSureDialog from './components/AreYouSureDialog'
@@ -67,7 +69,6 @@ import {
 
 const SERVER_ADDR = process.env.REACT_APP_SERVER_ADDR || "http://127.0.0.1:3001"
 let STRAVA_CLIENT_ID;
-let IP_GEO_KEY;
 
 const mapTypes = [
   'mapbox://styles/mapbox/streets-v12',
@@ -185,6 +186,7 @@ function Map() {
   const [dist, setDist] = useState(0.0);
   const [eleUp, setEleUp] = useState(0.0);
   const [eleDown, setEleDown] = useState(0.0);
+  const [hasDefaultLocation, setHasDefaultLocation] = useState(false);
 
   const handleSwitchDisplayChevrons = useCallback((event) => {
     setDisplayChevrons(event.target.checked);
@@ -512,6 +514,78 @@ function Map() {
     updateConnectedStatus();
   }, []);
 
+  const saveDefaultLocation = useCallback(() => {
+    if (!map.current) return;
+    
+    const center = map.current.getCenter();
+    const zoom = map.current.getZoom();
+    const locationData = {
+      lng: center.lng,
+      lat: center.lat,
+      zoom: zoom
+    };
+    
+    fetch('/saveDefaultLocation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(locationData)
+    })
+    .then(response => {
+      if (response.ok) {
+        setHasDefaultLocation(true);
+        alert("Home location saved! HowFar will load your map to this location next time you open the app.");
+      } else {
+        console.error("Failed to save default location");
+        alert("Failed to save default location");
+      }
+    })
+    .catch(error => {
+      console.error("Error saving default location:", error);
+      alert("Error saving default location");
+    });
+  }, []);
+
+  const clearDefaultLocation = useCallback(() => {
+    fetch('/clearDefaultLocation', {
+      method: 'POST',
+    })
+    .then(response => {
+      if (response.ok) {
+        setHasDefaultLocation(false);
+        alert("Home location cleared!");
+      } else {
+        console.error("Failed to clear default location");
+        alert("Failed to clear default location");
+      }
+    })
+    .catch(error => {
+      console.error("Error clearing default location:", error);
+      alert("Error clearing default location");
+    });
+  }, []);
+
+  const checkForDefaultLocationAndFlyTo = useCallback(async () => {
+    const response = await fetch('/getDefaultLocation');
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.location) {
+        setHasDefaultLocation(true);
+        if (map.current) {
+          map.current.flyTo({
+            center: [data.location.lng, data.location.lat],
+            zoom: data.location.zoom,
+            essential: true,
+            animate: false
+          });
+          return true;
+        }
+      }
+    }
+    return false;
+  }, []);
+
   useEffect(() => {
     if (!mapSetupStartedRef.current && !map.current) { // initialize map only once
       mapSetupStartedRef.current = true;
@@ -521,7 +595,6 @@ function Map() {
           apiCodesResp.json().then(data => {
             STRAVA_CLIENT_ID = data.STRAVA_CLIENT_ID;
             mapboxgl.accessToken = data.MAPBOX_PUB_KEY;
-            IP_GEO_KEY = data.IP_GEO_KEY;
 
             map.current = new mapboxgl.Map({
               container: mapContainer.current,
@@ -723,10 +796,14 @@ function Map() {
               });
             });
 
-            map.current.on('load', () => {
+            map.current.on('load', async () => {
               setLoading(false);
-              // Snap to users location if allowed
-              if (process.env.NODE_ENV === 'production') {
+
+              // Check for default location first
+              const hasDefault = await checkForDefaultLocationAndFlyTo();
+
+              // If no default location, try to use geolocation
+              if (process.env.NODE_ENV === 'production' && !hasDefault) {
                 setLocating(true);
                 // Dummy call, which according to the internet will make the second call work better? Who knows
                 navigator.geolocation.getCurrentPosition(function () {}, function () {}, {});
@@ -742,36 +819,7 @@ function Map() {
                   console.error("Failed to locate using navigator.geolocation.getCurrentPosition");
                   setLocating(false);
                   let errMsg = getErrorMsgFromPositionError(err);
-                  if (window.confirm(errMsg + "\n\nWould you like to try locating by IP?")) {
-                    setLocating(true);
-                    try {
-                      let info = await fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${IP_GEO_KEY}`);
-                      if (info.ok) {
-                        let data = await info.json();
-                        const lat = data.latitude;
-                        const lon = data.longitude;
-                        if (lat && lon) {
-                          map.current.flyTo({
-                            center: [lon, lat],
-                            zoom: 14,
-                            essential: true,
-                            animate: false
-                          });
-                        }
-                        setLocating(false);
-                      }
-                      else {
-                        setLocating(false);
-                        alert("Failed to locate with IP. Try searching your location in the search bar.");
-                      }
-                    } catch (error) {
-                      setLocating(false);
-                      alert("Failed to locate with IP. Try searching your location in the search bar.");
-                      console.error("Failed to get location by IP. Err:", error);
-                    }
-                  } else {
-                    alert("You can also search your location in the search bar.");
-                  }
+                  alert(errMsg + "\n\nYou can also search your location in the search bar.");
                 }, {
                   maximumAge: 1000*60*60, // Can return cached location if < 1hr old
                   timeout: 7000, // 7 Seconds. 5 seems short but 10 seems long. idk
@@ -1172,8 +1220,28 @@ function Map() {
         </div>
       </div>
 
-      <div className="bottom-sidebar">
-        <CompatibleWithStrava />
+      <div className="bottom-sidebar-container">
+        <div className="default-location-button">
+          <Tooltip disableInteractive title={<Typography>
+            {hasDefaultLocation ? "Clear saved default start location" : "Save current view as default start location when the map loads"}
+          </Typography>}>
+            <Button
+              variant="contained" 
+              onClick={hasDefaultLocation ? clearDefaultLocation : saveDefaultLocation}
+              sx={{
+                fontSize: '0.85rem',
+                borderRadius: '4px',
+                padding: '8px',
+              }}
+            >
+              {hasDefaultLocation ? "Clear Home" : "Save As Home"}
+              {hasDefaultLocation ? <LocationOffIcon /> : <LocationOnIcon />}
+            </Button>
+          </Tooltip>
+        </div>
+        <div className="bottom-sidebar">
+          <CompatibleWithStrava />
+        </div>
       </div>
 
       {displayDistancePopup && distancePopupVisible && popupDistances.length > 0 && <div className="distance-popup">

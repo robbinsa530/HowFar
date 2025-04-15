@@ -40,7 +40,6 @@ app.get("/getApiTokens", async (req, res) => {
   res.json({ 
     STRAVA_CLIENT_ID: strava.client_id,
     MAPBOX_PUB_KEY: process.env.MAPBOX_PUB_KEY,
-    IP_GEO_KEY: process.env.IP_GEO_KEY
    });
 });
 
@@ -74,6 +73,41 @@ app.get("/saveToken", async (req, res) => {
 
   res.send("Authentication complete. You may close this tab. Don't worry, you shouldn't have to do this again.");
 });
+
+app.post("/saveDefaultLocation", async (req, res) => {
+  const location = req.body;
+  console.log("Saving default location:", location);
+  // Save location data as comma-separated string in cookie
+  const locationStr = `${location.lng},${location.lat},${location.zoom}`;
+  res.cookie('DEFAULT_LOCATION', locationStr, { maxAge: 1000*60*60*24*365, httpOnly: true, sameSite:'Strict', overwrite: true });
+  res.status(200).send("Default location saved.");
+});
+
+app.post("/clearDefaultLocation", async (req, res) => {
+  res.clearCookie('DEFAULT_LOCATION');
+  res.status(200).send("Default location cleared.");
+});
+
+app.get("/getDefaultLocation", async (req, res) => {
+  const locationStr = req.cookies.DEFAULT_LOCATION;
+  if (!locationStr) {
+    res.status(200).send({location: null});
+    return;
+  }
+  const locationArray = locationStr.split(',');
+  const location = {
+    lng: parseFloat(locationArray[0]),
+    lat: parseFloat(locationArray[1]),
+    zoom: parseFloat(locationArray[2])
+  };
+
+  if (Number.isNaN(location.lng) || Number.isNaN(location.lat) || Number.isNaN(location.zoom)) {
+    res.status(200).send({location: null});
+    return;
+  }
+  res.status(200).send({location});
+});
+
 
 app.get("/stravaUser", async (req, res) => {
   // 1. Check for refresh token and request access token

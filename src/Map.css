@@ -50,16 +50,22 @@
   border-radius: 4px;
 }
 
+.bottom-sidebar-container {
+  position: absolute;
+  bottom: 12px;
+  right: 0;
+  margin: 12px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .bottom-sidebar {
   color: #fff;
   font-family: monospace;
   background-color: rgb(35 55 75 / 90%);
   padding: 2px 2px;
-  z-index: 1;
-  position: absolute;
-  bottom: 12px;
-  right: 0;
-  margin: 12px;
   border-radius: 4px;
 }
 
@@ -221,6 +227,20 @@
   border-radius: 4px;
 }
 
+.default-location-button {
+  margin-bottom: 8px; /* Creates space between the button and the bottom sidebar */
+}
+
+.default-location-button button {
+  box-shadow: 0 0 0 2px rgba(0,0,0,.1);
+  background-color: white;
+  color: black;
+}
+
+.default-location-button button:hover {
+  background-color: #f5f5f5;
+}
+
 /* Mobile styling */
 @media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
   .desktop-controls {
@@ -307,6 +327,10 @@
 
   .bottom-sidebar {
     display: none;
+  }
+
+  .default-location-button {
+    margin-bottom: 20px;
   }
 
   .mobile-controls-popup {
