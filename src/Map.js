@@ -654,8 +654,24 @@ function Map() {
             });
             map.current.addControl(mapboxGeolocateControl, "top-right");
             mapboxGeolocateControl.on("error", err => {
+              setLocating(false);
               let errMsg = getErrorMsgFromPositionError(err);
               alert(errMsg + " Try searching your location in the search bar.")
+            });
+            mapboxGeolocateControl.on("geolocate", () => {
+              setLocating(false);
+            });
+
+            // Wait a sec so the control is added to the DOM
+            map.current.once('idle', () => {
+              // Add a click listener to the geolocate button
+              // Will trigger the "Locating..." popup while locating
+              const geolocateButton = document.querySelector('.mapboxgl-ctrl-geolocate');
+              if (geolocateButton) {
+                geolocateButton.addEventListener('click', () => {
+                  setLocating(true);
+                });
+              }
             });
 
             map.current.on('style.load', () => {
