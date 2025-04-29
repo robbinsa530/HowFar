@@ -994,6 +994,30 @@ function Map() {
 
   return (
     <div className="Map">
+      <div className="bottom-sidebar-container">
+        <div className={"default-location-button"}>
+          <Tooltip disableInteractive title={<Typography>
+            {hasDefaultLocation ? "Clear saved default start location" : "Save current view as default start location when the map loads"}
+          </Typography>}>
+            <Button
+              variant="contained" 
+              onClick={hasDefaultLocation ? clearDefaultLocation : saveDefaultLocation}
+              sx={{
+                fontSize: '0.85rem',
+                borderRadius: '4px',
+                padding: '8px',
+              }}
+            >
+              {hasDefaultLocation ? "Clear Home" : "Save As Home"}
+              {hasDefaultLocation ? <LocationOffIcon /> : <LocationOnIcon />}
+            </Button>
+          </Tooltip>
+        </div>
+        <div className="bottom-sidebar">
+          <CompatibleWithStrava />
+        </div>
+      </div>
+
       <div id="sidebar-content" className='sidebar-content'>
         <div id="sidebar" className="sidebar">
           <div className="mobile-controls">
@@ -1036,6 +1060,12 @@ function Map() {
                   map.current.getSource('geojson').setData(geojson);
                 }} sx={{color:'white'}}>
                   <LoopIcon />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip disableInteractive title={<Typography>Toggle between walking and cycling directions</Typography>}>
+                <IconButton onClick={() => handleChangeDirectionsMode(directionsMode === "walking" ? "cycling" : "walking")} sx={{color:'white'}}>
+                  {directionsMode === "walking" ? <DirectionsRunIcon /> : <DirectionsBikeIcon />}
                 </IconButton>
               </Tooltip>
 
@@ -1298,30 +1328,6 @@ function Map() {
               />
             </FormControl>
           </div>
-        </div>
-      </div>
-
-      <div className="bottom-sidebar-container">
-        <div className="default-location-button">
-          <Tooltip disableInteractive title={<Typography>
-            {hasDefaultLocation ? "Clear saved default start location" : "Save current view as default start location when the map loads"}
-          </Typography>}>
-            <Button
-              variant="contained" 
-              onClick={hasDefaultLocation ? clearDefaultLocation : saveDefaultLocation}
-              sx={{
-                fontSize: '0.85rem',
-                borderRadius: '4px',
-                padding: '8px',
-              }}
-            >
-              {hasDefaultLocation ? "Clear Home" : "Save As Home"}
-              {hasDefaultLocation ? <LocationOffIcon /> : <LocationOnIcon />}
-            </Button>
-          </Tooltip>
-        </div>
-        <div className="bottom-sidebar">
-          <CompatibleWithStrava />
         </div>
       </div>
 
