@@ -12,6 +12,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import MenuIcon from '@mui/icons-material/Menu';
 import LoopIcon from '@mui/icons-material/Loop';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
+import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
@@ -40,6 +42,7 @@ import BlueSwitch from './components/BlueSwitch'
 import BlueRadio from './components/BlueRadio'
 import BlueSelect from './components/BlueSelect'
 import BlueSlider from './components/BlueSlider'
+import DirectionModeButton from './components/DirectionModeButton'
 import ConnectWithStrava from './assets/ConnectWithStrava';
 import CompatibleWithStrava from './assets/CompatibleWithStrava';
 import { 
@@ -154,6 +157,7 @@ function Map() {
   const [distancePopupVisible, setDistancePopupVisible] = useState(false);
   const [popupDistances, setPopupDistances] = useState([]);
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
+  const [directionsMode, setDirectionsMode] = useState("walking");
   const mapSetupStartedRef = React.useRef(false);
   const stravaLoginWindowWasOpenedRef = React.useRef(false);
   const autoFollowRoadsRef = React.useRef(autoFollowRoads);
@@ -164,7 +168,7 @@ function Map() {
   const walkwayBiasRef = React.useRef(walkwayBias);
   const touchTimeoutRef = React.useRef(null);
   const pendingUploadedAlertRef = useRef(null);
-
+  const directionsModeRef = React.useRef(directionsMode);
   const searchBoxTimerIdRef = React.useRef(0);
   const searchBoxLastTextRef = React.useRef("");
 
@@ -275,6 +279,11 @@ function Map() {
   const handleChangeWalkwayBias = useCallback((_, newValue) => {
     setWalkwayBias(newValue);
     walkwayBiasRef.current = newValue;
+  }, []);
+
+  const handleChangeDirectionsMode = useCallback((newMode) => {
+    setDirectionsMode(newMode);
+    directionsModeRef.current = newMode;
   }, []);
 
   const updateDistanceAndEleState = useCallback(() => {
@@ -404,6 +413,7 @@ function Map() {
         lngLatStart,
         lngLatEnd,
         walkwayBiasRef.current,
+        directionsModeRef.current,
         mapboxgl.accessToken
       );
     }
@@ -1179,6 +1189,38 @@ function Map() {
                   updateDistanceAndEleState();
                   map.current.getSource('geojson').setData(geojson);
                 }} startIcon={<LoopIcon />}>Out & Back</Button>
+              </Tooltip>
+            </Stack>
+            <hr/>
+
+            <Stack className="sidebar-btn-container" spacing={0} direction="row">
+              <Tooltip disableInteractive title={<Typography>Walk/run directions</Typography>}>
+                <DirectionModeButton
+                  variant="contained"
+                  value="walking"
+                  onClick={() => handleChangeDirectionsMode("walking")}
+                  className={`direction-mode-button-left ${
+                    directionsMode === "walking" 
+                      ? "direction-mode-button-selected" 
+                      : "direction-mode-button-unselected"
+                  }`}
+                >
+                  <DirectionsRunIcon />
+                </DirectionModeButton>
+              </Tooltip>
+              <Tooltip disableInteractive title={<Typography>Cycling directions</Typography>}>
+                <DirectionModeButton
+                  variant="contained"
+                  value="cycling"
+                  onClick={() => handleChangeDirectionsMode("cycling")}
+                  className={`direction-mode-button-right ${
+                    directionsMode === "cycling" 
+                      ? "direction-mode-button-selected" 
+                      : "direction-mode-button-unselected"
+                  }`}
+                >
+                  <DirectionsBikeIcon />
+                </DirectionModeButton>
               </Tooltip>
             </Stack>
 

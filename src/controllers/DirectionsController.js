@@ -1,6 +1,10 @@
-const BASEDIR = 'https://api.mapbox.com/directions/v5/mapbox/walking/';
-async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, token) {
-  const endpoint = `${BASEDIR}${lngLatStart[0]},${lngLatStart[1]};${lngLatEnd[0]},${lngLatEnd[1]}?exclude=ferry&geometries=geojson&access_token=${token}&overview=full&walkway_bias=${walkwayBias}`;
+const BASEDIR = 'https://api.mapbox.com/directions/v5/mapbox';
+
+async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, directionsMode, token) {
+  let endpoint = `${BASEDIR}/${directionsMode}/${lngLatStart[0]},${lngLatStart[1]};${lngLatEnd[0]},${lngLatEnd[1]}?exclude=ferry&geometries=geojson&access_token=${token}&overview=full`;
+  if (directionsMode === 'walking') {
+    endpoint += `&walkway_bias=${walkwayBias}`;
+  }
   let query;
   try {
     query = await fetch(endpoint, { method: 'GET' });
