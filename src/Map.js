@@ -14,6 +14,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import LoopIcon from '@mui/icons-material/Loop';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
+import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
@@ -356,6 +357,28 @@ function Map() {
   const handleImportActivityClick = useCallback(() => {
     setImportActivityDialogOpen(true);
   }, []);
+
+  const handle3DVisualizationClick = useCallback(() => {
+    if (geojson.features.length === 0) {
+      alert("No route to visualize.");
+      return;
+    }
+
+    // Prepare route data for 3D visualization
+    const routeData = {
+      geojson: geojson,
+      mapboxAccessToken: mapboxgl.accessToken,
+      totalDistance: dist,
+      elevationUp: eleUp,
+      elevationDown: eleDown
+    };
+
+    // Store route data in localStorage for the new window to access
+    localStorage.setItem('howfar_route_3d_data', JSON.stringify(routeData));
+
+    // Open new tab with 3D visualization
+    window.open('/3d-visualization.html', '_blank');
+  }, [geojson, dist, eleUp, eleDown]);
 
   const applyMapStyles = useCallback(() => {
     // Elevation Data
@@ -1481,6 +1504,27 @@ function Map() {
                 labelPlacement="start"
               />
             </Tooltip>
+
+            <br/><br/><hr/><br/>
+            <Typography variant="h6">Visualize:</Typography>
+            <br/>
+            {markers.length > 1 ? (
+              <Tooltip disableInteractive title={<Typography>View 3D cinematic animation of your route</Typography>}>
+                <Button className="drawer-button" variant="contained" onClick={handle3DVisualizationClick} startIcon={<ThreeDRotationIcon />}>
+                  View 3D Visualization
+                </Button>
+              </Tooltip>
+            ) : (
+              <Typography sx={{ 
+                color: 'lightgray', 
+                fontStyle: 'italic', 
+                textAlign: 'center',
+                fontSize: '0.9em',
+                padding: '1px 0'
+              }}>
+                Add a route first by clicking on the map
+              </Typography>
+            )}
 
             <br/><br/><hr/><br/>
             <Typography variant="h6">Import / Export:</Typography>

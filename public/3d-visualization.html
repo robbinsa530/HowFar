@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HowFar - 3D Route Visualization</title>
+
+    <!-- HowFar favicon -->
+    <link rel="icon" href="/how_far_just_logo_white_background.png" />
+    <link rel="apple-touch-icon" href="/how_far_just_logo_white_background.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+
+    <!-- Turf.js -->
+    <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+        }
+
+        .controls button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .controls button:hover {
+            background: #1565c0;
+        }
+
+        .controls button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .route-info {
+            margin-top: 10px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .duration-control {
+            margin-top: 10px;
+        }
+
+        .duration-control label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .map-type-control {
+            margin-top: 10px;
+        }
+
+        .map-type-control label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .map-type-select {
+            width: 100%;
+            padding: 4px;
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 12px;
+        }
+
+        .map-type-select option {
+            background: #333;
+            color: white;
+        }
+
+        .duration-slider {
+            width: 100%;
+            margin-bottom: 5px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .duration-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #1976d2;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .duration-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #1976d2;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .manual-control {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+        }
+
+        .manual-control label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .progress-slider {
+            width: 100%;
+            height: 8px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .progress-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #1976d2;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .progress-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #1976d2;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .panning-note {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(74, 144, 226, 0.2);
+            border-radius: 5px;
+            font-size: 11px;
+            border-left: 3px solid #1976d2;
+        }
+
+        /* Route markers matching main app */
+        .start-marker {
+            background-color: rgb(11, 243, 23);
+            border: 1px solid black;
+            padding: 0;
+            display: inline-block;
+            border-radius: 50%;
+            width: 8px;
+            height: 8px;
+        }
+
+        .end-marker {
+            background-color: rgb(248, 42, 6);
+            border: 1px solid black;
+            padding: 0;
+            display: inline-block;
+            border-radius: 50%;
+            width: 8px;
+            height: 8px;
+        }
+
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="controls">
+        <h3>3D Cinematic Route</h3>
+        <div>
+            <button id="playButton" onclick="startAnimation()">▶ Follow Route</button>
+            <button id="resetButton" onclick="resetView()" disabled>↻ Back to Start</button>
+        </div>
+
+        <div class="duration-control">
+            <label for="durationSlider">Animation Duration: <span id="durationValue">10s</span></label>
+            <input type="range" id="durationSlider" class="duration-slider" min="5" max="60" value="10"
+                   oninput="updateDuration(this.value)">
+        </div>
+
+        <div class="duration-control">
+            <label for="elevationSlider">Camera Elevation: <span id="elevationValue">2500m</span></label>
+            <input type="range" id="elevationSlider" class="duration-slider" min="500" max="5000" value="2500"
+                   oninput="updateElevation(this.value)">
+        </div>
+
+        <div class="map-type-control">
+            <label for="mapTypeSelect">Map Style:</label>
+            <select id="mapTypeSelect" class="map-type-select" onchange="updateMapType(this.value)">
+                <option value="0">Standard</option>
+                <option value="1" selected>Outdoors</option>
+                <option value="2">Satellite</option>
+                <option value="3">Dark Theme</option>
+            </select>
+        </div>
+        <div class="route-info" id="routeInfo">
+            <div>Loading route data...</div>
+        </div>
+
+
+        <div class="panning-note" id="panningNote">
+            💡 <strong>Tip:</strong> Ctrl + Click + Drag to pan around and explore the terrain in 3D
+            <div id="panningStatus" style="margin-top: 4px; font-size: 10px; opacity: 0.8;"></div>
+        </div>
+    </div>
+
+    <div class="manual-control">
+        <label for="progressSlider">Manual Route Control</label>
+        <input type="range" id="progressSlider" class="progress-slider" min="0" max="100" value="0"
+               oninput="updateRouteProgress(this.value)">
+        <div style="font-size: 12px; opacity: 0.8;">
+            Drag slider to manually draw the route • <span id="progressPercent">0%</span> complete
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let routeData;
+        let animationId;
+        let isAnimating = false;
+
+        // Animation parameters
+        let ANIMATION_DURATION = 10000; // Default 10 seconds, controllable by slider
+        let CAMERA_ALTITUDE = 2500; // meters - controllable by elevation slider
+        const CAMERA_PITCH = 55; // degrees - looking down to avoid terrain issues
+        const LERP_FACTOR = 0.25; // Smooth position interpolation
+        const ROUTE_COLOR = '#1976d2'; // Blue color matching main app
+
+        // Map types matching main app
+        const mapTypes = [
+            'mapbox://styles/mapbox/streets-v12',
+            'mapbox://styles/mapbox/outdoors-v12',
+            'mapbox://styles/mapbox/satellite-streets-v12',
+            'mapbox://styles/mapbox/dark-v11'
+        ];
+
+        // Control variables
+        let manualMode = false;
+        let currentProgress = 0;
+
+        // Route markers
+        let startMarker = null;
+        let endMarker = null;
+
+        // Load route data from localStorage
+        function loadRouteData() {
+            try {
+                const stored = localStorage.getItem('howfar_route_3d_data');
+                if (!stored) {
+                    showError('No route data found. Please return to the main app and try again.');
+                    return false;
+                }
+
+                routeData = JSON.parse(stored);
+                if (!routeData.geojson || !routeData.geojson.features || routeData.geojson.features.length === 0) {
+                    showError('Invalid route data. Please create a route and try again.');
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                showError('Error loading route data: ' + error.message);
+                return false;
+            }
+        }
+
+        function showError(message) {
+            removeRouteMarkers(); // Clean up markers on error
+            document.body.innerHTML = `<div class="error"><h3>Error</h3><p>${message}</p></div>`;
+        }
+
+        // Combine all route segments into a single LineString
+        function combineRoute(geojson) {
+            let allCoordinates = [];
+
+            geojson.features.forEach(feature => {
+                if (feature.geometry.type === 'LineString') {
+                    // Skip first coordinate if it's the same as the last one we added
+                    const coords = feature.geometry.coordinates;
+                    if (allCoordinates.length > 0) {
+                        const lastCoord = allCoordinates[allCoordinates.length - 1];
+                        const firstCoord = coords[0];
+                        if (lastCoord[0] === firstCoord[0] && lastCoord[1] === firstCoord[1]) {
+                            allCoordinates.push(...coords.slice(1));
+                        } else {
+                            allCoordinates.push(...coords);
+                        }
+                    } else {
+                        allCoordinates.push(...coords);
+                    }
+                }
+            });
+
+            return {
+                type: 'Feature',
+                geometry: {
+                    type: 'LineString',
+                    coordinates: allCoordinates
+                }
+            };
+        }
+
+        // Calculate camera position using trigonometry
+        function computeCameraPosition(pitch, bearing, targetPosition, altitude) {
+            const bearingInRadian = (bearing * Math.PI) / 180;
+            const pitchInRadian = ((90 - pitch) * Math.PI) / 180;
+
+            // Distance from target point to camera position on ground
+            const groundDistance = altitude / Math.tan(pitchInRadian);
+
+            // Approximate conversion (works well for mid-latitudes)
+            const lngDiff = (groundDistance * Math.sin(-bearingInRadian)) / 70000;
+            const latDiff = (groundDistance * Math.cos(-bearingInRadian)) / 110000;
+
+            return {
+                lng: targetPosition.lng + lngDiff,
+                lat: targetPosition.lat - latDiff
+            };
+        }
+
+        // Calculate bearing between two points
+        function calculateBearing(point1, point2) {
+            try {
+                // Validate input points
+                if (!point1 || !point2 || point1.length < 2 || point2.length < 2) {
+                    return 0;
+                }
+
+                const lat1 = (point1[1] * Math.PI) / 180;
+                const lat2 = (point2[1] * Math.PI) / 180;
+                const deltaLng = ((point2[0] - point1[0]) * Math.PI) / 180;
+
+                const x = Math.sin(deltaLng) * Math.cos(lat2);
+                const y = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+
+                const bearing = Math.atan2(x, y);
+                const bearingDegrees = (bearing * 180) / Math.PI;
+
+                return isNaN(bearingDegrees) ? 0 : bearingDegrees;
+            } catch (error) {
+                console.warn('Error calculating bearing:', error);
+                return 0;
+            }
+        }
+
+        // Get smooth bearing that averages direction over a longer distance
+        function getSmoothedRouteBearing(route, progress) {
+            try {
+                const routeLength = turf.length(route, { units: 'kilometers' });
+                const currentDistance = progress * routeLength;
+
+                // Adaptive smoothing distance based on route length
+                // Short routes: 0.3-0.8km, Long routes: 0.8-1.5km
+                const smoothingDistance = Math.min(1.5, Math.max(0.3, routeLength * 0.2));
+
+                // Calculate bearings over multiple points in the smoothing window
+                const bearings = [];
+                const numSamples = 8; // Sample 8 points across the smoothing distance
+
+                for (let i = 0; i < numSamples; i++) {
+                    const sampleStart = Math.max(0, currentDistance - smoothingDistance * 0.3 + (i * smoothingDistance / numSamples));
+                    const sampleEnd = Math.min(routeLength, sampleStart + (smoothingDistance / numSamples));
+
+                    if (sampleEnd > sampleStart) {
+                        const startPoint = turf.along(route, sampleStart, { units: 'kilometers' });
+                        const endPoint = turf.along(route, sampleEnd, { units: 'kilometers' });
+
+                        if (startPoint.geometry && endPoint.geometry) {
+                            const bearing = calculateBearing(startPoint.geometry.coordinates, endPoint.geometry.coordinates);
+                            if (!isNaN(bearing)) {
+                                bearings.push(bearing);
+                            }
+                        }
+                    }
+                }
+
+                if (bearings.length === 0) {
+                    return 0; // Fallback
+                }
+
+                // Calculate average bearing, handling 360° wrapping
+                return calculateAverageBearing(bearings);
+
+            } catch (error) {
+                console.warn('Error calculating smoothed route bearing:', error);
+                return 0; // Default bearing
+            }
+        }
+
+        // Calculate average bearing handling 360° wraparound
+        function calculateAverageBearing(bearings) {
+            if (bearings.length === 0) return 0;
+
+            // Convert to unit vectors to handle wraparound
+            let xSum = 0, ySum = 0;
+
+            bearings.forEach(bearing => {
+                const radians = (bearing * Math.PI) / 180;
+                xSum += Math.cos(radians);
+                ySum += Math.sin(radians);
+            });
+
+            const avgRadians = Math.atan2(ySum, xSum);
+            const avgBearing = (avgRadians * 180) / Math.PI;
+
+            return avgBearing;
+        }
+
+        // Calculate viewport bounds based on camera position and settings
+        function getViewportBounds(centerLng, centerLat, zoom, bearing, pitch) {
+            try {
+                // Approximate viewport size based on zoom level
+                // This is a simplified calculation - more accurate would use actual map projection
+                const metersDegLat = 111000; // Approximate meters per degree latitude
+                const metersDegLng = 111000 * Math.cos(centerLat * Math.PI / 180); // Longitude varies by latitude
+
+                // Calculate viewport size in degrees based on zoom
+                const viewportMeters = 40075000 / Math.pow(2, zoom); // Rough approximation
+                const pitchFactor = 1 + (pitch / 90) * 0.8; // Account for pitch extending view ahead
+                const bufferFactor = 1.3; // Add 30% buffer to be more generous with visibility
+
+                const halfWidthDeg = (viewportMeters * 0.5 * bufferFactor) / metersDegLng;
+                const halfHeightDeg = (viewportMeters * 0.5 * pitchFactor * bufferFactor) / metersDegLat;
+
+                // Rotate viewport based on bearing
+                const bearingRad = bearing * Math.PI / 180;
+                const cos = Math.cos(bearingRad);
+                const sin = Math.sin(bearingRad);
+
+                // Calculate rotated viewport corners
+                const corners = [
+                    [-halfWidthDeg, -halfHeightDeg], // bottom-left
+                    [halfWidthDeg, -halfHeightDeg],  // bottom-right
+                    [halfWidthDeg, halfHeightDeg],   // top-right
+                    [-halfWidthDeg, halfHeightDeg]   // top-left
+                ];
+
+                const rotatedCorners = corners.map(([x, y]) => [
+                    centerLng + (x * cos - y * sin),
+                    centerLat + (x * sin + y * cos)
+                ]);
+
+                // Return simple bounds (will be improved if needed)
+                return {
+                    north: centerLat + halfHeightDeg,
+                    south: centerLat - halfHeightDeg,
+                    east: centerLng + halfWidthDeg,
+                    west: centerLng - halfWidthDeg,
+                    corners: rotatedCorners
+                };
+            } catch (error) {
+                console.warn('Error calculating viewport bounds:', error);
+                return null;
+            }
+        }
+
+        // Check if route segment is visible in viewport
+        function isRouteSegmentVisible(route, startProgress, endProgress, viewportBounds) {
+            try {
+                if (!viewportBounds) return false;
+
+                const routeLength = turf.length(route, { units: 'kilometers' });
+                const startDistance = startProgress * routeLength;
+                const endDistance = endProgress * routeLength;
+
+                // Sample points along the segment
+                const numSamples = 5;
+                for (let i = 0; i <= numSamples; i++) {
+                    const sampleDistance = startDistance + (i / numSamples) * (endDistance - startDistance);
+                    const point = turf.along(route, sampleDistance, { units: 'kilometers' });
+
+                    if (point.geometry) {
+                        const [lng, lat] = point.geometry.coordinates;
+
+                        // Simple bounds check (could be improved with proper polygon containment)
+                        if (lng >= viewportBounds.west && lng <= viewportBounds.east &&
+                            lat >= viewportBounds.south && lat <= viewportBounds.north) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            } catch (error) {
+                console.warn('Error checking route visibility:', error);
+                return true; // Default to visible if error
+            }
+        }
+
+        // Calculate optimal camera bearing that minimizes unnecessary panning
+        function getOptimalCameraBearing(route, progress, lastBearing = null, currentCenter = null) {
+            try {
+                const routeLength = turf.length(route, { units: 'kilometers' });
+                const currentDistance = progress * routeLength;
+
+                // If we have a previous bearing and center, check if route is still visible
+                if (lastBearing !== null && currentCenter) {
+                    const viewportBounds = getViewportBounds(
+                        currentCenter[0],
+                        currentCenter[1],
+                        13, // zoom level
+                        lastBearing,
+                        CAMERA_PITCH
+                    );
+
+                    // Check if next 1.5-3km of route is visible (generous check)
+                    const lookaheadDistance = Math.min(3.0, Math.max(1.5, routeLength * 0.3));
+                    const endProgress = Math.min(1.0, progress + (lookaheadDistance / routeLength));
+
+                    const routeVisible = isRouteSegmentVisible(route, progress, endProgress, viewportBounds);
+
+                    // If route is visible, strongly prefer keeping current bearing
+                    if (routeVisible) {
+                        const routeBearing = getSmoothedRouteBearing(route, progress);
+                        // Very strong preference for current bearing (95% vs 5% new direction)
+                        return blendAverageBearing([lastBearing, routeBearing], [0.95, 0.05]);
+                    }
+                }
+
+                // Route not visible or no previous bearing - calculate optimal bearing
+                const routeBearing = getSmoothedRouteBearing(route, progress);
+
+                // Look ahead to see upcoming route direction
+                const visibilityDistance = Math.min(1.5, (routeLength - currentDistance) * 0.5);
+                if (visibilityDistance > 0) {
+                    const lookAheadPoint = turf.along(route, Math.min(currentDistance + visibilityDistance, routeLength), { units: 'kilometers' });
+                    const currentPoint = turf.along(route, currentDistance, { units: 'kilometers' });
+
+                    if (currentPoint.geometry && lookAheadPoint.geometry) {
+                        const visibilityBearing = calculateBearing(currentPoint.geometry.coordinates, lookAheadPoint.geometry.coordinates);
+
+                        // Blend route and visibility bearings
+                        let optimalBearing = blendAverageBearing([routeBearing, visibilityBearing], [0.6, 0.4]);
+
+                        // Apply temporal smoothing if we have a previous bearing
+                        if (lastBearing !== null) {
+                            optimalBearing = blendAverageBearing([lastBearing, optimalBearing], [0.4, 0.6]);
+                        }
+
+                        return optimalBearing;
+                    }
+                }
+
+                // Fallback to route bearing with temporal smoothing
+                if (lastBearing !== null) {
+                    return blendAverageBearing([lastBearing, routeBearing], [0.5, 0.5]);
+                }
+
+                return routeBearing;
+
+            } catch (error) {
+                console.warn('Error calculating optimal camera bearing:', error);
+                return lastBearing || 0;
+            }
+        }
+
+        // Blend bearings with weights, handling 360° wraparound
+        function blendAverageBearing(bearings, weights) {
+            if (bearings.length === 0 || bearings.length !== weights.length) return 0;
+
+            let xSum = 0, ySum = 0, weightSum = 0;
+
+            for (let i = 0; i < bearings.length; i++) {
+                const bearing = bearings[i];
+                const weight = weights[i];
+                const radians = (bearing * Math.PI) / 180;
+
+                xSum += Math.cos(radians) * weight;
+                ySum += Math.sin(radians) * weight;
+                weightSum += weight;
+            }
+
+            if (weightSum === 0) return 0;
+
+            const avgRadians = Math.atan2(ySum / weightSum, xSum / weightSum);
+            const avgBearing = (avgRadians * 180) / Math.PI;
+
+            return avgBearing;
+        }
+
+        // Linear interpolation for smooth camera movement
+        function lerp(start, end, t) {
+            return (1 - t) * start + t * end;
+        }
+
+        // Update animation duration from slider
+        function updateDuration(seconds) {
+            ANIMATION_DURATION = seconds * 1000;
+            document.getElementById('durationValue').textContent = seconds + 's';
+        }
+
+        // Update camera elevation from slider
+        function updateElevation(meters) {
+            CAMERA_ALTITUDE = parseInt(meters);
+            document.getElementById('elevationValue').textContent = meters + 'm';
+
+            // If we're in manual mode or not animating, update camera immediately
+            if (manualMode || !isAnimating) {
+                // Get current camera center
+                const currentCenter = map.getCenter();
+                map.easeTo({
+                    center: [currentCenter.lng, currentCenter.lat],
+                    pitch: CAMERA_PITCH,
+                    zoom: calculateZoomForAltitude(CAMERA_ALTITUDE),
+                    duration: 500
+                });
+            }
+        }
+
+        // Calculate appropriate zoom level for altitude
+        function calculateZoomForAltitude(altitude) {
+            // Approximate zoom calculation - higher altitude = lower zoom
+            // This is a rough approximation for better UX
+            if (altitude <= 1000) return 15;
+            if (altitude <= 2000) return 14;
+            if (altitude <= 3000) return 13;
+            if (altitude <= 4000) return 12;
+            return 11;
+        }
+
+        // Update map type/style from selector
+        function updateMapType(typeIndex) {
+            const index = parseInt(typeIndex);
+            if (index >= 0 && index < mapTypes.length && map) {
+                try {
+                    // Store current camera position and settings
+                    const currentCenter = map.getCenter();
+                    const currentZoom = map.getZoom();
+                    const currentBearing = map.getBearing();
+                    const currentPitch = map.getPitch();
+
+                    // Change the map style
+                    map.setStyle(mapTypes[index]);
+
+                    // Re-apply terrain and route layers when style loads
+                    map.once('style.load', () => {
+                        try {
+                            // Re-add terrain
+                            map.addSource('mapbox-dem', {
+                                type: 'raster-dem',
+                                url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                                tileSize: 512,
+                                maxzoom: 14
+                            });
+                            map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+
+                            // Re-add route if we have data
+                            if (routeData) {
+                                const combinedRoute = combineRoute(routeData.geojson);
+
+                                map.addSource('route', {
+                                    type: 'geojson',
+                                    data: combinedRoute,
+                                    lineMetrics: true
+                                });
+
+                                map.addLayer({
+                                    id: 'route-line',
+                                    type: 'line',
+                                    source: 'route',
+                                    layout: {
+                                        'line-cap': 'round',
+                                        'line-join': 'round'
+                                    },
+                                    paint: {
+                                        'line-color': ROUTE_COLOR,
+                                        'line-width': 6,
+                                        'line-gradient': [
+                                            'step',
+                                            ['line-progress'],
+                                            ROUTE_COLOR,
+                                            currentProgress,
+                                            'rgba(25, 118, 210, 0)'
+                                        ]
+                                    }
+                                });
+
+                                // Recreate start/end markers
+                                removeRouteMarkers();
+                                createRouteMarkers(combinedRoute);
+                            }
+
+                            // Restore camera position
+                            map.jumpTo({
+                                center: currentCenter,
+                                zoom: currentZoom,
+                                bearing: currentBearing,
+                                pitch: currentPitch
+                            });
+
+                        } catch (error) {
+                            console.error('Error reloading map layers:', error);
+                        }
+                    });
+
+                } catch (error) {
+                    console.error('Error changing map type:', error);
+                }
+            }
+        }
+
+        // Update panning status message
+        function updatePanningStatus(isAnimating) {
+            const statusDiv = document.getElementById('panningStatus');
+            if (isAnimating) {
+                statusDiv.textContent = '(pan not available while animation is in progress)';
+                statusDiv.style.fontStyle = 'italic';
+            } else {
+                statusDiv.textContent = '';
+                statusDiv.style.fontStyle = 'normal';
+            }
+        }
+
+        // Create start and end markers
+        function createRouteMarkers(route) {
+            try {
+                if (!route || !route.geometry || !route.geometry.coordinates || !map) return;
+                if (route.geometry.coordinates.length < 2) return; // Need at least 2 points
+
+                // Remove existing markers first
+                removeRouteMarkers();
+
+                const coordinates = route.geometry.coordinates;
+                const startCoord = coordinates[0];
+                const endCoord = coordinates[coordinates.length - 1];
+
+                // Validate coordinates
+                if (!startCoord || !endCoord ||
+                    startCoord.length < 2 || endCoord.length < 2 ||
+                    isNaN(startCoord[0]) || isNaN(startCoord[1]) ||
+                    isNaN(endCoord[0]) || isNaN(endCoord[1])) {
+                    console.warn('Invalid coordinates for route markers');
+                    return;
+                }
+
+                // Create start marker element
+                const startElement = document.createElement('div');
+                startElement.className = 'start-marker';
+                startElement.title = 'Route Start';
+
+                // Create end marker element
+                const endElement = document.createElement('div');
+                endElement.className = 'end-marker';
+                endElement.title = 'Route End';
+
+                // Add markers to map
+                startMarker = new mapboxgl.Marker({
+                    element: startElement
+                }).setLngLat(startCoord).addTo(map);
+
+                endMarker = new mapboxgl.Marker({
+                    element: endElement
+                }).setLngLat(endCoord).addTo(map);
+
+            } catch (error) {
+                console.error('Error creating route markers:', error);
+            }
+        }
+
+        // Remove existing markers from map
+        function removeRouteMarkers() {
+            if (startMarker) {
+                startMarker.remove();
+                startMarker = null;
+            }
+            if (endMarker) {
+                endMarker.remove();
+                endMarker = null;
+            }
+        }
+
+        // Update route progress from manual slider
+        function updateRouteProgress(percent) {
+            if (!routeData || !map) return;
+
+            manualMode = true;
+            currentProgress = percent / 100;
+
+            // Stop any running animation
+            if (isAnimating) {
+                isAnimating = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+                document.getElementById('playButton').disabled = false;
+                document.getElementById('playButton').innerHTML = '▶ Follow Route';
+            }
+
+            // Panning is available in manual mode
+            updatePanningStatus(false);
+
+            // Update progress display
+            document.getElementById('progressPercent').textContent = percent + '%';
+
+            // Update route and camera
+            updateRouteAtProgress(currentProgress);
+        }
+
+        // Update route drawing and camera position for a specific progress
+        function updateRouteAtProgress(progress) {
+            try {
+                if (!routeData || !map) return;
+
+                const combinedRoute = combineRoute(routeData.geojson);
+                const routeLength = turf.length(combinedRoute, { units: 'kilometers' });
+
+                // Update line gradient to show progress
+                map.setPaintProperty('route-line', 'line-gradient', [
+                    'step',
+                    ['line-progress'],
+                    ROUTE_COLOR,
+                    progress,
+                    'rgba(7, 77, 217, 0)' // Transparent for unrevealed portion
+                ]);
+
+                // Get the current position along the route
+                const distanceAlongRoute = progress * routeLength;
+                const leadingEdge = turf.along(combinedRoute, distanceAlongRoute, { units: 'kilometers' });
+                const leadingEdgeCoords = leadingEdge.geometry.coordinates;
+
+                if (!leadingEdgeCoords || isNaN(leadingEdgeCoords[0]) || isNaN(leadingEdgeCoords[1])) {
+                    return;
+                }
+
+                // Calculate optimal bearing for current position
+                const optimalBearing = getOptimalCameraBearing(combinedRoute, progress, null, leadingEdgeCoords);
+
+                // Move camera to follow route
+                map.easeTo({
+                    center: leadingEdgeCoords,
+                    bearing: optimalBearing,
+                    pitch: CAMERA_PITCH,
+                    zoom: calculateZoomForAltitude(CAMERA_ALTITUDE),
+                    duration: manualMode ? 200 : 50,
+                    easing: (t) => t
+                });
+
+            } catch (error) {
+                console.error('Error updating route at progress:', error);
+            }
+        }
+
+        // Smooth camera position interpolation
+        function lerpPosition(startPos, endPos, t) {
+            return {
+                lng: lerp(startPos.lng, endPos.lng, t),
+                lat: lerp(startPos.lat, endPos.lat, t)
+            };
+        }
+
+        function initializeMap() {
+            if (!loadRouteData()) return;
+
+            mapboxgl.accessToken = routeData.mapboxAccessToken;
+
+            // Create combined route
+            const combinedRoute = combineRoute(routeData.geojson);
+            const routeLength = turf.length(combinedRoute, { units: 'kilometers' });
+
+            // Calculate route bounds for initial view
+            const bbox = turf.bbox(combinedRoute);
+
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: mapTypes[1], // Start with outdoors style (index 1)
+                bounds: bbox,
+                padding: 100,
+                pitch: 60,
+                bearing: 0
+            });
+
+            map.on('load', () => {
+                // Add terrain immediately
+                map.addSource('mapbox-dem', {
+                    type: 'raster-dem',
+                    url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                    tileSize: 512,
+                    maxzoom: 14
+                });
+                map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+
+                // Add route source
+                map.addSource('route', {
+                    type: 'geojson',
+                    data: combinedRoute,
+                    lineMetrics: true
+                });
+
+                // Add route layer with gradient - starts completely transparent
+                map.addLayer({
+                    id: 'route-line',
+                    type: 'line',
+                    source: 'route',
+                    layout: {
+                        'line-cap': 'round',
+                        'line-join': 'round'
+                    },
+                    paint: {
+                        'line-color': ROUTE_COLOR,
+                        'line-width': 6,
+                        'line-gradient': [
+                            'step',
+                            ['line-progress'],
+                            ROUTE_COLOR, // Blue for revealed portion
+                            0,
+                            'rgba(25, 118, 210, 0)' // Transparent for unrevealed portion
+                        ]
+                    }
+                });
+
+                // Position camera at start of route with terrain visible
+                const startPoint = combinedRoute.geometry.coordinates[0];
+                const initialBearing = getOptimalCameraBearing(combinedRoute, 0.01, null, startPoint); // Optimal bearing for start
+
+                // Set initial camera position - start high and looking down at route start
+                map.jumpTo({
+                    center: [startPoint[0], startPoint[1]],
+                    zoom: calculateZoomForAltitude(CAMERA_ALTITUDE),
+                    pitch: CAMERA_PITCH,
+                    bearing: initialBearing
+                });
+
+                // Update route info
+                updateRouteInfo(routeLength);
+
+                // Create start and end markers
+                createRouteMarkers(combinedRoute);
+
+                // Enable controls and initialize panning status
+                document.getElementById('playButton').disabled = false;
+                updatePanningStatus(false);
+            });
+        }
+
+        function updateRouteInfo(routeLength) {
+            const routeInfo = document.getElementById('routeInfo');
+            routeInfo.innerHTML = `
+                <div><strong>Distance:</strong> ${routeData.totalDistance.toFixed(2)} miles (${routeLength.toFixed(2)} km)</div>
+                <div><strong>Elevation:</strong> ↑${routeData.elevationUp.toFixed(0)}ft ↓${routeData.elevationDown.toFixed(0)}ft</div>
+            `;
+        }
+
+        function startAnimation() {
+            if (isAnimating) return;
+
+            // Exit manual mode and reset slider
+            manualMode = false;
+            document.getElementById('progressSlider').value = 0;
+            document.getElementById('progressPercent').textContent = '0%';
+
+            isAnimating = true;
+            updatePanningStatus(true);
+            document.getElementById('playButton').disabled = true;
+            document.getElementById('resetButton').disabled = false;
+
+            const combinedRoute = combineRoute(routeData.geojson);
+            const routeLength = turf.length(combinedRoute, { units: 'kilometers' });
+
+            const startTime = performance.now();
+            let lastCameraCenter = null;
+            let lastOptimalBearing = null;
+
+            function animate() {
+                if (!isAnimating) return;
+
+                try {
+                    const currentTime = performance.now();
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
+
+                    // Update line gradient to show progress (blue line being drawn)
+                    map.setPaintProperty('route-line', 'line-gradient', [
+                        'step',
+                        ['line-progress'],
+                        ROUTE_COLOR, // Blue for revealed portion
+                        progress,
+                        'rgba(7, 77, 217, 0)' // Transparent for unrevealed portion
+                    ]);
+
+                    // Update manual slider to follow animation
+                    document.getElementById('progressSlider').value = Math.round(progress * 100);
+                    document.getElementById('progressPercent').textContent = Math.round(progress * 100) + '%';
+
+                    // Get the current position along the route (the "leading edge")
+                    const distanceAlongRoute = progress * routeLength;
+                    const leadingEdge = turf.along(combinedRoute, distanceAlongRoute, { units: 'kilometers' });
+                    const leadingEdgeCoords = leadingEdge.geometry.coordinates;
+
+                    // Validate coordinates
+                    if (!leadingEdgeCoords || isNaN(leadingEdgeCoords[0]) || isNaN(leadingEdgeCoords[1])) {
+                        console.warn('Invalid coordinates, skipping frame');
+                        animationId = requestAnimationFrame(animate);
+                        return;
+                    }
+
+                    // Smooth camera center first
+                    let smoothedCenter = leadingEdgeCoords;
+                    if (lastCameraCenter !== null) {
+                        smoothedCenter = [
+                            lerp(lastCameraCenter[0], leadingEdgeCoords[0], LERP_FACTOR),
+                            lerp(lastCameraCenter[1], leadingEdgeCoords[1], LERP_FACTOR)
+                        ];
+                    }
+
+                    // Calculate optimal bearing that minimizes panning when route is visible
+                    const optimalBearing = getOptimalCameraBearing(combinedRoute, progress, lastOptimalBearing, smoothedCenter);
+
+                    lastCameraCenter = smoothedCenter;
+                    lastOptimalBearing = optimalBearing;
+
+                    // Use smooth easeTo for camera movement - stays above terrain
+                    map.easeTo({
+                        center: smoothedCenter,
+                        bearing: optimalBearing,
+                        pitch: CAMERA_PITCH,
+                        zoom: calculateZoomForAltitude(CAMERA_ALTITUDE),
+                        duration: 50, // Short duration for smooth updates
+                        easing: (t) => t // Linear easing for predictable movement
+                    });
+
+                if (progress < 1) {
+                    animationId = requestAnimationFrame(animate);
+                } else {
+                    // Animation complete
+                    isAnimating = false;
+                    updatePanningStatus(false);
+                    document.getElementById('playButton').disabled = false;
+                    document.getElementById('playButton').innerHTML = '↻ Follow Again';
+                }
+                } catch (error) {
+                    console.error('Animation error:', error);
+                    // Stop animation on error to prevent freezing
+                    isAnimating = false;
+                    updatePanningStatus(false);
+                    document.getElementById('playButton').disabled = false;
+                    document.getElementById('playButton').innerHTML = '▶ Follow Route (Error - Try Again)';
+                }
+            }
+
+            animate();
+        }
+
+        function resetView() {
+            if (isAnimating) {
+                isAnimating = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            }
+
+            // Reset manual controls
+            manualMode = false;
+            currentProgress = 0;
+            document.getElementById('progressSlider').value = 0;
+            document.getElementById('progressPercent').textContent = '0%';
+            updatePanningStatus(false);
+
+            const combinedRoute = combineRoute(routeData.geojson);
+
+            // Recreate markers
+            removeRouteMarkers();
+            createRouteMarkers(combinedRoute);
+
+            // Reset line gradient to show no progress
+            map.setPaintProperty('route-line', 'line-gradient', [
+                'step',
+                ['line-progress'],
+                ROUTE_COLOR, // Blue for revealed portion
+                0,
+                'rgba(7, 77, 217, 0)' // Transparent for unrevealed portion
+            ]);
+
+            // Position camera at start of route
+            const startPoint = combinedRoute.geometry.coordinates[0];
+            const initialBearing = getOptimalCameraBearing(combinedRoute, 0.01, null, startPoint); // Optimal bearing for start
+
+            // Reset camera to start position - stay above terrain
+            map.flyTo({
+                center: [startPoint[0], startPoint[1]],
+                zoom: calculateZoomForAltitude(CAMERA_ALTITUDE),
+                pitch: CAMERA_PITCH,
+                bearing: initialBearing,
+                duration: 2000
+            });
+
+            // Reset controls
+            document.getElementById('playButton').disabled = false;
+            document.getElementById('playButton').innerHTML = '▶ Follow Route';
+            document.getElementById('resetButton').disabled = true;
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initializeMap);
+
+        // Handle window close - clean up localStorage and markers
+        window.addEventListener('beforeunload', () => {
+            removeRouteMarkers();
+            localStorage.removeItem('howfar_route_3d_data');
+        });
+    </script>
+</body>
+</html>
