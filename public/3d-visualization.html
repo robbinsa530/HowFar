@@ -36,6 +36,78 @@
             border-radius: 10px;
             font-family: Arial, sans-serif;
             z-index: 1000;
+            transition: all 0.3s ease-in-out;
+            max-width: 400px;
+        }
+
+        /* Mobile responsive controls */
+        @media (max-width: 768px) {
+            .controls {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                width: calc(100vw - 20px);
+                box-sizing: border-box;
+                height: auto;
+                max-height: calc(100vh - 120px);
+                overflow-y: auto;
+                padding: 15px;
+            }
+
+            .controls.collapsed {
+                max-height: 80px;
+                overflow: hidden;
+                padding: 10px 15px;
+            }
+
+            .controls-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+
+            .controls-toggle {
+                background: none;
+                border: none;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                padding: 5px;
+                transition: transform 0.3s ease;
+            }
+
+            .controls-toggle.collapsed {
+                transform: rotate(180deg);
+            }
+
+            .controls-content {
+                transition: all 0.3s ease-in-out;
+            }
+
+            .controls.collapsed .controls-content {
+                opacity: 0;
+                max-height: 0;
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
+            }
+
+            .controls.collapsed .controls-header {
+                margin-bottom: 0;
+            }
+        }
+
+        /* Desktop keeps original behavior */
+        @media (min-width: 769px) {
+            .controls-toggle {
+                display: none;
+            }
+
+            .controls-header h3 {
+                margin: 0 0 10px 0;
+            }
         }
 
         .controls button {
@@ -140,6 +212,40 @@
             z-index: 1000;
         }
 
+        /* Mobile responsive progress slider */
+        @media (max-width: 768px) {
+            .manual-control {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                padding: 10px 15px;
+                border-radius: 8px;
+            }
+
+            .manual-control label {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+
+            .progress-slider {
+                height: 6px;
+            }
+
+            .progress-slider::-webkit-slider-thumb {
+                width: 18px;
+                height: 18px;
+            }
+
+            .progress-slider::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+            }
+
+            .manual-control div {
+                font-size: 11px;
+            }
+        }
+
         .manual-control label {
             display: block;
             margin-bottom: 8px;
@@ -222,12 +328,17 @@
 <body>
     <div id="map"></div>
 
-    <div class="controls">
-        <h3>3D Cinematic Route</h3>
-        <div>
-            <button id="playButton" onclick="startAnimation()">▶ Follow Route</button>
-            <button id="resetButton" onclick="resetView()" disabled>↻ Back to Start</button>
+    <div class="controls" id="controlsPanel">
+        <div class="controls-header">
+            <h3>3D Cinematic Route</h3>
+            <button class="controls-toggle" id="controlsToggle" onclick="toggleControls()">▼</button>
         </div>
+
+        <div class="controls-content" id="controlsContent">
+            <div>
+                <button id="playButton" onclick="startAnimation()">▶ Follow Route</button>
+                <button id="resetButton" onclick="resetView()" disabled>↻ Back to Start</button>
+            </div>
 
         <div class="duration-control">
             <label for="durationSlider">Animation Duration: <span id="durationValue">10s</span></label>
@@ -255,9 +366,10 @@
         </div>
 
 
-        <div class="panning-note" id="panningNote">
-            💡 <strong>Tip:</strong> Ctrl + Click + Drag to pan around and explore the terrain in 3D
-            <div id="panningStatus" style="margin-top: 4px; font-size: 10px; opacity: 0.8;"></div>
+            <div class="panning-note" id="panningNote">
+                💡 <strong>Tip:</strong> <span id="panningInstructions">Ctrl + Click + Drag to pan around and explore the terrain in 3D</span>
+                <div id="panningStatus" style="margin-top: 4px; font-size: 10px; opacity: 0.8;"></div>
+            </div>
         </div>
     </div>
 
@@ -298,6 +410,10 @@
         // Route markers
         let startMarker = null;
         let endMarker = null;
+
+        // Mobile controls state
+        let isMobile = false;
+        let controlsExpanded = true;
 
         // Load route data from localStorage
         function loadRouteData() {
@@ -640,6 +756,53 @@
             return (1 - t) * start + t * end;
         }
 
+        // Mobile detection
+        function detectMobile() {
+            return window.innerWidth <= 768 ||
+                   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Toggle controls expansion/collapse (mobile)
+        function toggleControls() {
+            if (!isMobile) return;
+
+            const controlsPanel = document.getElementById('controlsPanel');
+            const controlsToggle = document.getElementById('controlsToggle');
+
+            controlsExpanded = !controlsExpanded;
+
+            if (controlsExpanded) {
+                controlsPanel.classList.remove('collapsed');
+                controlsToggle.classList.remove('collapsed');
+                controlsToggle.textContent = '▼';
+            } else {
+                controlsPanel.classList.add('collapsed');
+                controlsToggle.classList.add('collapsed');
+                controlsToggle.textContent = '▲';
+            }
+        }
+
+        // Auto-collapse controls on mobile when animation starts or slider is used
+        function autoCollapseOnMobile() {
+            if (isMobile && controlsExpanded) {
+                setTimeout(() => {
+                    toggleControls();
+                }, 150); // Small delay so user sees the action started
+            }
+        }
+
+        // Update panning instructions based on device type
+        function updatePanningInstructions() {
+            const panningInstructions = document.getElementById('panningInstructions');
+            if (panningInstructions) {
+                if (isMobile) {
+                    panningInstructions.textContent = 'Two finger drag to pan around and explore the terrain in 3D';
+                } else {
+                    panningInstructions.textContent = 'Ctrl + Click + Drag to pan around and explore the terrain in 3D';
+                }
+            }
+        }
+
         // Update animation duration from slider
         function updateDuration(seconds) {
             ANIMATION_DURATION = seconds * 1000;
@@ -830,6 +993,11 @@
         function updateRouteProgress(percent) {
             if (!routeData || !map) return;
 
+            // Auto-collapse controls on mobile when slider is first moved
+            if (percent > 0 && (manualMode === false || currentProgress === 0)) {
+                autoCollapseOnMobile();
+            }
+
             manualMode = true;
             currentProgress = percent / 100;
 
@@ -907,6 +1075,19 @@
 
         function initializeMap() {
             if (!loadRouteData()) return;
+
+            // Initialize mobile detection and controls
+            isMobile = detectMobile();
+            controlsExpanded = true; // Start expanded
+
+            // Update controls toggle visibility based on device
+            const controlsToggle = document.getElementById('controlsToggle');
+            if (!isMobile) {
+                controlsToggle.style.display = 'none';
+            }
+
+            // Update panning instructions based on device
+            updatePanningInstructions();
 
             mapboxgl.accessToken = routeData.mapboxAccessToken;
 
@@ -999,6 +1180,9 @@
 
         function startAnimation() {
             if (isAnimating) return;
+
+            // Auto-collapse controls on mobile
+            autoCollapseOnMobile();
 
             // Exit manual mode and reset slider
             manualMode = false;
@@ -1148,6 +1332,29 @@
 
         // Initialize when page loads
         window.addEventListener('load', initializeMap);
+
+        // Handle window resize/orientation change
+        window.addEventListener('resize', () => {
+            const wasMobile = isMobile;
+            isMobile = detectMobile();
+
+            // If device type changed, update toggle button visibility
+            if (wasMobile !== isMobile) {
+                const controlsToggle = document.getElementById('controlsToggle');
+                if (!isMobile) {
+                    controlsToggle.style.display = 'none';
+                    // Ensure controls are expanded on desktop
+                    const controlsPanel = document.getElementById('controlsPanel');
+                    controlsPanel.classList.remove('collapsed');
+                    controlsExpanded = true;
+                } else {
+                    controlsToggle.style.display = 'block';
+                }
+
+                // Update panning instructions for new device type
+                updatePanningInstructions();
+            }
+        });
 
         // Handle window close - clean up localStorage and markers
         window.addEventListener('beforeunload', () => {
