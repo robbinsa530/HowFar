@@ -33,6 +33,12 @@ async function fetchAuthenticatedAthlete(accessToken) {
   return athleteResponse;
 }
 
+function removeSpecialChars(title) {
+  const specialCharsToRemove = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '=', '-',
+    '[', ']', '{', '}', '|', '\\', '/', ':', ';', ',', '.', '?', '`', '~', '\'', '\"', '<', '>'];
+  return title.split('').filter(char => !specialCharsToRemove.includes(char)).join('');
+}
+
 function getGpxFromActivityData(data, includeTime=false) {
   /*
     Note: If includeTime=true, time data should be provided as:
@@ -42,7 +48,7 @@ function getGpxFromActivityData(data, includeTime=false) {
 
   // Grab necessary bits from data
   const points = data.points;
-  const title = data.title;
+  const title = removeSpecialChars(data.title);
   const startTime = data.startTime; // Format: 2016-06-17T23:41:03Z
 
   // Create GPX file in memory
