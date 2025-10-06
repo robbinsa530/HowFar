@@ -356,12 +356,20 @@ const SettingsDrawer = () => {
               Help
             </a>
             <a
-              href="https://github.com/robbinsa530/HowFar/blob/main/FAQ.md"
+              href="/FAQ.html"
               target="_blank"
               rel="noreferrer"
               className="footer-link"
             >
               FAQ
+            </a>
+            <a
+              href="https://github.com/robbinsa530/HowFar"
+              target="_blank"
+              rel="noreferrer"
+              className="footer-link"
+            >
+              Source Code
             </a>
             <a
               href="https://www.paypal.me/AlexRobbins662"

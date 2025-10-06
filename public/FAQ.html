@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HowFar FAQ</title>
+
+    <!-- HowFar favicon -->
+    <link rel="icon" href="/how_far_just_logo_white_background.png" />
+    <link rel="apple-touch-icon" href="/how_far_just_logo_white_background.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+
+        .header img {
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 10px;
+            background-color: #2c3e50;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .faq-item {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .faq-question {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .faq-answer {
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .faq-answer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .faq-answer a:hover {
+            text-decoration: underline;
+        }
+
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        .note strong {
+            color: #533f03;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="./how_far_logo_complete.png" alt="HowFar Logo">
+        <p>Frequently Asked Questions about HowFar</p>
+    </div>
+
+    <div class="content">
+        <div class="faq-item">
+            <div class="faq-question">Why doesn't my map show up on Strava?</div>
+            <div class="faq-answer">
+                Strava only allows maps to be uploaded as <code>.gpx</code> files, like the ones produced by a GPS watch. When these files are uploaded to Strava, their time and position data are used to determine pace at each point along the route. This is how Strava determines things like segment records and crowns.
+                <br><br>
+                Since HowFar has no way of knowing your pace along each segment of a route, the best it could do is average your pace along the entire route based on total time and distance, to create & upload a "fake" <code>.gpx</code> file made from that small amount of info.
+                <br><br>
+                Unfortunately, while this is possible, this method has no way of accounting for things like hills, or an athlete speeding up/slowing down. Even though your pace may have varied throughout your activity, it will be averaged (which means the file will overestimate your pace for parts and underestimate your pace for parts). So oftentimes when doing this, an activity can get awarded Strava accolades that aren't actually deserved. This is a big problem that would create a bad reputation for HowFar.
+                <br><br>
+                Because there's no way around this problem at the moment, maps cannot be uploaded from HowFar. Rather HowFar uploads all activities as manual Strava activities with just total time, distance and text info.
+                <br><br>
+                <strong>If you would like to vote to change this, allowing your maps to be posted to Strava in an easy, fair way, please consider giving kudos to <a href="https://communityhub.strava.com/t5/ideas/add-the-ability-for-athletes-to-use-route-course-files-no-time/idi-p/31322" target="_blank" rel="noreferrer">this Strava Community post</a>.</strong>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">How is HowFar compatible with Strava?</div>
+            <div class="faq-answer">
+                HowFar allows a user to connect to Strava by logging in using the "Connect with Strava" button in the menu. Then, you can post manual activities to Strava which will be auto populated with the distance of your mapped route. This is done using the "Post Activity" button in the menu.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Does HowFar save any of my data?</div>
+            <div class="faq-answer">
+                HowFar saves very little information about you, and the info that it does save, it only does so if you choose to let it. 
+                <br><br>
+                If you choose to connect to Strava on the site using the "Connect with Strava" button in the menu, a refresh token will be saved in your browser. This allows HowFar to keep you connected to Strava without you having to re-log-in every time you want to post an activity. This token is saved for 180 days (meaning you will need to re-log-in to Strava every 180 days). If you would like to delete this token, simply clear cookies/site-data for HowFar in your browser.
+                <br><br>
+                And if you choose to save a default start location (Home) for the map, this is saved in a cookie on your browser as well. This is used to automatically center the map on your home location when the map loads. If you would like to delete this, simply click the "Clear Home" button or clear your cookies/site-data for HowFar in your browser.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Does HowFar work on mobile?</div>
+            <div class="faq-answer">
+                Yes! The mobile experience is quite similar to the desktop experience minus one or two features. I do plan on developing proper mobile app versions (for Android and iOS) in the future, which would allow for some cool features like downloading maps for offline use, and live location tracking.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">I really don't need a user account?</div>
+            <div class="faq-answer">
+                Nope! No one wants to make an account to do something as simple as mapping a run or a bike ride. There is no reason you should have to setup a whole account for something so simple.
+                <br><br>
+                It's possible that in the future features could be added to HowFar that would necessitate creating an account, but if that happens, an account will <strong>only</strong> be required to use those specific features.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">I found a bug. Who do I tell?</div>
+            <div class="faq-answer">
+                HowFar is new and not perfect. There may be bugs. If you find one, you can either:
+                <ul>
+                    <li>Create an issue on the <a href="https://github.com/robbinsa530/HowFar/issues" target="_blank" rel="noreferrer">HowFar Github repo</a> if you have a Github account, or</li>
+                    <li>Send an email to <a href="mailto:alex.robbins530@gmail.com">alex.robbins530@gmail.com</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Can I donate to HowFar?</div>
+            <div class="faq-answer">
+                You sure can (though you shouldn't feel obligated)! HowFar is not free to host or maintain, but it is a labor of love. That said, if you would like to donate, you can do so through the "Donate" button at the bottom of the menu. Or by following <a href="https://www.paypal.me/AlexRobbins662" target="_blank" rel="noreferrer">this link</a>.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

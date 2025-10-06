@@ -17,4 +17,4 @@
 
 ## Documentation
 - [Help Page](https://howfar.run/help.html) - Interactive help and user guide
-- [FAQ](https://github.com/robbinsa530/HowFar/blob/main/FAQ.md) - Frequently Asked Questions
+- [FAQ](https://howfar.run/FAQ.html) - Frequently Asked Questions
