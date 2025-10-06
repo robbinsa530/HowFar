@@ -296,7 +296,7 @@ const MapComponent = (props) => {
           tileSize={512}
           maxzoom={14}
         />
-        
+
         <Source type="geojson" data={geojson} lineMetrics={true}>
           <Layer {...measureLinesLayer}/>
           { displayChevronsEnabled && <Layer {...chevronsLayer}/> }

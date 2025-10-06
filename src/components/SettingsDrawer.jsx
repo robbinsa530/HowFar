@@ -68,7 +68,7 @@ const SettingsDrawer = () => {
   const {
     connectedToStrava
   } = useSelector((state) => state.external);
- 
+
   const handleConnectToStrava = () => {
     connectToStrava();
   };
@@ -135,8 +135,8 @@ const SettingsDrawer = () => {
   }, [dispatch, isMobile]);
 
   return (
-    <Drawer 
-      open={menuOpen} 
+    <Drawer
+      open={menuOpen}
       onClose={() => dispatch(setMenuOpen(false))}
       slotProps={{
         paper: {
@@ -151,9 +151,9 @@ const SettingsDrawer = () => {
       <div className="settings-drawer">
         {/* Header with back button */}
         <div className="drawer-header">
-          <Button 
+          <Button
             variant="outlined"
-            onClick={() => dispatch(setMenuOpen(false))} 
+            onClick={() => dispatch(setMenuOpen(false))}
             sx={{ color: 'white', margin: 0, padding: 0 }}
           >
             <KeyboardBackspaceIcon />
@@ -167,7 +167,7 @@ const SettingsDrawer = () => {
               <ConnectWithStrava />
             </Button>
           </Tooltip>
-          
+
           {connectedToStrava != null && (
             <div className="strava-status">
               <span className="status-text">{!connectedToStrava && "Not "}Connected</span>
@@ -178,9 +178,9 @@ const SettingsDrawer = () => {
               )}
             </div>
           )}
-          
+
           <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
-            <Button 
+            <Button
               className="action-button"
               variant="contained"
               onClick={handlePostToStravaClick}
@@ -194,7 +194,7 @@ const SettingsDrawer = () => {
         <div className="settings-section">
           <div className="section-divider" />
           <Typography variant="h6" className="section-title">Display Options:</Typography>
-          
+
           <FormControl fullWidth className="form-control" sx={{ marginTop: '8px', marginBottom: '8px' }}>
             <InputLabel sx={{ color: "white", fontSize: "1.1em", "&.Mui-focused": { color: "white" } }}>
               Map type
@@ -212,7 +212,7 @@ const SettingsDrawer = () => {
               <MenuItem value={3}>Dark Theme</MenuItem>
             </BlueSelect>
           </FormControl>
-          
+
           <FormControl className="form-control" sx={{ marginTop: '8px', marginBottom: '8px' }}>
             <FormLabel sx={{ "&.Mui-focused": { color: "white" }, textAlign: "left", color: "white" }}>
               Display Distances As:
@@ -231,13 +231,13 @@ const SettingsDrawer = () => {
               </RadioGroup>
             </Tooltip>
           </FormControl>
-          
+
           <Tooltip disableInteractive title={<Typography>When enabled, route lines will show arrows to indicate direction</Typography>}>
-            <FormControlLabel 
+            <FormControlLabel
               sx={{ marginLeft: 0, marginRight: 0, width: "100%", justifyContent: 'space-between' }}
               value="display-chevrons"
               control={
-                <BlueSwitch 
+                <BlueSwitch
                   checked={displayChevronsEnabled}
                   onChange={(e) => dispatch(setDisplayChevronsEnabled(e.target.checked))}
                   name="displayChevrons"
@@ -279,7 +279,7 @@ const SettingsDrawer = () => {
         <div className="settings-section">
           <div className="section-divider" />
           <Typography variant="h6" className="section-title">Visualize:</Typography>
-          
+
           {markers.length > 1 ? (
             <Tooltip disableInteractive title={<Typography>View 3D cinematic animation of your route</Typography>}>
               <Button
@@ -305,9 +305,9 @@ const SettingsDrawer = () => {
 
           <div className="button-group">
             <Tooltip disableInteractive title={<Typography>Save route and get a shareable link</Typography>}>
-              <Button 
-                className="action-button" 
-                variant="contained" 
+              <Button
+                className="action-button"
+                variant="contained"
                 onClick={handleSaveRouteClick}
               >
                 Save Route
@@ -320,22 +320,22 @@ const SettingsDrawer = () => {
         <div className="settings-section">
           <div className="section-divider" />
           <Typography variant="h6" className="section-title">Import / Export:</Typography>
-          
+
           <div className="button-group">
             <Tooltip disableInteractive title={<Typography>Import a route from a .gpx file</Typography>}>
-              <Button 
-                className="action-button" 
-                variant="contained" 
+              <Button
+                className="action-button"
+                variant="contained"
                 onClick={handleImportActivityClick}
               >
                 Import Activity
               </Button>
             </Tooltip>
-            
+
             <Tooltip disableInteractive title={<Typography>Export route as a .gpx file</Typography>}>
-              <Button 
-                className="action-button" 
-                variant="contained" 
+              <Button
+                className="action-button"
+                variant="contained"
                 onClick={handleExportActivityClick}
               >
                 Export Activity
@@ -347,15 +347,15 @@ const SettingsDrawer = () => {
         {/* Footer */}
         <div className="drawer-footer">
           <div className="footer-links">
-            <a 
-              href="https://github.com/robbinsa530/HowFar/blob/main/README.md"
+            <a
+              href="/help.html"
               target="_blank"
               rel="noreferrer"
               className="footer-link"
             >
               Help
             </a>
-            <a 
+            <a
               href="https://github.com/robbinsa530/HowFar/blob/main/FAQ.md"
               target="_blank"
               rel="noreferrer"
@@ -363,7 +363,7 @@ const SettingsDrawer = () => {
             >
               FAQ
             </a>
-            <a 
+            <a
               href="https://www.paypal.me/AlexRobbins662"
               target="_blank"
               rel="noreferrer"
@@ -372,7 +372,7 @@ const SettingsDrawer = () => {
               Donate
             </a>
           </div>
-          
+
           <div className="copyright">
             <small>&copy; Copyright 2024-{new Date().getFullYear()}</small>
             <small>Alex Robbins</small>

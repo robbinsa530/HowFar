@@ -50,7 +50,7 @@ function splitLineWithPoint(lineToSplit, pointLngLat) {
   /*
     Split line around point
 
-    Turf line-split doesn't always work here due to a known problem, so go with a super 
+    Turf line-split doesn't always work here due to a known problem, so go with a super
     primitive approach of just finding the segment which the point is closest to. Luckily
     this works super well and pretty fast.
 

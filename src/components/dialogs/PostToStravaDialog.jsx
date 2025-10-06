@@ -240,7 +240,7 @@ function PostToStravaDialog() {
             }
 
             formJson['distance'] = distance; // Used later to calculate timestamps for intermediate points
-            // Until there is a better way to get a map on Strava without faking data and potentially running 
+            // Until there is a better way to get a map on Strava without faking data and potentially running
             // into issues about "cheating" if my fake activities end up producing super fast times for segments,
             // we're not going to include maps in posts
             formJson['uploadMap'] = false;
@@ -419,7 +419,7 @@ function PostToStravaDialog() {
               id="strava-use-gear"
             >
               <FormControlLabel
-                control={<Checkbox 
+                control={<Checkbox
                   checked={useDefaultGear}
                   onChange={handleUseDefaultGearChange}
                 />}

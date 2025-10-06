@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HowFar Help</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+
+        .header img {
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 10px;
+            background-color: #2c3e50;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-caption {
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        .note strong {
+            color: #533f03;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="./how_far_logo_complete.png" alt="HowFar Logo">
+        <p>Complete guide to using HowFar for activity mapping</p>
+    </div>
+
+    <div class="content">
+
+        <h2>Mapping Functionality</h2>
+        <p>Create a route by clicking on the map. As you click, the most efficient route between your selected points will be calculated and automatically drawn onto the map. Turn off "Auto Follow Roads" or right click at any time to route a straight line between your points instead. This is useful when your route does not follow established roads or paths, for example when it goes through an open field, off trail in the wilderness, or hops a curb from a road to a path.</p>
+
+        <div class="image-container">
+            <img src="./assets/routing.png" alt="Auto follow roads routing">
+            <div class="image-caption">Auto follow roads routing</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/straight_line.png" alt="Straight line routing">
+            <div class="image-caption">Straight line routing</div>
+        </div>
+
+        <p>As you map, your routes distance and estimated elevation gain and loss are updated and displayed at the top of the side bar. Adding, moving or deleting points will update these values, and clearing your route will reset all values to 0.</p>
+
+        <div class="note">
+            <strong>Note:</strong> Distances are very accurate, but elevation gain and loss are rough estimates and should not be trusted for official use
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/distance_ele.png" alt="Displayed distance and estimated elevation change">
+            <div class="image-caption">Displayed distance and estimated elevation change</div>
+        </div>
+
+        <h2>Add Waypoints in Line Segments</h2>
+        <p>Enabling the "Edit lines on click" will allow you to edit existing line segments within your route. When disabled (which is the default) clicking on a part of your route will simply add a new waypoint to the end of beginning of the route (depending on the "Add new points to beginning/end" option). But when this setting is enabled, hovering the mouse over a line will reveal a gray "add new" waypoint. Clicking on the line will add a waypoint at that point in the middle of the line, allowing it to be dragged/edited.</p>
+
+        <div class="image-container">
+            <img src="./assets/add_point_in_line_marker.png" alt="Hovering the mouse over a line reveals the add new waypoint in line marker">
+            <div class="image-caption">Hovering the mouse over a line reveals the "add new waypoint in line" marker. Click to add a new waypoint at that point on your route and split the line in two</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/add_new_point_in_line_edit.png" alt="After the point has been added, it can be moved, editing that section of your route in place">
+            <div class="image-caption">After the point has been added, it can be moved, editing that section of your route in place</div>
+        </div>
+
+        <h2>Map Types</h2>
+        <p>HowFar has multiple map types.</p>
+
+        <div class="feature-grid">
+            <div class="feature-item">
+                <div class="image-container">
+                    <img src="./assets/standard_map.png" alt="Standard streets view map">
+                    <div class="image-caption">Standard streets view map</div>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="image-container">
+                    <img src="./assets/outdoor_map.png" alt="Outdoors map">
+                    <div class="image-caption">Outdoors map. Recommended for mapping trail runs, hikes and mountain bike rides as it makes viewing trails a much nicer experience</div>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="image-container">
+                    <img src="./assets/satellite_map.png" alt="Satellite map">
+                    <div class="image-caption">Satellite map</div>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="image-container">
+                    <img src="./assets/dark_map.png" alt="Dark theme map">
+                    <div class="image-caption">Dark theme map</div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Post to Strava</h2>
+        <p>Clicking into the menu at the top left of the sidebar opens more settings. The first two buttons in the sidebar are "Connect with Strava" and "Post Activity". Before an activity can be posted to Strava, you must first connect using the "Connect with Strava" button. This will bring up a Strava controlled login window. Note that HowFar never sees and does not save your login info, but it does save a token safely in the browser which will prevent you from having to re-login to Strava every time you open the app. The token lasts 6 months and can be deleted by clearing your cookies.</p>
+
+        <p>Underneath the "Connect with Strava" button you will see your connection status. If you are connected, you will see a green check. This indicates that you have already logged in and are able to post your activity. If you see a red X, you will need to login.</p>
+
+        <p>The "Post Activity" button will bring up a window where you can enter information like a name, description, elapsed time, time of day and activity type. Enter all of the required fields and click "Post" to post your run to Strava.</p>
+
+        <div class="image-container">
+            <img src="./assets/strava_buttons.png" alt="Connect with Strava and Post Activity buttons">
+            <div class="image-caption">Connect with Strava and Post Activity buttons</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/post_dialog.png" alt="Post activity to strava dialog window">
+            <div class="image-caption">Post activity to strava dialog window</div>
+        </div>
+
+        <h2>Favored Surface Type Slider</h2>
+        <p>This can be a confusing feature, but can also be helpful for mapping different types of activities, or for mapping in certain geographic areas. Basically, the closer the slider is to favoring "Roads", the more weight the mapping service will put on keeping your route <strong>ON</strong> roads. The closer the slider is to favoring "Walkways", the more weight the mapping service will put on keeping you <strong>OFF</strong> of roads and on sidewalks, trails, path and walkways.</p>
+
+        <div class="image-container">
+            <img src="./assets/favor_slider.png" alt="Favored surface type slider">
+            <div class="image-caption">Favored surface type slider</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/favor_walkways.png" alt="Routing with the slider all the way toward Walkways">
+            <div class="image-caption">Routing with the slider all the way toward "Walkways". The route avoids roads and stays on paths</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/favor_roads.png" alt="Routing with the slider all the way toward Roads">
+            <div class="image-caption">Routing with the slider all the way toward "Roads". The route avoids paths and stays on roads</div>
+        </div>
+
+        <h2>Export Activity</h2>
+        <p>Activities (routes) can be exported to GPX files for portability with other applications. To do this, click on the menu icon in the top left of the sidebar and find and click the "Export Activity" button. Then just enter a file name and click "Export".</p>
+
+        <p>File names can only contain letters, numbers, dashes (-), underscores (_), and periods (.)</p>
+
+        <div class="note">
+            <strong>Note:</strong> Exported routes will only contain geographic data, and not time data (i.e. the file will describe a <em>route</em>, not a <em>timed activity</em>)
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/import_export_btn.png" alt="Export activities by clicking the Export button">
+            <div class="image-caption">Export activities by clicking the Export button</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/export_add_name.png" alt="Choose a custom filename before exporting an activity">
+            <div class="image-caption">Choose a custom filename before exporting an activity so you can easily find it later</div>
+        </div>
+
+        <h2>Import Activity</h2>
+        <p>Routes can be imported into HowFar from a GPX file. These GPX files can be ones that were exported from HowFar, from a watch, or any other place. As long as it is a valid GPX file it can be imported to HowFar. Once imported, routes can be edited as normal.</p>
+
+        <p>To import a route, click on the menu icon in the top left of the sidebar and find and click the "Import Activity" button. Then just choose a file and click "Import".</p>
+
+        <div class="image-container">
+            <img src="./assets/import_dialog.png" alt="Import activities by clicking the Import button">
+            <div class="image-caption">Import activities by clicking the Import button</div>
+        </div>
+
+        <h2>3D Visualization</h2>
+        <p>Visualize your route from above with HowFar's 3D visualization feature. Once you've created a route, you can view it in a 3D aerial view that shows elevation profiles, terrain details, and provides a cinematic fly-through that you can either animate, or control yourself.</p>
+
+        <p>The 3D visualization gives you a unique perspective on your planned activities, helping you understand the elevation changes and terrain you'll encounter. This is particularly useful for trail runs, hikes, and bike rides on terrain with elevation change, but can also be used to visualize race courses or other complex routes.</p>
+
+        <div class="image-container">
+            <img src="./assets/3d_vis_button.png" alt="3D Visualization button in the interface">
+            <div class="image-caption">View 3D visualization with the "View 3D Visualization" button in the settings menu</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/3d_vis_page.png" alt="3D visualization page showing route in 3D">
+            <div class="image-caption">3D visualization showing your route with elevation and terrain details</div>
+        </div>
+
+        <p>To use the 3D visualization feature:</p>
+        <ol>
+            <li>Create a route by clicking on the map</li>
+            <li>Open the settings menu</li>
+            <li>Click "View 3D Visualization" in the Visualize section</li>
+            <li>Enjoy the cinematic view of your route</li>
+        </ol>
+
+        <div class="note">
+            <strong>Tip:</strong> The 3D visualization is especially useful for routes that have elevation changes. Try it with mountain trails or hilly routes for the most impressive results!
+        </div>
+    </div>
+</body>
+</html>

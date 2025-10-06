@@ -90,7 +90,7 @@ const MobileSidebar = (props) => {
           </IconButton>
         </Tooltip>
       </div>
-      
+
       {/* Action Buttons */}
       <div className="mobile-action-buttons">
         <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
@@ -98,7 +98,7 @@ const MobileSidebar = (props) => {
             <ClearIcon />
           </IconButton>
         </Tooltip>
-        
+
         <Tooltip disableInteractive title={<Typography>Undo last action</Typography>}>
           <IconButton onClick={handleUndo} sx={{color:'white'}}>
             <UndoIcon />
@@ -155,7 +155,7 @@ const MobileSidebar = (props) => {
             <CloseIcon />
           </IconButton>
         </div>
-        
+
         <FormControl component="fieldset">
           <FormGroup aria-label="boolean-switches">
             <Tooltip disableInteractive title={<Typography>When enabled, routes between points will follow streets and pathways</Typography>}>
@@ -164,7 +164,7 @@ const MobileSidebar = (props) => {
                 control={
                   <BlueSwitch
                     checked={autoFollowRoadsEnabled}
-                    onChange={(e) => dispatch(setAutoFollowRoadsEnabled(e.target.checked))} 
+                    onChange={(e) => dispatch(setAutoFollowRoadsEnabled(e.target.checked))}
                     name="autoFollowRoadsEnabled"
                   />
                 }
@@ -177,8 +177,8 @@ const MobileSidebar = (props) => {
                 value="right-click-enabled"
                 control={
                   <BlueSwitch
-                    checked={rightClickEnabled} 
-                    onChange={(e) => dispatch(setRightClickEnabled(e.target.checked))} 
+                    checked={rightClickEnabled}
+                    onChange={(e) => dispatch(setRightClickEnabled(e.target.checked))}
                     name="rightClickEnabled"
                   />
                 }
@@ -190,9 +190,9 @@ const MobileSidebar = (props) => {
               <FormControlLabel sx={{marginLeft:0, justifyContent:'space-between'}}
                 value="add-marker-in-line-enabled"
                 control={
-                  <BlueSwitch 
+                  <BlueSwitch
                     checked={addMarkerInLineEnabled}
-                    onChange={(e) => dispatch(setAddMarkerInLineEnabled(e.target.checked))} 
+                    onChange={(e) => dispatch(setAddMarkerInLineEnabled(e.target.checked))}
                     name="addMarkerInLineEnabled"
                   />
                 }
@@ -234,7 +234,7 @@ const MobileSidebar = (props) => {
             max={1}
             tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
                     roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
-                    as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
+                    as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to
                     favor both equally</>}
           />
         </FormControl>

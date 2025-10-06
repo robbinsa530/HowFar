@@ -14,7 +14,7 @@ const BlueSelect = styled(Select)(() => ({
     fontSize: '1.2em'
   },
   '&.Mui-focused .MuiInputBase-input': {
-    
+
   },
   '& .MuiOutlinedInput-notchedOutline': {
     borderColor: blue[200],

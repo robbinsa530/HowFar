@@ -205,7 +205,7 @@ app.post("/postManualActivityToStrava", async (req, res) => {
 
       Note: The code below seems totally valid to me, but actually returns an error?
             But worst case its a good jumping off point. Someone else posted about
-            the same error here: 
+            the same error here:
       https://communityhub.strava.com/t5/developer-discussions/updateactivitybyid-resource-not-found-error/m-p/27952
     */
     // If the user specified gear, upload that too

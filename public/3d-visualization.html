@@ -421,11 +421,11 @@
                 // Check if we have a UUID in the URL path
                 const path = window.location.pathname;
                 const uuidMatch = path.match(/\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/3d-visualization\.html$/i);
-                
+
                 if (uuidMatch) {
                     const uuid = uuidMatch[1];
                     console.log('Loading route from database for 3D visualization:', uuid);
-                    
+
                     try {
                         const response = await fetch(`/routes/${uuid}`);
                         if (!response.ok) {
@@ -436,13 +436,13 @@
                             }
                             throw new Error('Failed to load route');
                         }
-                        
+
                         const dbRouteData = await response.json();
                         const points = dbRouteData.points; // Already parsed by PostgreSQL JSONB
-                        
+
                         // Points are already stored as coordinate pairs [[lng1, lat1], [lng2, lat2], ...]
                         const coordinates = points;
-                        
+
                         // Create geojson structure similar to what the app generates
                         const geojson = {
                             type: 'FeatureCollection',
@@ -455,7 +455,7 @@
                                 }
                             }]
                         };
-                        
+
                         // Create route data structure expected by 3D visualization
                         routeData = {
                             geojson: geojson,
@@ -464,9 +464,9 @@
                             elevationUp: 0, // Will be calculated if needed
                             elevationDown: 0 // Will be calculated if needed
                         };
-                        
+
                         return true;
-                        
+
                     } catch (error) {
                         console.error('Error loading route from database:', error);
                         showError('Error loading route: ' + error.message);

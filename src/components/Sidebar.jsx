@@ -101,7 +101,7 @@ const Sidebar = (props) => {
 
         {/* Distance Display */}
         <div className="sidebar-distance">
-          Distance: {imperialOrMetric === 'imperial' 
+          Distance: {imperialOrMetric === 'imperial'
             ? `${distance.toFixed(2)} Miles`
             : `${(distance * 1.60934).toFixed(2)} km`
           }
@@ -183,10 +183,10 @@ const Sidebar = (props) => {
               <FormControlLabel
                 value="auto-follow-roads"
                 control={
-                  <BlueSwitch 
+                  <BlueSwitch
                     sx={{marginRight:'10px'}}
                     checked={autoFollowRoadsEnabled}
-                    onChange={(e) => dispatch(setAutoFollowRoadsEnabled(e.target.checked))} 
+                    onChange={(e) => dispatch(setAutoFollowRoadsEnabled(e.target.checked))}
                     name="autoFollowRoadsEnabled"
                   />
                 }
@@ -200,8 +200,8 @@ const Sidebar = (props) => {
                 control={
                   <BlueSwitch
                     sx={{marginRight:'10px'}}
-                    checked={rightClickEnabled} 
-                    onChange={(e) => dispatch(setRightClickEnabled(e.target.checked))} 
+                    checked={rightClickEnabled}
+                    onChange={(e) => dispatch(setRightClickEnabled(e.target.checked))}
                     name="rightClickEnabled"
                   />
                 }
@@ -216,7 +216,7 @@ const Sidebar = (props) => {
                   <BlueSwitch
                     sx={{marginRight:'10px'}}
                     checked={addMarkerInLineEnabled}
-                    onChange={(e) => dispatch(setAddMarkerInLineEnabled(e.target.checked))} 
+                    onChange={(e) => dispatch(setAddMarkerInLineEnabled(e.target.checked))}
                     name="addMarkerInLineEnabled"
                   />
                 }
@@ -265,7 +265,7 @@ const Sidebar = (props) => {
             max={1}
             tooltip={<><b>Advanced:</b> Routing bias towards/against walkways (e.g. sidewalks, walking paths). Favoring
                     roads can help keep routes straighter and simpler, favoring walkways can make routes look more jumpy,
-                    as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to 
+                    as they'll hop between roads & sidewalks more, but can keep them more true to life. <i>Default</i> is to
                     favor both equally</>}
           />
         </FormControl>

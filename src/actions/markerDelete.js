@@ -24,7 +24,7 @@ async function onMarkerDelete(map, markerIdToRemove) {
     marker: markerToRemove,
     index: markerToRemoveIndex,
     lines: [ // Can hold 0-2 lines
-      // { 
+      // {
       //   line: LineString Feature,
       //   lineIndex: Number,
       //   otherMarker: Marker obj,

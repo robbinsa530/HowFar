@@ -83,7 +83,7 @@ async function handleLeftRightClick(event, map, rightClick) {
       if (markers.length === 1) { // Only on the second point, make sure we update the first too
         markers[0].lngLat = newLine.geometry.coordinates[0];
       }
- 
+
       geojson.features.push(newLine);
     }
     markers.push(markerToAdd);

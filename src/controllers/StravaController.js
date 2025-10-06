@@ -150,8 +150,8 @@ export async function uploadActivityToStrava(postData, geojson) {
   // I suspect this has to do with how so many numbers are being rounded along the way, there is probably a small
   // loss of precision. Regardless, this algorithm almost always ends up producing a GPX file with the correct
   // distance and time. However, on strava the pace graph always ends up super jumpy (by ~10-20s/mile). This is because
-  // (it seems) Strava ignores milliseconds of timestamps associated with route points, so some segments will have their 
-  // time altered by up to a whole second (which for small segments will alter pace drastically). 
+  // (it seems) Strava ignores milliseconds of timestamps associated with route points, so some segments will have their
+  // time altered by up to a whole second (which for small segments will alter pace drastically).
   //
   // I tried a different strategy where I broke up the route into 2 second waypoint intervals based on pace. This mostly
   // worked, but any time there was a 90-180 degree turn in the route, the pace was very wrong again. Additionally with

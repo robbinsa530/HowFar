@@ -105,7 +105,7 @@ export async function loadRouteFromPoints(points, map) {
     const filteredCoords = coords.filter((coord, i) => {
       if (i === 0) return true;
       const prevCoord = coords[i-1];
-      return Math.abs(coord[0] - prevCoord[0]) > 0.0000001 || 
+      return Math.abs(coord[0] - prevCoord[0]) > 0.0000001 ||
              Math.abs(coord[1] - prevCoord[1]) > 0.0000001;
     });
     chunk.geometry.coordinates = filteredCoords;
