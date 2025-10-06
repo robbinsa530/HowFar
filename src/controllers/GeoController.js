@@ -1,17 +1,17 @@
 import lineChunk from '@turf/line-chunk'
 import pointToLineDistance from "@turf/point-to-line-distance";
 
-export function getElevationChange(map, line, elevStart) {
+function getElevationChange(map, line, elevStart) {
   const chunks = lineChunk(line, 0.1/*km*/).features;
   let elevations = [ // In meters
     ...chunks.map((feature) => {
-        return map.current.queryTerrainElevation(
+        return map.queryTerrainElevation(
             feature.geometry.coordinates[0],
             { exaggerated: false }
         );
     }),
     // do not forget the last coordinate
-    map.current.queryTerrainElevation(
+    map.queryTerrainElevation(
         chunks[chunks.length - 1].geometry.coordinates[1],
         { exaggerated: false }
     )
@@ -39,14 +39,14 @@ export function getElevationChange(map, line, elevStart) {
   return [up, down];
 }
 
-export function updateMarkerElevation(map, marker) {
-  marker.elevation = map.current.queryTerrainElevation(
+function updateMarkerElevation(map, marker) {
+  marker.elevation = map.queryTerrainElevation(
     marker.lngLat,
     { exaggerated: false }
   );
 }
 
-export function splitLineWithPoint(lineToSplit, pointLngLat) {
+function splitLineWithPoint(lineToSplit, pointLngLat) {
   /*
     Split line around point
 
@@ -101,4 +101,10 @@ export function splitLineWithPoint(lineToSplit, pointLngLat) {
   rCoords.unshift(pointLngLat);
 
   return [lCoords, rCoords];
+}
+
+export {
+  getElevationChange,
+  updateMarkerElevation,
+  splitLineWithPoint
 }

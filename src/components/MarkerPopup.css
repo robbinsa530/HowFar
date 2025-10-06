@@ -1,0 +1,23 @@
+.mapboxgl-popup-close-button {
+  color: black;
+  padding: 4px;
+}
+
+.marker-popup-btn {
+  margin: 5px;
+  background-color: rgba(51, 51, 51, 0.1);
+  border-radius: 8px;
+  border-width: 0;
+  color: #303030;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Haas Grot Text R Web", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+  list-style: none;
+  padding: 6px 12px;
+  text-align: center;
+  vertical-align: baseline;
+  white-space: nowrap;
+}

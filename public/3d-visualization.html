@@ -415,22 +415,79 @@
         let isMobile = false;
         let controlsExpanded = true;
 
-        // Load route data from localStorage
-        function loadRouteData() {
+        // Load route data from localStorage or database
+        async function loadRouteData() {
             try {
-                const stored = localStorage.getItem('howfar_route_3d_data');
-                if (!stored) {
-                    showError('No route data found. Please return to the main app and try again.');
-                    return false;
-                }
+                // Check if we have a UUID in the URL path
+                const path = window.location.pathname;
+                const uuidMatch = path.match(/\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/3d-visualization\.html$/i);
+                
+                if (uuidMatch) {
+                    const uuid = uuidMatch[1];
+                    console.log('Loading route from database for 3D visualization:', uuid);
+                    
+                    try {
+                        const response = await fetch(`/routes/${uuid}`);
+                        if (!response.ok) {
+                            if (response.status === 404) {
+                                showError('Route not found. Redirecting to homepage...');
+                                setTimeout(() => window.location.href = '/', 2000);
+                                return false;
+                            }
+                            throw new Error('Failed to load route');
+                        }
+                        
+                        const dbRouteData = await response.json();
+                        const points = dbRouteData.points; // Already parsed by PostgreSQL JSONB
+                        
+                        // Points are already stored as coordinate pairs [[lng1, lat1], [lng2, lat2], ...]
+                        const coordinates = points;
+                        
+                        // Create geojson structure similar to what the app generates
+                        const geojson = {
+                            type: 'FeatureCollection',
+                            features: [{
+                                type: 'Feature',
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString',
+                                    coordinates: coordinates
+                                }
+                            }]
+                        };
+                        
+                        // Create route data structure expected by 3D visualization
+                        routeData = {
+                            geojson: geojson,
+                            mapboxAccessToken: '', // Will be set when map initializes
+                            totalDistance: 0, // Will be calculated
+                            elevationUp: 0, // Will be calculated if needed
+                            elevationDown: 0 // Will be calculated if needed
+                        };
+                        
+                        return true;
+                        
+                    } catch (error) {
+                        console.error('Error loading route from database:', error);
+                        showError('Error loading route: ' + error.message);
+                        return false;
+                    }
+                } else {
+                    // No UUID, load from localStorage (legacy behavior)
+                    const stored = localStorage.getItem('howfar_route_3d_data');
+                    if (!stored) {
+                        showError('No route data found. Please return to the main app and try again.');
+                        return false;
+                    }
 
-                routeData = JSON.parse(stored);
-                if (!routeData.geojson || !routeData.geojson.features || routeData.geojson.features.length === 0) {
-                    showError('Invalid route data. Please create a route and try again.');
-                    return false;
-                }
+                    routeData = JSON.parse(stored);
+                    if (!routeData.geojson || !routeData.geojson.features || routeData.geojson.features.length === 0) {
+                        showError('Invalid route data. Please create a route and try again.');
+                        return false;
+                    }
 
-                return true;
+                    return true;
+                }
             } catch (error) {
                 showError('Error loading route data: ' + error.message);
                 return false;
@@ -1073,8 +1130,8 @@
             };
         }
 
-        function initializeMap() {
-            if (!loadRouteData()) return;
+        async function initializeMap() {
+            if (!(await loadRouteData())) return;
 
             // Initialize mobile detection and controls
             isMobile = detectMobile();

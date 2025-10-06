@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 function checkForRefreshToken(req) {
   const hasToken = req.cookies.STRAVA_REFRESH != undefined;
@@ -73,7 +73,7 @@ function getGpxFromActivityData(data, includeTime=false) {
   return gpxString;
 }
 
-module.exports = {
+export {
   checkForRefreshToken,
   fetchAccessToken,
   fetchAuthenticatedAthlete,

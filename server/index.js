@@ -1,18 +1,17 @@
 // server/index.js
-const express = require("express");
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const fetch = require('node-fetch');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const FormData = require('form-data');
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import fetch from 'node-fetch';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
-const {
+import {
   checkForRefreshToken,
   fetchAccessToken,
   fetchAuthenticatedAthlete,
   getGpxFromActivityData
-} = require('./utils')
+} from './utils.js';
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -22,7 +21,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({limit: '50mb'}));
 
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../build')));
+  app.use(express.static(path.join(__dirname, '../dist')));
 }
 
 // These need to be set in dev and prod
@@ -37,7 +36,7 @@ app.get("/checkHasToken", async (req, res) => {
 });
 
 app.get("/getApiTokens", async (req, res) => {
-  res.json({ 
+  res.json({
     STRAVA_CLIENT_ID: strava.client_id,
     MAPBOX_PUB_KEY: process.env.MAPBOX_PUB_KEY,
    });
@@ -71,7 +70,7 @@ app.get("/saveToken", async (req, res) => {
   // Set cookies to last 180 days
   res.cookie('STRAVA_REFRESH', data.refresh_token, { maxAge: 1000*60*60*24*180, httpOnly: true, sameSite:'Strict', overwrite: true });
 
-  res.send("Authentication complete. You may close this tab. Don't worry, you shouldn't have to do this again.");
+  res.status(200).send("Authentication complete. You may close this tab. Don't worry, you shouldn't have to do this again.");
 });
 
 app.post("/saveDefaultLocation", async (req, res) => {
@@ -265,9 +264,9 @@ app.post("/uploadToStrava", async (req, res) => {
   }
   const athleteData = await athleteResponse.json();
 
-  // Just for now (B, D & A)...
+  // Just for now (B, D, A, Test)...
   // TODO: Remove
-  if (![2792073, 35794954, 53422431].includes(athleteData.id)) {
+  if (![2792073, 35794954, 53422431, 135036127].includes(athleteData.id)) {
     res.status(401).send("Sorry, you aren't allowed to upload maps");
     return;
   }
@@ -285,11 +284,9 @@ app.post("/uploadToStrava", async (req, res) => {
 
   // 4. Post run to strava
   const content = Buffer.from(gpxString);
+  const blob = new Blob([content], { type: 'application/gpx+xml' });
   const fileForm = new FormData();
-  fileForm.append('file', content, {
-    "Content-Type": "multipart/form-data",
-    "filename": "route.gpx"
-  });
+  fileForm.append('file', blob, 'route.gpx');
   fileForm.append("name", title);
   fileForm.append("description", description);
   fileForm.append("data_type", "gpx");

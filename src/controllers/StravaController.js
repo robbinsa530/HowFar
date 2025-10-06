@@ -1,7 +1,74 @@
+import store from '../store/store';
+import {
+  setConnectedToStrava,
+  setStravaLoginWindowWasOpened
+} from '../store/slices/externalSlice';
+import {
+  setUploading,
+  setUploadedMessage
+} from '../store/slices/displaySlice';
 import length from '@turf/length'
+import cloneDeep from 'lodash.clonedeep';
 
 export async function checkUserHasToken() {
   return fetch("/checkHasToken", { method: 'GET', credentials: 'include' });
+}
+
+export async function updateConnectedStatus() {
+  const checkResp = await checkUserHasToken();
+  if (checkResp.ok) {
+    const data = await checkResp.json();
+    store.dispatch(setConnectedToStrava(data.hasToken));
+  }  else {
+    console.error("Error checking Strava user status.");
+  }
+};
+
+export async function connectToStrava() {
+  const SERVER_ADDR = import.meta.env.VITE_SERVER_ADDR || "http://localhost:3001";
+  const state = store.getState();
+  const stravaClientId = state.map.stravaClientId;
+
+  const checkResp = await checkUserHasToken();
+  if (checkResp.ok) {
+    const data = await checkResp.json();
+    if (data.hasToken) {
+      console.info('User has token saved. Can now allow post to Strava');
+      store.dispatch(setConnectedToStrava(true));
+    } else {
+      // Force Strava sign-in
+      store.dispatch(setStravaLoginWindowWasOpened(true));
+      window.open(`https://www.strava.com/oauth/authorize?client_id=${stravaClientId}&redirect_uri=${SERVER_ADDR}/saveToken&response_type=code&approval_prompt=auto&scope=read,profile:read_all,activity:write`, "_blank");
+    }
+  }  else {
+    console.error("Error checking Strava user status.");
+    alert("Failed to authenticate");
+  }
+}
+
+export async function postToStrava(postData) {
+  const state = store.getState();
+  let geojson = cloneDeep(state.route.geojson);
+  store.dispatch(setUploading(true));
+  let resultMsg;
+  if (postData.uploadMap) {
+    resultMsg = await uploadActivityToStrava(postData, geojson);
+  }
+  // Ssshhhhhhhh
+  // TODO: Remove
+  else if (postData.description.trimEnd().toLowerCase().endsWith("/map")) {
+    postData.description = postData.description.slice(0, -4);
+    resultMsg = await uploadActivityToStrava(postData, geojson);
+  }
+  else {
+    resultMsg = await createManualActivityOnStrava(postData);
+  }
+
+  // Store the message in the ref for the next render cycle
+  store.dispatch(setUploadedMessage(resultMsg));
+
+  // This will trigger a re-render
+  store.dispatch(setUploading(false));
 }
 
 export async function createManualActivityOnStrava(postData) {
@@ -57,7 +124,7 @@ export function geojsonToPointsForGpx(geojson) {
   return points;
 }
 
-//! Deprecated
+// ! Deprecated
 export async function uploadActivityToStrava(postData, geojson) {
   // Calculate start/end times in current time zone
   let baseDate = new Date(Date.parse(postData.date + 'T' + postData.time + ':00.000Z'));

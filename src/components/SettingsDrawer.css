@@ -1,0 +1,142 @@
+/* Main drawer container */
+.settings-drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: white;
+  padding: 10px;
+  padding-bottom: 45px; /* Extra padding at bottom to ensure footer is fully visible */
+}
+
+/* Header section */
+.drawer-header {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+/* Strava connection section */
+.strava-section {
+  text-align: center;
+  margin: 0 8px;
+}
+
+.strava-connect-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.strava-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.status-text {
+  margin-right: 8px;
+  color: white;
+}
+
+.status-icon.connected {
+  color: #53e327;
+}
+
+.status-icon.disconnected {
+  color: #d6392d;
+}
+
+/* Action buttons */
+.action-button {
+  display: block;
+  width: 100%;
+}
+
+/* Settings sections */
+.settings-section {
+  margin: 0 8px;
+  margin-bottom: 24px;
+}
+
+.section-divider {
+  height: 1px;
+  background-color: #6c757d;
+  margin: 10px 0;
+}
+
+.section-title {
+  color: white;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+/* Form controls */
+/* // Doesn't seem to work for some reason? Probably getting overridden by MUI somehow */
+/* .form-control {
+  margin-bottom: 8px;
+  margin-top: 8px;
+} */
+
+/* Placeholder text */
+.placeholder-text {
+  color: lightgray;
+  font-style: italic;
+  text-align: center;
+  font-size: 0.9em;
+  padding: 1px 0;
+}
+
+/* Button groups */
+.button-group {
+  text-align: center;
+}
+
+.button-group .action-button {
+  margin-bottom: 16px;
+}
+
+.button-group .action-button:last-child {
+  margin-bottom: 0;
+}
+
+/* Footer */
+.drawer-footer {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.footer-links {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.footer-link {
+  color: white;
+  font-size: 1em;
+  text-decoration: underline;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+  color: #999;
+}
+
+.copyright {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: lightgray;
+  margin-bottom: 8px;
+}
+
+.copyright small {
+  margin-bottom: 2px;
+}
+
+.copyright small:last-child {
+  margin-bottom: 0;
+}
