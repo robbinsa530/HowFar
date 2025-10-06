@@ -14,3 +14,7 @@
 - 3D visualization of your routes with cinematic animations showing elevation profiles and terrain.
 - Strava integration to post your route as an activity to your Strava account (requires Strava login).
 - Import and export activities from/to GPX files
+
+## Documentation
+- [Help Page](https://howfar.run/help.html) - Interactive help and user guide
+- [FAQ](https://github.com/robbinsa530/HowFar/blob/main/FAQ.md) - Frequently Asked Questions
