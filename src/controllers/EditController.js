@@ -13,6 +13,7 @@ import {
 import {
   setAddToStartOrEnd
 } from '../store/slices/settingsSlice';
+import { resetEditStateBasics } from './ResetController';
 import cloneDeep from 'lodash.clonedeep';
 
 export function beginEditRouteBetweenPoints() {
@@ -60,7 +61,7 @@ export function beginEditRouteBetweenPoints() {
 
   // Make a backup of the undo action list. If edit is cancelled, we can restore it.
   // If edit is finished, we will restore it and add a new undo-bulk-edit entry.
-  store.dispatch(setUndoActionListBackup(state.route.undoActionList));
+  store.dispatch(setUndoActionListBackup(cloneDeep(state.route.undoActionList)));
   store.dispatch(setUndoActionList([]));
 
   // Cannot allow adding to beginning of route while editing
@@ -111,4 +112,7 @@ export function finishEditRouteBetweenPoints() {
 
   store.dispatch(setMarkers(markers));
   store.dispatch(setGeojsonFeatures(geojson.features));
+
+  // Reset edit state to clean up backup and close edit mode only once we're completely done
+  resetEditStateBasics();
 }

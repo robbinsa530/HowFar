@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   setEditRedrawingRoute,
 } from '../store/slices/editRouteSlice';
-import { resetEditState, resetEditStateBasics } from '../controllers/ResetController';
+import { resetEditState } from '../controllers/ResetController';
 import {
   beginEditRouteBetweenPoints,
   finishEditRouteBetweenPoints
@@ -48,7 +48,6 @@ const EditInfoBox = () => {
 
   function onFinish() {
     finishEditRouteBetweenPoints();
-    resetEditStateBasics();
   }
 
   useEffect(() => {
