@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   setEditRedrawingRoute,
 } from '../store/slices/editRouteSlice';
+import { setClearEditOpen } from '../store/slices/displaySlice';
 import { resetEditState } from '../controllers/ResetController';
 import {
   beginEditRouteBetweenPoints,
@@ -38,7 +39,12 @@ const EditInfoBox = () => {
   } = useSelector((state) => state.settings);
 
   function onClose() {
-    resetEditState();
+    // If redrawing, we'll make sure they want to, else we'll just reset
+    if (editRedrawingRoute) {
+      dispatch(setClearEditOpen(true));
+    } else {
+      resetEditState();
+    }
   }
 
   function onBegin() {

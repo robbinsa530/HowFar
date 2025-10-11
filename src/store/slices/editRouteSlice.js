@@ -11,6 +11,7 @@ const initialState = {
     'features': []
   },
   undoActionListBackup: [],
+  undoActionsAreBackedUp: false, // So we can tell if we actually have a backup to restore
   startEndMarkerIndices: {
     start: -1,
     end: -1
@@ -48,6 +49,9 @@ const editRouteSlice = createSlice({
     setUndoActionListBackup: (state, action) => {
       state.undoActionListBackup = [ ...action.payload ];
     },
+    setUndoActionsAreBackedUp: (state, action) => {
+      state.undoActionsAreBackedUp = action.payload;
+    },
     setStartEndMarkerIndices: (state, action) => {
       state.startEndMarkerIndices = { ...action.payload };
     },
@@ -63,6 +67,7 @@ export const {
   setEditFinishMarker,
   setEditingGeojsonFeatures,
   setUndoActionListBackup,
+  setUndoActionsAreBackedUp,
   setStartEndMarkerIndices,
   resetEditRouteState,
 } = editRouteSlice.actions;

@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   menuOpen: false,
   clearMapOpen: false,
+  clearEditOpen: false,
   postToStravaOpen: false,
   exportActivityOpen: false,
   importActivityOpen: false,
@@ -31,6 +32,9 @@ const displaySlice = createSlice({
     },
     setClearMapOpen: (state, action) => {
       state.clearMapOpen = action.payload;
+    },
+    setClearEditOpen: (state, action) => {
+      state.clearEditOpen = action.payload;
     },
     setPostToStravaOpen: (state, action) => {
       state.postToStravaOpen = action.payload;
@@ -71,6 +75,7 @@ const displaySlice = createSlice({
 export const {
   setMenuOpen,
   setClearMapOpen,
+  setClearEditOpen,
   setPostToStravaOpen,
   setExportActivityOpen,
   setImportActivityOpen,

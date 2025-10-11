@@ -12,6 +12,7 @@ import {
   setMenuOpen,
   setClearMapOpen,
   setEditInfoOpen,
+  setClearEditOpen,
 } from '../store/slices/displaySlice';
 import {
   setEditSelectingPoints
@@ -70,6 +71,7 @@ const MobileSidebar = (props) => {
     imperialOrMetric
   } = useSelector((state) => state.settings);
   const { editInfoOpen } = useSelector((state) => state.display);
+  const { editRedrawingRoute } = useSelector((state) => state.editRoute);
 
   const handleUndo = async () => {
     await onUndo(mapRef.current);
@@ -81,7 +83,12 @@ const MobileSidebar = (props) => {
 
   const handleOpenEditInfo = () => {
     if (editInfoOpen) {
-      resetEditState();
+      // If redrawing, we'll make sure they want to, else we'll just reset
+      if (editRedrawingRoute) {
+        dispatch(setClearEditOpen(true));
+      } else {
+        resetEditState();
+      }
       return;
     }
     if (geojson.features.length === 0) {

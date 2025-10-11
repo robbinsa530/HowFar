@@ -8,6 +8,7 @@ import {
   setEditingMarkers,
   setEditFinishMarker,
   setUndoActionListBackup,
+  setUndoActionsAreBackedUp,
   setStartEndMarkerIndices
 } from '../store/slices/editRouteSlice';
 import {
@@ -63,6 +64,7 @@ export function beginEditRouteBetweenPoints() {
   // If edit is finished, we will restore it and add a new undo-bulk-edit entry.
   store.dispatch(setUndoActionListBackup(cloneDeep(state.route.undoActionList)));
   store.dispatch(setUndoActionList([]));
+  store.dispatch(setUndoActionsAreBackedUp(true));
 
   // Cannot allow adding to beginning of route while editing
   store.dispatch(setAddToStartOrEnd('end'));

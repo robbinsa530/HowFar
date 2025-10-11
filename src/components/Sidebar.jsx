@@ -12,6 +12,7 @@ import {
   setMenuOpen,
   setClearMapOpen,
   setEditInfoOpen,
+  setClearEditOpen
 } from '../store/slices/displaySlice';
 import {
   setEditSelectingPoints,
@@ -83,7 +84,12 @@ const Sidebar = (props) => {
 
   const handleOpenEditInfo = () => {
     if (editInfoOpen) {
-      resetEditState();
+      // If redrawing, we'll make sure they want to, else we'll just reset
+      if (editRedrawingRoute) {
+        dispatch(setClearEditOpen(true));
+      } else {
+        resetEditState();
+      }
       return;
     }
     if (geojson.features.length === 0) {

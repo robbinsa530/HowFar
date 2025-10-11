@@ -36,8 +36,10 @@ export function resetEditState() {
   }
 
   // Reset undo action list
-  const undoActionListBackup = cloneDeep(state.editRoute.undoActionListBackup);
-  store.dispatch(setUndoActionList(undoActionListBackup));
+  if (state.editRoute.undoActionsAreBackedUp) {
+    const undoActionListBackup = cloneDeep(state.editRoute.undoActionListBackup);
+    store.dispatch(setUndoActionList(undoActionListBackup));
+  }
 
   // Reset the rest
   store.dispatch(setMarkers(markers));
