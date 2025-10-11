@@ -11,7 +11,11 @@ import {
 import {
   setMenuOpen,
   setClearMapOpen,
+  setEditInfoOpen,
 } from '../store/slices/displaySlice';
+import {
+  setEditSelectingPoints
+} from '../store/slices/editRouteSlice';
 
 // Material/MUI
 import MenuIcon from '@mui/icons-material/Menu';
@@ -21,6 +25,8 @@ import LoopIcon from '@mui/icons-material/Loop';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import EditOffIcon from '@mui/icons-material/EditOff';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -39,6 +45,7 @@ import BlueSlider from './material/BlueSlider';
 // Custom other stuff (actions, etc.)
 import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
+import { resetEditState } from '../controllers/ResetController';
 import './MobileSidebar.css';
 
 const MobileSidebar = (props) => {
@@ -46,6 +53,9 @@ const MobileSidebar = (props) => {
   const dispatch = useDispatch();
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
 
+  const {
+    geojson
+  } = useSelector((state) => state.route);
   const {
     distance,
     elevationChange
@@ -59,6 +69,7 @@ const MobileSidebar = (props) => {
     walkwayBias,
     imperialOrMetric
   } = useSelector((state) => state.settings);
+  const { editInfoOpen } = useSelector((state) => state.display);
 
   const handleUndo = async () => {
     await onUndo(mapRef.current);
@@ -66,6 +77,19 @@ const MobileSidebar = (props) => {
 
   const handleOutAndBack = () => {
     onOutAndBack();
+  };
+
+  const handleOpenEditInfo = () => {
+    if (editInfoOpen) {
+      resetEditState();
+      return;
+    }
+    if (geojson.features.length === 0) {
+      alert("No route to edit.");
+      return;
+    }
+    dispatch(setEditInfoOpen(true));
+    dispatch(setEditSelectingPoints(true));
   };
 
   const handleChangeDirectionsMode = (mode) => {
@@ -105,9 +129,21 @@ const MobileSidebar = (props) => {
           </IconButton>
         </Tooltip>
 
-        <Tooltip disableInteractive title={<Typography>Out and back (Return to start point along the same route)</Typography>}>
-          <IconButton onClick={handleOutAndBack} sx={{color:'white'}}>
-            <LoopIcon />
+        <Tooltip disableInteractive title={<Typography>Out and back (Return to start point along the same route {editInfoOpen ? <b> (Disabled during edit)</b> : ''})</Typography>}>
+          <span>
+            <IconButton 
+              onClick={handleOutAndBack}
+              sx={{color:'white'}}
+              disabled={editInfoOpen}
+              >
+              <LoopIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+
+        <Tooltip disableInteractive title={<Typography>{editInfoOpen ? 'Cancel edit' : 'Edit route between two points'}</Typography>}>
+          <IconButton onClick={handleOpenEditInfo} sx={{color:'white'}}>
+            {editInfoOpen ? <EditOffIcon /> : <EditIcon />}
           </IconButton>
         </Tooltip>
 
@@ -205,19 +241,21 @@ const MobileSidebar = (props) => {
 
         <FormControl>
           <FormLabel sx={{"&.Mui-focused": { color: "white" }, textAlign: "left", color:"white"}}>Add new points to:</FormLabel>
-          <Tooltip disableInteractive title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point</Typography>}>
-            <RadioGroup
-              row
-              aria-labelledby="add-to-start-or-end-radio-group"
-              defaultValue="add-to-end"
-              name="add-to-start-or-end-radio-buttons-group"
-              value={addToStartOrEnd}
-              onChange={handleToggleStartEnd}
-              sx={{ marginLeft: '-12px' }} // Hack to make radio buttons align with label
-            >
-              <FormControlLabel value="start" control={<BlueRadio />} label="Beginning" />
-              <FormControlLabel value="end" control={<BlueRadio />} label="End" />
-            </RadioGroup>
+          <Tooltip disableInteractive title={<Typography>Choose whether new waypoints are appended to the end of your route, or placed at the beginning before your start point {editInfoOpen ? <b> (Disabled during edit)</b> : ''}</Typography>}>
+            <span>
+              <RadioGroup
+                row
+                aria-labelledby="add-to-start-or-end-radio-group"
+                defaultValue="add-to-end"
+                name="add-to-start-or-end-radio-buttons-group"
+                value={addToStartOrEnd}
+                onChange={handleToggleStartEnd}
+                sx={{ marginLeft: '-12px' }} // Hack to make radio buttons align with label
+              >
+                <FormControlLabel value="start" control={<BlueRadio disabled={editInfoOpen}/>} label="Beginning" />
+                <FormControlLabel value="end" control={<BlueRadio disabled={editInfoOpen}/>} label="End" />
+              </RadioGroup>
+            </span>
           </Tooltip>
         </FormControl>
 

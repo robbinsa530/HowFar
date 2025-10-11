@@ -76,6 +76,14 @@
   font-family: monospace;
 }
 
+.new-sidebar-distance {
+  font-size: 1.1em;
+  margin: -4px 0px 4px 0px;
+  text-align: center;
+  font-family: monospace;
+  color: #58f863;
+}
+
 .elevation-container {
   border: 1px solid white;
   padding: 4px 8px;
@@ -89,11 +97,45 @@
   font-family: monospace;
 }
 
+.new-sidebar-elevation {
+  font-size: 0.9em;
+  margin: 4px 0;
+  font-family: monospace;
+  color: #58f863;
+}
+
 .sidebar-btn-container {
   display: flex;
   justify-content: center;
   gap: 10px;
   margin: 6px 0;
+}
+
+/* Uniform 2x2 grid for action buttons */
+.sidebar-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 6px 0;
+  justify-items: stretch;
+}
+
+.sidebar .sidebar-action-button.MuiButton-root {
+  min-width: 0;
+  width: 100%;
+  padding: 6px;
+}
+
+/* Tweak font-size to keep labels on one line and consistent */
+.sidebar .sidebar-action-button.MuiButton-root .MuiButton-startIcon {
+  margin-right: 6px;
+}
+
+/* Two-line label for Out & Back */
+.sidebar .sidebar-two-line-label {
+  display: inline-block;
+  line-height: 1.0;
+  font-size: 0.85rem;
 }
 
 /* Material UI Button overrides */

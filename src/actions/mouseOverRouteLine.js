@@ -14,16 +14,19 @@ import {
   setDistancesToDisplay
 } from '../store/slices/distancePopupSlice';
 import { splitLineWithPoint } from '../controllers/GeoController';
+import {
+  getMarkersAgnostic,
+  getGeojsonAgnostic
+} from '../controllers/RouteController';
 import { getMouseToMarkerSqDistance } from '../utils/mouseMath';
-import cloneDeep from 'lodash.clonedeep';
 import nearestPointOnLine from '@turf/nearest-point-on-line'
 import length from '@turf/length';
 
 async function onMouseOverRouteLine(event, map) {
   const state = store.getState();
   // Route state
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
   // Map state
   const mouseOnMarker = state.map.mouseOnMarker;
   // Settings state
@@ -116,7 +119,7 @@ async function onMouseOverRouteLine(event, map) {
     const idsUnderMouse = event.features.map(f => f.properties.id);
     const lineEndPtMarkers = markers.filter(m => m.associatedLines.some(l => idsUnderMouse.includes(l)));
     for (const m of lineEndPtMarkers) {
-      if (getMouseToMarkerSqDistance(event, map, m.lngLat) < 64) {
+      if (getMouseToMarkerSqDistance(event.point, map, m.lngLat) < 64) {
         store.dispatch(resetAddPointInLineState());
         return;
       }

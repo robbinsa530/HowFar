@@ -2,17 +2,16 @@
   For undoing a marker delete
   We add back the marker and any affected lines
 */
-import store from '../../store/store';
 import {
-  setMarkers,
-  setGeojsonFeatures,
-} from '../../store/slices/routeSlice';
-import cloneDeep from 'lodash.clonedeep';
+  getMarkersAgnostic,
+  getGeojsonAgnostic,
+  setMarkersAgnostic,
+  setGeojsonFeaturesAgnostic
+} from '../../controllers/RouteController';
 
 function onUndoMarkerDelete(undoInfo) {
-  const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
 
   if (undoInfo.lines.length === 0) {
     // A sole marker was deleted. Just add it back
@@ -49,8 +48,8 @@ function onUndoMarkerDelete(undoInfo) {
     markers[otherMarkerIndexLine1].associatedLines.push(undoInfo.lines[1].line.properties.id);
   }
 
-  store.dispatch(setMarkers(markers));
-  store.dispatch(setGeojsonFeatures(geojson.features));
+  setMarkersAgnostic(markers);
+  setGeojsonFeaturesAgnostic(geojson.features);
 }
 
 export default onUndoMarkerDelete;

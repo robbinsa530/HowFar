@@ -2,17 +2,18 @@
   For handling when a marker is deleted via the popup button
 */
 import store from '../store/store';
-import {
-  setMarkers,
-  setGeojsonFeatures
-} from '../store/slices/routeSlice';
 import { getDirections } from '../controllers/DirectionsController';
-import cloneDeep from 'lodash.clonedeep';
+import {
+  getMarkersAgnostic,
+  getGeojsonAgnostic,
+  setMarkersAgnostic,
+  setGeojsonFeaturesAgnostic
+} from '../controllers/RouteController';
 
 async function onMarkerDelete(map, markerIdToRemove) {
   const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
 
   // Remove the marker from the markers array
   let markerToRemoveIndex = markers.findIndex(m => m.id === markerIdToRemove);
@@ -120,8 +121,8 @@ async function onMarkerDelete(map, markerIdToRemove) {
     });
   }
 
-  store.dispatch(setMarkers(markers));
-  store.dispatch(setGeojsonFeatures(geojson.features));
+  setMarkersAgnostic(markers);
+  setGeojsonFeaturesAgnostic(geojson.features);
 
   return undoActionInfoToReturn;
 }

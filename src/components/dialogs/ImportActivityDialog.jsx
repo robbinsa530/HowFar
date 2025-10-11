@@ -5,12 +5,8 @@ import {
   setImportActivityOpen,
   setMenuOpen
 } from '../../store/slices/displaySlice';
-import {
-  setMarkers,
-  setGeojsonFeatures,
-  setUndoActionList
-} from '../../store/slices/routeSlice';
 import { importRouteFromGpx } from '../../controllers/ImportExportController';
+import { resetEditState, resetRouteState } from '../../controllers/ResetController';
 
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -58,12 +54,12 @@ function ImportActivityDialog(props) {
     event.preventDefault();
 
     // Clear the map
-    dispatch(setMarkers([]));
-    dispatch(setGeojsonFeatures([]));
-    dispatch(setUndoActionList([]));
+    resetRouteState();
+
+    // We allow importing while editing a section, make sure we cancel the edit
+    resetEditState();
 
     importRouteFromGpx(file, mapRef.current);
-
     handleCancel();
   };
 

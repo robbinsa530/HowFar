@@ -3,34 +3,34 @@
 */
 import store from '../store/store';
 import {
-  setMarkers,
-  setGeojsonFeatures,
   addUndoActionToList
 } from '../store/slices/routeSlice';
 import { getDirections } from '../controllers/DirectionsController';
 import { updateMarkerElevation } from '../controllers/GeoController';
+import {
+  getMarkersAgnostic,
+  getGeojsonAgnostic,
+  setMarkersAgnostic,
+  setGeojsonFeaturesAgnostic
+} from '../controllers/RouteController';
 import cloneDeep from 'lodash.clonedeep';
 
 async function onMarkerDragStart(draggedMarkerIndex) {
-  const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-
+  let markers = getMarkersAgnostic();
   markers[draggedMarkerIndex].isDragging = true;
   markers[draggedMarkerIndex].originalLngLat = [...markers[draggedMarkerIndex].lngLat];
-  store.dispatch(setMarkers(markers));
+  setMarkersAgnostic(markers);
 }
 
 async function onMarkerDrag(event, draggedMarkerIndex) {
-  const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
+  let markers = getMarkersAgnostic();
   markers[draggedMarkerIndex].lngLat = [event.lngLat.lng, event.lngLat.lat];
-  store.dispatch(setMarkers(markers));
+  setMarkersAgnostic(markers);
 }
 
 async function onMarkerDragEnd(event, map, draggedMarkerIndex) {
-  const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
 
   // Get a reference to our copy of the dragged marker
   let draggedMarker = markers[draggedMarkerIndex];
@@ -110,8 +110,8 @@ async function onMarkerDragEnd(event, map, draggedMarkerIndex) {
     info: dragActionInfo
   }));
 
-  store.dispatch(setMarkers(markers));
-  store.dispatch(setGeojsonFeatures(geojson.features));
+  setMarkersAgnostic(markers);
+  setGeojsonFeaturesAgnostic(geojson.features);
 }
 
 export {

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setClearMapOpen } from '../../store/slices/displaySlice';
-import { setMarkers, setGeojsonFeatures, setUndoActionList } from '../../store/slices/routeSlice';
+import { resetEditState, resetRouteState } from '../../controllers/ResetController';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -11,13 +11,18 @@ import DialogTitle from '@mui/material/DialogTitle';
 
 function ClearMapAreYouSureDialog() {
   const dispatch = useDispatch();
-  const { clearMapOpen } = useSelector((state) => state.display);
+  const {
+    clearMapOpen,
+    editInfoOpen
+  } = useSelector((state) => state.display);
 
   function onYes() {
-    dispatch(setMarkers([]));
-    dispatch(setGeojsonFeatures([]));
-    dispatch(setUndoActionList([]));
+    // Clear the route from the map
+    resetRouteState();
     dispatch(setClearMapOpen(false));
+
+    // We allow clearing while editing a section, make sure we cancel the edit
+    resetEditState();
   }
 
   function onNo() {
@@ -35,7 +40,7 @@ function ClearMapAreYouSureDialog() {
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            All points, lines and distances will be erased. You cannot undo this.
+            { "All points, lines and distances will be erased. You cannot undo this." + (editInfoOpen ? " (If editing route betwen points, this will also delete your edits)." : "") }
           </DialogContentText>
         </DialogContent>
         <DialogActions>

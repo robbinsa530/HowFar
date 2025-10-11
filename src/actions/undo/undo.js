@@ -12,6 +12,7 @@ import onUndoMarkerDrag from './undoMarkerDrag';
 import onUndoMarkerDelete from './undoMarkerDelete';
 import onUndoOutAndBack from './undoOutAndBack';
 import onUndoAddMarkerInline from './undoAddMarkerInline';
+import onUndoEdit from './undoEdit';
 
 async function onUndo(map) {
   const state = store.getState();
@@ -38,6 +39,9 @@ async function onUndo(map) {
   }
   else if (lastAction.type === 'add-marker-in-line') {
     onUndoAddMarkerInline(lastAction.info);
+  }
+  else if (lastAction.type === 'edit') {
+    onUndoEdit(lastAction.info);
   }
 }
 

@@ -16,6 +16,10 @@ const routeSlice = createSlice({
     setMarkers: (state, action) => {
       state.markers = [ ...action.payload ];
     },
+    editMarkerInPlace: (state, action) => {
+      const index = state.markers.findIndex(m => m.id === action.payload.id);
+      state.markers[index] = action.payload;
+    },
     setGeojsonFeatures: (state, action) => {
       state.geojson.features = [ ...action.payload ];
     },
@@ -33,6 +37,7 @@ const routeSlice = createSlice({
 
 export const {
   setMarkers,
+  editMarkerInPlace,
   setGeojsonFeatures,
   setUndoActionList,
   addUndoActionToList,

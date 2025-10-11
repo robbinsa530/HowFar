@@ -13,6 +13,11 @@ const initialState = {
     eleUp: 0.0,
     eleDown: 0.0
   },
+  newDistance: 0.0,
+  newElevationChange: {
+    eleUp: 0.0,
+    eleDown: 0.0
+  },
   mouseOnMarker: false,
   hasDefaultLocation: false,
   mapType: 0, // index of mapType in mapTypes
@@ -47,6 +52,12 @@ const mapSlice = createSlice({
     setElevationChange: (state, action) => {
       state.elevationChange = { ...action.payload };
     },
+    setNewDistance: (state, action) => {
+      state.newDistance = action.payload;
+    },
+    setNewElevationChange: (state, action) => {
+      state.newElevationChange = { ...action.payload };
+    },
     setMouseOnMarker: (state, action) => {
       state.mouseOnMarker = action.payload;
     },
@@ -66,6 +77,8 @@ export const {
   setLocation,
   setDistance,
   setElevationChange,
+  setNewDistance,
+  setNewElevationChange,
   setMouseOnMarker,
   setHasDefaultLocation,
   setMapType,

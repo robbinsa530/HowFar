@@ -4,8 +4,6 @@
 */
 import store from '../store/store';
 import {
-  setMarkers,
-  setGeojsonFeatures,
   addUndoActionToList
 } from '../store/slices/routeSlice';
 import {
@@ -13,14 +11,20 @@ import {
   splitLineWithPoint,
   getElevationChange
 } from '../controllers/GeoController';
+import {
+  getMarkersAgnostic,
+  getGeojsonAgnostic,
+  setMarkersAgnostic,
+  setGeojsonFeaturesAgnostic
+} from '../controllers/RouteController';
+import { Marker } from '../controllers/MarkerController';
 import { v4 as uuidv4 } from 'uuid';
-import cloneDeep from 'lodash.clonedeep';
 import length from '@turf/length';
 
 function onInlineMarkerClick(map) {
   const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
   const addPointInLineMarkerLocation = state.addPointInLine.addPointInLineMarkerLocation;
   const addPointInLineIdToSplit = state.addPointInLine.addPointInLineIdToSplit;
 
@@ -45,14 +49,14 @@ function onInlineMarkerClick(map) {
   });
 
   // Set up new marker
-  let markerToAdd = {
+  let markerToAdd = Marker({
     id: uuidv4(),
     lngLat: [addPointInLineMarkerLocation.longitude, addPointInLineMarkerLocation.latitude],
     associatedLines: [],
     isDragging: false
-    // snappedToRoad: (Needs to be added)
-    // elevation: (Needs to be added)
-  };
+    // snappedToRoad: (updated later)
+    // elevation: (updated later)
+  });
 
   // Split line around point
   const lineToSplitIndex = geojson.features.findIndex(f => f.properties.id === addPointInLineIdToSplit);
@@ -116,8 +120,8 @@ function onInlineMarkerClick(map) {
     }
   }));
 
-  store.dispatch(setMarkers(markers));
-  store.dispatch(setGeojsonFeatures(geojson.features));
+  setMarkersAgnostic(markers);
+  setGeojsonFeaturesAgnostic(geojson.features);
 }
 
 export default onInlineMarkerClick;

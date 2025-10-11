@@ -7,6 +7,7 @@ import {
   setGeojsonFeatures,
   addUndoActionToList
 } from '../store/slices/routeSlice';
+import { Marker } from '../controllers/MarkerController';
 import { v4 as uuidv4 } from 'uuid';
 import cloneDeep from 'lodash.clonedeep';
 
@@ -63,14 +64,14 @@ function onOutAndBack() {
     if (l2 < newLines.length) {
       newAssocLines.push(newLines[l2].properties.id);
     }
-    let newMarker = {
+    let newMarker = Marker({
       id: uuidv4(),
       lngLat: oldMarker.lngLat,
       associatedLines: newAssocLines,
       isDragging: false,
       snappedToRoad: oldMarker.snappedToRoad,
       elevation: oldMarker.elevation
-    };
+    });
 
     // Add marker to running list
     newMarkers.push(newMarker);

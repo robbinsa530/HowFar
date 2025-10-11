@@ -1,0 +1,122 @@
+/* Box positioning and theme */
+/* Increase specificity to override MUI Paper default background */
+.MuiPaper-root.edit-info-box {
+  background-color: rgb(35 55 75 / 90%);
+  color: white;
+  padding: 12px;
+  border-radius: 4px;
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: 320px;
+}
+
+.edit-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.edit-info-title {
+  color: white;
+}
+
+.edit-info-close {
+  color: white;
+}
+
+.edit-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.edit-step-text {
+  color: white;
+}
+
+.edit-step.inactive {
+  opacity: 0.5;
+}
+
+.edit-info-stats {
+  display: none;
+  flex-direction: row;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  justify-content: center;
+}
+
+.edit-stat-text {
+  color: #58f863;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+/* Mobile styling */
+@media only screen and (max-device-width: 480px) {
+  .MuiPaper-root.edit-info-box {
+    /* Position at bottom left, aligned with the button height */
+    top: auto;
+    bottom: 45px; /* Above the mobile-stats bar (which is at bottom: 0, ~40px tall) */
+    left: 8px;
+    right: auto;
+    transform: none;
+    max-width: calc(100vw - 155px); /* Leave space for Save/Clear Home button on right */
+    min-width: 180px;
+    padding: 8px; /* Reduce padding on mobile for compactness */
+    z-index: 1; /* Lower than mobile-controls-popup so it's hidden behind it */
+  }
+
+  .edit-info-header {
+    margin-bottom: 4px;
+  }
+
+  .edit-info-title {
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+
+  .edit-info-close {
+    padding: 4px;
+  }
+
+  /* Hide inactive steps on mobile */
+  .edit-step.inactive {
+    display: none;
+  }
+
+  /* Make active step more compact on mobile */
+  .edit-step.active {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .edit-step-text {
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .edit-step-button {
+    width: 100%;
+  }
+
+  /* Make stats section stack vertically on small screens */
+  .edit-info-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .edit-stat-text {
+    font-size: 0.8rem;
+  }
+}

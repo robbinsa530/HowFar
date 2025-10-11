@@ -6,6 +6,7 @@ const initialState = {
   postToStravaOpen: false,
   exportActivityOpen: false,
   importActivityOpen: false,
+  editInfoOpen: false,
   loading: true,
   locating: false,
   uploading: false,
@@ -40,6 +41,9 @@ const displaySlice = createSlice({
     setImportActivityOpen: (state, action) => {
       state.importActivityOpen = action.payload;
     },
+    setEditInfoOpen: (state, action) => {
+      state.editInfoOpen = action.payload;
+    },
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -70,6 +74,7 @@ export const {
   setPostToStravaOpen,
   setExportActivityOpen,
   setImportActivityOpen,
+  setEditInfoOpen,
   setLoading,
   setLocating,
   setUploading,

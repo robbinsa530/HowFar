@@ -2,17 +2,16 @@
   For undoing a marker drag
   We move the marker and any affected lines back to their original positions
 */
-import store from '../../store/store';
 import {
-  setMarkers,
-  setGeojsonFeatures,
-} from '../../store/slices/routeSlice';
-import cloneDeep from 'lodash.clonedeep';
+  getMarkersAgnostic,
+  getGeojsonAgnostic,
+  setMarkersAgnostic,
+  setGeojsonFeaturesAgnostic
+} from '../../controllers/RouteController';
 
 function onUndoMarkerDrag(undoInfo) {
-  const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
 
   // There are 3 possible cases. All of them require this step (moving the marker back to its old loc)
   let draggedMarker = markers.find(m => m.id === undoInfo.markerId);
@@ -31,8 +30,8 @@ function onUndoMarkerDrag(undoInfo) {
     lineRef.geometry.coordinates = l.geometry.coordinates;
   });
 
-  store.dispatch(setMarkers(markers));
-  store.dispatch(setGeojsonFeatures(geojson.features));
+  setMarkersAgnostic(markers);
+  setGeojsonFeaturesAgnostic(geojson.features);
 }
 
 export default onUndoMarkerDrag;

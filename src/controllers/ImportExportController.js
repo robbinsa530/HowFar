@@ -2,6 +2,7 @@ import store from '../store/store';
 
 import { geojsonToPointsForGpx } from './StravaController'
 import { getElevationChange } from './GeoController'
+import { Marker } from './MarkerController'
 import { setLoading } from '../store/slices/displaySlice'
 import { setMarkers, setGeojsonFeatures } from '../store/slices/routeSlice'
 
@@ -158,7 +159,7 @@ export async function loadRouteFromPoints(points, map) {
   });
 
   for (const obj of markerCoordsAndLines) {
-    markers.push({
+    markers.push(Marker({
       id: uuidv4(),
       lngLat: obj.coords,
       associatedLines: obj.associatedLines,
@@ -167,7 +168,7 @@ export async function loadRouteFromPoints(points, map) {
       elevation: map.queryTerrainElevation(
         obj.coords, { exaggerated: false }
       )
-    });
+    }));
   }
 
   // Update state

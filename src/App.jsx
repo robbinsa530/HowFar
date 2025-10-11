@@ -18,6 +18,7 @@ import ClearMapAreYouSureDialog from './components/dialogs/ClearMapAreYouSureDia
 import SimpleDialog from './components/dialogs/SimpleDialog'
 import PopupDistances from './components/PopupDistances'
 import BottomFloater from './components/BottomFloater'
+import EditInfoBox from './components/EditInfoBox'
 import SettingsDrawer from './components/SettingsDrawer'
 import PostToStravaDialog from './components/dialogs/PostToStravaDialog'
 import ExportActivityDialog from './components/dialogs/ExportActivityDialog'
@@ -27,7 +28,14 @@ import './App.css'
 function AppContent() {
   const dispatch = useDispatch();
   const { mapboxToken } = useSelector((state) => state.map);
-  const { loading, locating, uploading, uploadedMessage, isMobile } = useSelector((state) => state.display);
+  const {
+    loading,
+    locating,
+    uploading,
+    uploadedMessage,
+    isMobile,
+    editInfoOpen
+  } = useSelector((state) => state.display);
   const { displayDistancePopupEnabled } = useSelector((state) => state.settings);
   const { distancesToDisplay } = useSelector((state) => state.distancePopup);
   const { stravaLoginWindowWasOpened } = useSelector((state) => state.external);
@@ -96,11 +104,11 @@ function AppContent() {
 
   const handleWindowSizeChange = () => {
     if (window.innerWidth > 480) {
-      console.info('Window size is desktop');
+      console.debug('Window size is desktop');
       dispatch(setIsMobile(false));
     }
     else {
-      console.info('Window size is mobile');
+      console.debug('Window size is mobile');
       dispatch(setIsMobile(true));
     }
   };
@@ -121,12 +129,13 @@ function AppContent() {
       <Sidebar mapRef={mapRef} />
       <MobileSidebar mapRef={mapRef} />
       <SettingsDrawer />
-      <BottomFloater />
+      { !editInfoOpen && <BottomFloater /> }
+      { editInfoOpen && <EditInfoBox /> }
       <ClearMapAreYouSureDialog />
       <PostToStravaDialog />
       <ExportActivityDialog />
       <ImportActivityDialog mapRef={mapRef} />
-      { !isMobile && displayDistancePopupEnabled && distancesToDisplay.length > 0 && <PopupDistances /> }
+      { !isMobile && !editInfoOpen && displayDistancePopupEnabled && distancesToDisplay.length > 0 && <PopupDistances /> }
       { loading && <SimpleDialog open={loading} text="Loading..." /> }
       { locating && <SimpleDialog open={locating} text="Locating..." /> }
       { uploading && <SimpleDialog open={uploading} text="Uploading..." /> }

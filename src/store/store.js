@@ -7,6 +7,7 @@ import markerDragSlice from './slices/markerDragSlice';
 import addPointInLineSlice from './slices/addPointInLineSlice';
 import distancePopupSlice from './slices/distancePopupSlice';
 import externalSlice from './slices/externalSlice';
+import editRouteSlice from './slices/editRouteSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     addPointInLine: addPointInLineSlice,
     distancePopup: distancePopupSlice,
     external: externalSlice,
+    editRoute: editRouteSlice,
   },
 });
 

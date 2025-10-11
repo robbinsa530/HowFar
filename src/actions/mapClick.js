@@ -2,27 +2,46 @@
   For handling when the map is clicked
 */
 import store from '../store/store';
-import {
-  setMarkers,
-  setGeojsonFeatures,
-  addUndoActionToList
-} from '../store/slices/routeSlice';
+import { addUndoActionToList } from '../store/slices/routeSlice';
+import { setEditingMarkers, setEditingGeojsonFeatures } from '../store/slices/editRouteSlice';
 import { getDirections } from '../controllers/DirectionsController';
-import { updateMarkerElevation } from '../controllers/GeoController';
+import { updateMarkerElevation, markersAreCloseEnough } from '../controllers/GeoController';
 import { getMouseToMarkerSqDistance } from '../utils/mouseMath';
+import { Marker } from '../controllers/MarkerController';
+import {
+  getMarkersAgnostic,
+  getGeojsonAgnostic,
+  setMarkersAgnostic,
+  setGeojsonFeaturesAgnostic
+} from '../controllers/RouteController';
 import { v4 as uuidv4 } from 'uuid';
 import cloneDeep from 'lodash.clonedeep';
 
 let mutex = false; // Used to prevent multiple clicks from being processed at the same time
 
-async function handleLeftRightClick(event, map, rightClick) {
+async function handleLeftRightClick(
+    map,
+    rightClick,
+    targetClassName,
+    lngLat,
+    screenPoint
+  ) {
   const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
   const addToEnd = state.settings.addToStartOrEnd === 'end';
   const addMarkerInLineEnabled = state.settings.addMarkerInLineEnabled;
   const addPointInLineMarkerVisible = state.addPointInLine.addPointInLineMarkerVisible;
   const addPointInLineMarkerLocation = state.addPointInLine.addPointInLineMarkerLocation;
+
+  // This is a little hack to let us adjust the final point/line if this click was the user
+  //  clicking on the finish marker when bulk editing. Sometimes if that finish markers is not
+  //  on a road or path, this click will end up snapping away from it which makes it so we can't
+  //  finish the edit (since we check that editing is done by checking for overlapping markers)
+  let returnVal = {
+    newMarkerId: null,
+    newLineId: null
+  }
 
   // Check that a marker wasnt being dragged when click happened
   // If so, just do nothing
@@ -31,30 +50,33 @@ async function handleLeftRightClick(event, map, rightClick) {
     draggingMarker.isDragging = false;
     draggingMarker.lngLat = [...draggingMarker.originalLngLat];
     delete draggingMarker.originalLngLat;
-    store.dispatch(setMarkers(markers));
-    return;
+    store.dispatch(setMarkersAgnostic(markers));
+    return returnVal;
   }
 
   // If a marker was clicked, do nothing
   // (only fires for right click, or add-point-in-line marker click, b/c marker click handler eats left clicks)
-  if (event.originalEvent.target.className.includes('marker')) {
-    return;
+  if (targetClassName.includes('marker')) {
+    return returnVal;
   }
 
   // Just in case, do a specific check to make sure we don't proceed if the add-point-in-line marker was clicked
   // Will almost certainly be caught by the check above, but it would be bad if we did both...
   const addPointInLineMarkerLngLat = [addPointInLineMarkerLocation.longitude, addPointInLineMarkerLocation.latitude];
-  if (addMarkerInLineEnabled && addPointInLineMarkerVisible && (getMouseToMarkerSqDistance(event, map, addPointInLineMarkerLngLat) < 64)) {
-    return;
+  if (addMarkerInLineEnabled && addPointInLineMarkerVisible && (getMouseToMarkerSqDistance(screenPoint, map, addPointInLineMarkerLngLat) < 64)) {
+    return returnVal;
   }
 
-  let markerToAdd = {
+  let markerToAdd = Marker({
     id: uuidv4(),
-    lngLat: [event.lngLat.lng, event.lngLat.lat],
+    lngLat: [lngLat.lng, lngLat.lat],
     associatedLines: [],
     isDragging: false,
     snappedToRoad: true // default to true, seems to work?
-  };
+  });
+
+  // Save new marker ID
+  returnVal.newMarkerId = markerToAdd.id;
 
   let prevPt;
   if (addToEnd) {
@@ -69,6 +91,9 @@ async function handleLeftRightClick(event, map, rightClick) {
         (rightClick) ? false : undefined // If right click, just this time don't calculate directions
       );
       markerToAdd.snappedToRoad = calculatedDirections;
+
+      // Save new line ID
+      returnVal.newLineId = newLine.properties.id;
 
       // Associate this new line with both of its endpoint markers
       // This is so we can know which lines to edit on marker delete/move
@@ -100,6 +125,10 @@ async function handleLeftRightClick(event, map, rightClick) {
         (rightClick) ? false : undefined // If right click, just this time don't calculate directions
       );
       markerToAdd.snappedToRoad = calculatedDirections;
+
+      // Save new line ID
+      returnVal.newLineId = newLine.properties.id;
+
       // Associate this new line with both of its endpoint markers
       // This is so we can know which lines to edit on marker delete/move
       prevPt.associatedLines.push(newLine.properties.id); // markers[0]
@@ -130,16 +159,60 @@ async function handleLeftRightClick(event, map, rightClick) {
     marker: markerToAdd
   }));
 
-  store.dispatch(setMarkers(markers));
-  store.dispatch(setGeojsonFeatures(geojson.features));
+  setMarkersAgnostic(markers);
+  setGeojsonFeaturesAgnostic(geojson.features);
+
+  return returnVal;
 }
 
-async function onMapClick(event, map, rightClick) {
+export async function onMapClick(event, map, rightClick) {
   if (!mutex) {
     mutex = true;
-    await handleLeftRightClick(event, map, rightClick);
+    await handleLeftRightClick(
+      map,
+      rightClick,
+      event.originalEvent.target.className,
+      event.lngLat,
+      event.point
+    );
     mutex = false;
   }
 }
 
-export default onMapClick;
+// Doesn't really belong in here, but I want to keep these two together
+export async function onFinishMarkerClick(event, finishMarker, map, rightClick) {
+  if (!mutex) {
+    mutex = true;
+    const returnVal = await handleLeftRightClick(
+      map,
+      rightClick,
+      '',
+      {
+        lng: finishMarker.lngLat[0],
+        lat: finishMarker.lngLat[1]
+      },
+      { x: event.clientX, y: event.clientY }
+    );
+
+    // Move the new marker and line if needed (little hacky, but whatevs, its clean and better than filling onMapClick with ifs)
+    const { newMarkerId, newLineId } = returnVal;
+    if (newMarkerId && newLineId) {
+      // Don't need to use agnostic function because in here we know we only ever want to edit the editmarkers/geojson
+      const state = store.getState();
+      let markers = cloneDeep(state.editRoute.editingMarkers);
+      let geojson = cloneDeep(state.editRoute.editingGeojson);
+      const markerIndex = markers.findIndex(m => m.id === newMarkerId);
+      const lineIndex = geojson.features.findIndex(f => f.properties.id === newLineId);
+      if (!markersAreCloseEnough(markers[markerIndex], finishMarker, 1e-7)) {
+        // Marker must have been moved by directions controller
+        markers[markerIndex].lngLat = finishMarker.lngLat;
+        markers[markerIndex].snappedToRoad = false; // If this happened we are almost certainly not on a road or path
+        geojson.features[lineIndex].geometry.coordinates.push(finishMarker.lngLat);
+        store.dispatch(setEditingMarkers(markers));
+        store.dispatch(setEditingGeojsonFeatures(geojson.features));
+      }
+    }
+
+    mutex = false;
+  }
+}

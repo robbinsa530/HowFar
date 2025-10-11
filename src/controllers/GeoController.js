@@ -103,8 +103,13 @@ function splitLineWithPoint(lineToSplit, pointLngLat) {
   return [lCoords, rCoords];
 }
 
+function markersAreCloseEnough(marker1, marker2, epsilon) {
+  return Math.abs(marker1.lngLat[0] - marker2.lngLat[0]) < epsilon && Math.abs(marker1.lngLat[1] - marker2.lngLat[1]) < epsilon;
+}
+
 export {
   getElevationChange,
   updateMarkerElevation,
-  splitLineWithPoint
+  splitLineWithPoint,
+  markersAreCloseEnough
 }

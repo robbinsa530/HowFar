@@ -2,17 +2,16 @@
   For undoing an add-marker-in-line action
   We remove the middle marker and 2 connecting lines and replace with the single old line
 */
-import store from '../../store/store';
 import {
-  setMarkers,
-  setGeojsonFeatures,
-} from '../../store/slices/routeSlice';
-import cloneDeep from 'lodash.clonedeep';
+  getMarkersAgnostic,
+  getGeojsonAgnostic,
+  setMarkersAgnostic,
+  setGeojsonFeaturesAgnostic
+} from '../../controllers/RouteController';
 
 function onUndoAddMarkerInline(undoInfo) {
-  const state = store.getState();
-  let markers = cloneDeep(state.route.markers);
-  let geojson = cloneDeep(state.route.geojson);
+  let markers = getMarkersAgnostic();
+  let geojson = getGeojsonAgnostic();
 
   const associatedMarkers = [
     markers[undoInfo.addedMarkerIndex - 1],
@@ -34,8 +33,8 @@ function onUndoAddMarkerInline(undoInfo) {
     m.associatedLines.push(undoInfo.removedLine.properties.id);
   });
 
-  store.dispatch(setMarkers(markers));
-  store.dispatch(setGeojsonFeatures(geojson.features));
+  setMarkersAgnostic(markers);
+  setGeojsonFeaturesAgnostic(geojson.features);
 }
 
 export default onUndoAddMarkerInline;

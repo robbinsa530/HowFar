@@ -58,6 +58,7 @@ const SettingsDrawer = () => {
   } = useSelector((state) => state.route);
   const {
     menuOpen,
+    editInfoOpen,
     isMobile
   } = useSelector((state) => state.display);
   const {
@@ -179,14 +180,17 @@ const SettingsDrawer = () => {
             </div>
           )}
 
-          <Tooltip disableInteractive title={<Typography>Post route to connected App(s)</Typography>}>
-            <Button
-              className="action-button"
-              variant="contained"
-              onClick={handlePostToStravaClick}
-            >
-              Post Activity
-            </Button>
+          <Tooltip disableInteractive title={<Typography>Post route to connected App(s) {editInfoOpen ? <b> (Disabled during edit)</b> : ''}</Typography>}>
+            <span>
+              <Button
+                className="action-button"
+                variant="contained"
+                onClick={handlePostToStravaClick}
+                disabled={editInfoOpen}
+              >
+                Post Activity
+              </Button>
+            </span>
           </Tooltip>
         </div>
 
@@ -281,15 +285,18 @@ const SettingsDrawer = () => {
           <Typography variant="h6" className="section-title">Visualize:</Typography>
 
           {markers.length > 1 ? (
-            <Tooltip disableInteractive title={<Typography>View 3D cinematic animation of your route</Typography>}>
-              <Button
-                className="action-button"
-                variant="contained"
-                onClick={handle3DVisualizationClick}
-                startIcon={<ThreeDRotationIcon />}
-              >
-                View 3D Visualization
-              </Button>
+            <Tooltip disableInteractive title={<Typography>View 3D cinematic animation of your route {editInfoOpen ? <b> (Disabled during edit)</b> : ''}</Typography>}>
+              <span>
+                <Button
+                  className="action-button"
+                  variant="contained"
+                  onClick={handle3DVisualizationClick}
+                  startIcon={<ThreeDRotationIcon />}
+                  disabled={editInfoOpen}
+                >
+                  View 3D Visualization
+                </Button>
+              </span>
             </Tooltip>
           ) : (
             <Typography className="placeholder-text">
@@ -332,14 +339,17 @@ const SettingsDrawer = () => {
               </Button>
             </Tooltip>
 
-            <Tooltip disableInteractive title={<Typography>Export route as a .gpx file</Typography>}>
-              <Button
-                className="action-button"
-                variant="contained"
-                onClick={handleExportActivityClick}
-              >
-                Export Activity
-              </Button>
+            <Tooltip disableInteractive title={<Typography>Export route as a .gpx file {editInfoOpen ? <b> (Disabled during edit)</b> : ''}</Typography>}>
+              <span>
+                <Button
+                  className="action-button"
+                  variant="contained"
+                  onClick={handleExportActivityClick}
+                  disabled={editInfoOpen}
+                >
+                  Export Activity
+                </Button>
+              </span>
             </Tooltip>
           </div>
         </div>
