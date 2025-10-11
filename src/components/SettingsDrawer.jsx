@@ -252,7 +252,7 @@ const SettingsDrawer = () => {
             />
           </Tooltip>
 
-          <Tooltip disableInteractive title={<Typography>When enabled, hovering over your route will display the distance along the route of the point under your mouse</Typography>}>
+          <Tooltip disableInteractive title={<Typography>When enabled, hovering over your route will display the distance along the route of the point under your mouse {isMobile ? <b> (Unavailable on mobile)</b> : ''}</Typography>}>
             <FormControlLabel
               sx={{ marginLeft: 0, marginRight: 0, width: "100%", justifyContent: 'space-between' }}
               value="display-distance-popup"
