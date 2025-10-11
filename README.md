@@ -11,6 +11,7 @@
 - Right click to quickly bypass the auto follow roads feature for smooth transition between following established routes and (for example) hopping curbs, mapping through parks, etc.
 - Append route segments to both the beginning and end of the route. Helpful in case you've mapped a complex route and want to edit the start.
 - Road/walkway preference for fine-tuning routes.
+- Edit your route between 2 waypoints by deleting and re-drawing whole sections in bulk.
 - 3D visualization of your routes with cinematic animations showing elevation profiles and terrain.
 - Strava integration to post your route as an activity to your Strava account (requires Strava login).
 - Import and export activities from/to GPX files
