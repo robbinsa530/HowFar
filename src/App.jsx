@@ -16,6 +16,7 @@ import Sidebar from './components/Sidebar'
 import MobileSidebar from './components/MobileSidebar'
 import ClearMapAreYouSureDialog from './components/dialogs/ClearMapAreYouSureDialog'
 import ClearEditAreYouSureDialog from './components/dialogs/ClearEditAreYouSureDialog'
+import AddPinsToMapDialog from './components/dialogs/AddPinsToMapDialog'
 import SimpleDialog from './components/dialogs/SimpleDialog'
 import PopupDistances from './components/PopupDistances'
 import BottomFloater from './components/BottomFloater'
@@ -134,6 +135,7 @@ function AppContent() {
       { editInfoOpen && <EditInfoBox /> }
       <ClearMapAreYouSureDialog />
       <ClearEditAreYouSureDialog />
+      <AddPinsToMapDialog />
       <PostToStravaDialog />
       <ExportActivityDialog />
       <ImportActivityDialog mapRef={mapRef} />

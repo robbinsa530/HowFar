@@ -7,6 +7,7 @@ const initialState = {
   postToStravaOpen: false,
   exportActivityOpen: false,
   importActivityOpen: false,
+  addPinsToMapOpen: false,
   editInfoOpen: false,
   loading: true,
   locating: false,
@@ -20,7 +21,15 @@ const initialState = {
     id: '',
     longitude: 0,
     latitude: 0
-  }
+  },
+
+  // Pin popup
+  pinPopupOpen: false,
+  pinPopupData: {
+    id: '',
+    longitude: 0,
+    latitude: 0
+  },
 };
 
 const displaySlice = createSlice({
@@ -45,6 +54,9 @@ const displaySlice = createSlice({
     setImportActivityOpen: (state, action) => {
       state.importActivityOpen = action.payload;
     },
+    setAddPinsToMapOpen: (state, action) => {
+      state.addPinsToMapOpen = action.payload;
+    },
     setEditInfoOpen: (state, action) => {
       state.editInfoOpen = action.payload;
     },
@@ -66,6 +78,12 @@ const displaySlice = createSlice({
     setMarkerPopupData: (state, action) => {
       state.markerPopupData = { ...state.markerPopupData, ...action.payload };
     },
+    setPinPopupOpen: (state, action) => {
+      state.pinPopupOpen = action.payload;
+    },
+    setPinPopupData: (state, action) => {
+      state.pinPopupData = { ...state.pinPopupData, ...action.payload };
+    },
     setIsMobile: (state, action) => {
       state.isMobile = action.payload;
     },
@@ -79,6 +97,7 @@ export const {
   setPostToStravaOpen,
   setExportActivityOpen,
   setImportActivityOpen,
+  setAddPinsToMapOpen,
   setEditInfoOpen,
   setLoading,
   setLocating,
@@ -86,6 +105,8 @@ export const {
   setUploadedMessage,
   setMarkerPopupOpen,
   setMarkerPopupData,
+  setPinPopupOpen,
+  setPinPopupData,
   setIsMobile,
 } = displaySlice.actions;
 export default displaySlice.reducer;

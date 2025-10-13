@@ -13,7 +13,8 @@ import {
   setMenuOpen,
   setPostToStravaOpen,
   setExportActivityOpen,
-  setImportActivityOpen
+  setImportActivityOpen,
+  setAddPinsToMapOpen
 } from '../store/slices/displaySlice';
 import {
   setConnectedToStrava
@@ -322,6 +323,22 @@ const SettingsDrawer = () => {
               }
               labelPlacement="start"
             />
+          </Tooltip>
+        </div>
+
+        {/* Extras Section */}
+        <div className="settings-section">
+          <div className="section-divider" />
+          <Typography variant="h6" className="section-title">Extras:</Typography>
+
+          <Tooltip disableInteractive title={<Typography>Add helper pins to the map. These pins are managed separately from your route</Typography>}>
+            <Button
+              className="action-button"
+              variant="contained"
+              onClick={() => dispatch(setAddPinsToMapOpen(true))}
+            >
+              Add/Remove Pins
+            </Button>
           </Tooltip>
         </div>
 

@@ -16,11 +16,15 @@ import cloneDeep from 'lodash.clonedeep';
 // Custom components/controls/actions/layers
 import SearchBoxControl from "./SearchBoxControl";
 import MarkerPopup from "./MarkerPopup";
+import PinPopup from "./PinPopup";
 import MarkerIcon from "./MarkerIcon";
+import PinIcon from "./PinIcon";
 import AddPointInLineMarkerIcon from "./AddPointInLineMarkerIcon";
 import { getErrorMsgFromPositionError } from '../utils/location';
 import { getMouseToMarkerSqDistance } from '../utils/mouseMath';
+import { getPinDisplayPosition } from '../utils/pinEdgePosition';
 import { markersAreCloseEnough } from '../controllers/GeoController';
+import { addPinAtCoordinates } from '../controllers/PinController';
 import { measureLinesLayer, editingMeasureLinesLayer } from '../layers/measureLines';
 import { chevronsLayer1, chevronsLayer2 } from '../layers/chevrons';
 import onMapLoad from '../actions/mapLoad';
@@ -39,7 +43,8 @@ import {
   setDistance,
   setElevationChange,
   setNewDistance,
-  setNewElevationChange
+  setNewElevationChange,
+  setAddPinOnNextClick
 } from '../store/slices/mapSlice';
 import {
   editMarkerInPlace
@@ -48,7 +53,9 @@ import {
   setLoading,
   setLocating,
   setMarkerPopupOpen,
-  setMarkerPopupData
+  setMarkerPopupData,
+  setPinPopupOpen,
+  setPinPopupData
 } from '../store/slices/displaySlice';
 import {
   setMouseDownCoords
@@ -91,7 +98,9 @@ const MapComponent = (props) => {
     mapboxToken,
     location,
     mapType,
-    mapTypes
+    mapTypes,
+    pins,
+    addPinOnNextClick
   } = useSelector((state) => state.map);
   const {
     rightClickEnabled,
@@ -106,6 +115,8 @@ const MapComponent = (props) => {
   const {
     markerPopupOpen,
     markerPopupData,
+    pinPopupOpen,
+    pinPopupData,
     editInfoOpen
   } = useSelector((state) => state.display);
   const {
@@ -254,6 +265,30 @@ const MapComponent = (props) => {
     }
   };
 
+  // Handle clicking on a helper pin (to delete it)
+  const handlePinClick = (event, pin) => {
+    event.originalEvent.stopPropagation();
+    dispatch(setPinPopupOpen(true));
+    dispatch(setPinPopupData({
+      id: pin.id,
+      longitude: pin.lngLat[0],
+      latitude: pin.lngLat[1],
+    }));
+  };
+
+  // If a pin is off screen and is clicked, fly to it
+  const flyToPin = (event, pin) => {
+    event.originalEvent.stopPropagation();
+    mapRef.current.flyTo({center: pin.lngLat, duration: 500});
+  };
+
+  // Allow clicking map to add a pin just once, then go back to normal click behavior
+  const handleAddPinOnNextClick = (event) => {
+    dispatch(setAddPinOnNextClick(false));
+    addPinAtCoordinates(event.lngLat.lat, event.lngLat.lng);
+  };
+
+  // For finishing an edit of a route section
   const handleEditFinishMarkerClick = (event) => {
     event.originalEvent.stopPropagation();
     onFinishMarkerClick(event.originalEvent, editFinishMarker, mapRef.current, false);
@@ -362,7 +397,7 @@ const MapComponent = (props) => {
         onMouseMove={handleMapMouseMove}
         onMouseLeave={handleMapMouseLeave}
         onMove={handleMapMove}
-        onClick={handleMapClick}
+        onClick={addPinOnNextClick ? handleAddPinOnNextClick : handleMapClick}
         onContextMenu={(event) => handleMapClick(event, true)}
         onRightClick={(event) => handleMapClick(event, true)}
 
@@ -486,6 +521,24 @@ const MapComponent = (props) => {
           </Marker>
         )}
 
+        {/* Helper pins */}
+        {pins.map((pin) => {
+          const displayPos = getPinDisplayPosition(mapRef.current, pin);
+          return (
+            <Marker
+              key={pin.id}
+              anchor="center"
+              longitude={displayPos.longitude}
+              latitude={displayPos.latitude}
+              onClick={displayPos.isOnEdge ?
+                (e) => flyToPin(e, pin) // If pin is off screen, fly to it
+                : (e) => handlePinClick(e, pin)} // If pin is on screen, open popup (for delete)
+            >
+              <PinIcon pinId={pin.id} isOnEdge={displayPos.isOnEdge} />
+            </Marker>
+          );
+        })}
+
         {/* Marker popup (just one that will be used for all markers) */}
         {markerPopupOpen && (
           <Popup
@@ -496,6 +549,19 @@ const MapComponent = (props) => {
             focusAfterOpen={false}
           >
             <MarkerPopup mapRef={mapRef} />
+          </Popup>
+        )}
+
+        {/* Pin popup (just one that will be used for all pins) */}
+        {pinPopupOpen && (
+          <Popup
+            anchor="bottom"
+            longitude={pinPopupData.longitude}
+            latitude={pinPopupData.latitude}
+            onClose={() => dispatch(setPinPopupOpen(false))}
+            focusAfterOpen={false}
+          >
+            <PinPopup mapRef={mapRef} />
           </Popup>
         )}
 

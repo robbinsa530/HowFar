@@ -26,7 +26,10 @@ const initialState = {
     'mapbox://styles/mapbox/outdoors-v12',
     'mapbox://styles/mapbox/satellite-streets-v12',
     'mapbox://styles/mapbox/dark-v11'
-  ]
+  ],
+  // Pins could use their own slice, but they're very tied to the map, so I like them here
+  pins: [],
+  addPinOnNextClick: false,
 };
 
 const mapSlice = createSlice({
@@ -66,6 +69,12 @@ const mapSlice = createSlice({
     },
     setMapType: (state, action) => {
       state.mapType = action.payload;
+    },
+    setPins: (state, action) => {
+      state.pins = [ ...action.payload ];
+    },
+    setAddPinOnNextClick: (state, action) => {
+      state.addPinOnNextClick = action.payload;
     }
   }
 });
@@ -82,5 +91,7 @@ export const {
   setMouseOnMarker,
   setHasDefaultLocation,
   setMapType,
+  setPins,
+  setAddPinOnNextClick,
 } = mapSlice.actions;
 export default mapSlice.reducer;
