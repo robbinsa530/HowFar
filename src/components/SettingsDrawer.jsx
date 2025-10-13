@@ -363,7 +363,7 @@ const SettingsDrawer = () => {
               rel="noreferrer"
               className="footer-link"
             >
-              Help
+              How-To
             </a>
             <a
               href="/FAQ.html"
