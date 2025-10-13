@@ -256,6 +256,7 @@ const SettingsDrawer = () => {
             <FormControlLabel
               sx={{ marginLeft: 0, marginRight: 0, width: "100%", justifyContent: 'space-between' }}
               value="display-distance-popup"
+              disabled={isMobile}
               control={
                 <BlueSwitch
                   disabled={isMobile}
@@ -266,9 +267,21 @@ const SettingsDrawer = () => {
               }
               label={
                 <div>
-                  <Typography component="span">Distance on Hover</Typography>
+                  <Typography 
+                    component="span"
+                    sx={{ color: isMobile ? '#88888899' : 'inherit' }}
+                  >
+                    Distance on Hover
+                  </Typography>
                   {isMobile && (
-                    <Typography component="span" sx={{ display: 'block', fontSize: '0.75rem', color: '#00000061' }}>
+                    <Typography 
+                      component="span" 
+                      sx={{ 
+                        display: 'block', 
+                        fontSize: '0.75rem', 
+                        color: '#88888899' 
+                      }}
+                    >
                       (Unavailable on mobile)
                     </Typography>
                   )}
