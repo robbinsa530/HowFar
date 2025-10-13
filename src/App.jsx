@@ -130,7 +130,7 @@ function AppContent() {
       <Sidebar mapRef={mapRef} />
       <MobileSidebar mapRef={mapRef} />
       <SettingsDrawer />
-      { !editInfoOpen && <BottomFloater /> }
+      <BottomFloater />
       { editInfoOpen && <EditInfoBox /> }
       <ClearMapAreYouSureDialog />
       <ClearEditAreYouSureDialog />

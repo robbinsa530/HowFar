@@ -40,4 +40,8 @@
   .bottom-floater-container {
     bottom: 30px;
   }
+
+  .bottom-floater-container.floater-hidden {
+    display: none;
+  }
 }

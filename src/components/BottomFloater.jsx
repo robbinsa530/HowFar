@@ -20,9 +20,10 @@ const BottomFloater = () => {
   const {
     hasDefaultLocation
   } = useSelector((state) => state.map);
+  const { editInfoOpen } = useSelector((state) => state.display);
 
   return (
-    <div className="bottom-floater-container">
+    <div className={`bottom-floater-container ${editInfoOpen ? 'floater-hidden' : ''}`}>
       <div className={"default-location-button"}>
         <Tooltip disableInteractive title={<Typography>
           {hasDefaultLocation ? "Clear saved default start location" : "Save current view as default start location when the map loads"}
