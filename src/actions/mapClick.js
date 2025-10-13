@@ -74,6 +74,7 @@ async function handleLeftRightClick(
     isDragging: false,
     snappedToRoad: true // default to true, seems to work?
   });
+  updateMarkerElevation(map, markerToAdd);
 
   // Save new marker ID
   returnVal.newMarkerId = markerToAdd.id;
@@ -147,7 +148,7 @@ async function handleLeftRightClick(
     }
     markers.unshift(markerToAdd);
   }
-  // Update marker elevation (I don't actually remember why this is needed...)
+  // Update marker elevations in case the markers were moved
   updateMarkerElevation(map, markerToAdd);
   if (prevPt) {
     updateMarkerElevation(map, prevPt);
