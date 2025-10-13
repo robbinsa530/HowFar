@@ -6,7 +6,8 @@ import {
 import {
   setImperialOrMetric,
   setDisplayDistancePopupEnabled,
-  setDisplayChevronsEnabled
+  setDisplayChevronsEnabled,
+  setShowUserLocationEnabled
 } from '../store/slices/settingsSlice';
 import {
   setMenuOpen,
@@ -64,7 +65,8 @@ const SettingsDrawer = () => {
   const {
     imperialOrMetric,
     displayChevronsEnabled,
-    displayDistancePopupEnabled
+    displayDistancePopupEnabled,
+    showUserLocationEnabled
   } = useSelector((state) => state.settings);
   const {
     connectedToStrava
@@ -248,6 +250,37 @@ const SettingsDrawer = () => {
                 />
               }
               label="Route Arrows"
+              labelPlacement="start"
+            />
+          </Tooltip>
+
+          <Tooltip disableInteractive title={<Typography>Show your current location dot on the map after clicking the find my location button on the map</Typography>}>
+            <FormControlLabel
+              sx={{ marginLeft: 0, marginRight: 0, width: "100%", justifyContent: 'space-between' }}
+              value="display-user-location"
+              control={
+                <BlueSwitch
+                  checked={showUserLocationEnabled}
+                  onChange={(e) => dispatch(setShowUserLocationEnabled(e.target.checked))}
+                  name="displayUserLocation"
+                />
+              }
+              label={
+                <div>
+                  <Typography  component="span">
+                    Show My Location
+                  </Typography>
+                  <Typography 
+                      component="span" 
+                      sx={{ 
+                        display: 'block', 
+                        fontSize: '0.75rem', 
+                      }}
+                    >
+                      (On "Find My Location" Click)
+                    </Typography>
+                </div>
+              }
               labelPlacement="start"
             />
           </Tooltip>

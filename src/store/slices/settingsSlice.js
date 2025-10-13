@@ -9,7 +9,8 @@ const initialState = {
   walkwayBias: 0, // -1 to 1, favor roads vs walkways
   imperialOrMetric: 'imperial', // 'imperial' or 'metric'
   displayDistancePopupEnabled: true,
-  displayChevronsEnabled: true
+  displayChevronsEnabled: true,
+  showUserLocationEnabled: false
 };
 
 const settingsSlice = createSlice({
@@ -42,6 +43,9 @@ const settingsSlice = createSlice({
     },
     setDisplayChevronsEnabled: (state, action) => {
       state.displayChevronsEnabled = action.payload;
+    },
+    setShowUserLocationEnabled: (state, action) => {
+      state.showUserLocationEnabled = action.payload;
     }
   }
 });
@@ -55,6 +59,7 @@ export const {
   setRightClickEnabled,
   setAddMarkerInLineEnabled,
   setDisplayDistancePopupEnabled,
-  setDisplayChevronsEnabled
+  setDisplayChevronsEnabled,
+  setShowUserLocationEnabled
 } = settingsSlice.actions;
 export default settingsSlice.reducer;

@@ -96,7 +96,8 @@ const MapComponent = (props) => {
   const {
     rightClickEnabled,
     addMarkerInLineEnabled,
-    displayChevronsEnabled
+    displayChevronsEnabled,
+    showUserLocationEnabled
   } = useSelector((state) => state.settings);
   const {
     geojson,
@@ -502,8 +503,9 @@ const MapComponent = (props) => {
         <SearchBox mapboxToken={mapboxToken} currentLocation={location} />
         <NavigationControl position="top-right" />
         <GeolocateControl
+          key={showUserLocationEnabled ? 'show' : 'hide'} // Hack to re-render the control when showUserLocationEnabled changes. Only way to allow changing showUserLocation prop
           showAccuracyCircle={false}
-          showUserLocation={false}
+          showUserLocation={showUserLocationEnabled}
           positionOptions={{
             maximumAge: 1000*60*60, // Can return cached location if < 1hr old
             timeout: 7000 // 7 Seconds. 5 seems short but 10 seems long. idk
