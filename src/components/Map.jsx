@@ -100,7 +100,9 @@ const MapComponent = (props) => {
     mapType,
     mapTypes,
     pins,
-    addPinOnNextClick
+    addPinOnNextClick,
+    pendingPinName,
+    pendingPinColor
   } = useSelector((state) => state.map);
   const {
     rightClickEnabled,
@@ -273,6 +275,7 @@ const MapComponent = (props) => {
       id: pin.id,
       longitude: pin.lngLat[0],
       latitude: pin.lngLat[1],
+      name: pin.name || '',
     }));
   };
 
@@ -285,7 +288,7 @@ const MapComponent = (props) => {
   // Allow clicking map to add a pin just once, then go back to normal click behavior
   const handleAddPinOnNextClick = (event) => {
     dispatch(setAddPinOnNextClick(false));
-    addPinAtCoordinates(event.lngLat.lat, event.lngLat.lng);
+    addPinAtCoordinates(event.lngLat.lat, event.lngLat.lng, pendingPinName, pendingPinColor);
   };
 
   // For finishing an edit of a route section
@@ -534,7 +537,7 @@ const MapComponent = (props) => {
                 (e) => flyToPin(e, pin) // If pin is off screen, fly to it
                 : (e) => handlePinClick(e, pin)} // If pin is on screen, open popup (for delete)
             >
-              <PinIcon pinId={pin.id} isOnEdge={displayPos.isOnEdge} />
+              <PinIcon pinId={pin.id} isOnEdge={displayPos.isOnEdge} color={pin.color} />
             </Marker>
           );
         })}

@@ -28,7 +28,8 @@ const initialState = {
   pinPopupData: {
     id: '',
     longitude: 0,
-    latitude: 0
+    latitude: 0,
+    name: ''
   },
 };
 

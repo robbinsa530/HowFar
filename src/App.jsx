@@ -25,11 +25,15 @@ import SettingsDrawer from './components/SettingsDrawer'
 import PostToStravaDialog from './components/dialogs/PostToStravaDialog'
 import ExportActivityDialog from './components/dialogs/ExportActivityDialog'
 import ImportActivityDialog from './components/dialogs/ImportActivityDialog'
+import AddPinHelperPopup from './components/AddPinHelperPopup'
 import './App.css'
 
 function AppContent() {
   const dispatch = useDispatch();
-  const { mapboxToken } = useSelector((state) => state.map);
+  const {
+    mapboxToken,
+    addPinOnNextClick
+  } = useSelector((state) => state.map);
   const {
     loading,
     locating,
@@ -143,6 +147,7 @@ function AppContent() {
       { loading && <SimpleDialog open={loading} text="Loading..." /> }
       { locating && <SimpleDialog open={locating} text="Locating..." /> }
       { uploading && <SimpleDialog open={uploading} text="Uploading..." /> }
+      { addPinOnNextClick && <AddPinHelperPopup /> }
     </div>
   );
 }

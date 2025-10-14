@@ -126,6 +126,43 @@
             text-decoration: underline;
         }
 
+        .table-of-contents {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+
+        .table-of-contents h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .table-of-contents ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .table-of-contents li {
+            margin: 10px 0;
+        }
+
+        .table-of-contents a {
+            color: #3498db;
+            text-decoration: none;
+            font-size: 1.05em;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .table-of-contents a:hover {
+            color: #2980b9;
+            transform: translateX(5px);
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -152,8 +189,23 @@
     </div>
 
     <div class="content">
+        <div class="table-of-contents">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#mapping-functionality">Mapping Functionality</a></li>
+                <li><a href="#add-waypoints">Add Waypoints in Line Segments</a></li>
+                <li><a href="#edit-route">Edit Route Between Points</a></li>
+                <li><a href="#map-types">Map Types</a></li>
+                <li><a href="#pins">Pins</a></li>
+                <li><a href="#post-to-strava">Post to Strava</a></li>
+                <li><a href="#favored-surface">Favored Surface Type Slider</a></li>
+                <li><a href="#export-activity">Export Activity</a></li>
+                <li><a href="#import-activity">Import Activity</a></li>
+                <li><a href="#3d-visualization">3D Visualization</a></li>
+            </ul>
+        </div>
 
-        <h2>Mapping Functionality</h2>
+        <h2 id="mapping-functionality">Mapping Functionality</h2>
         <p>Create a route by clicking on the map. As you click, the most efficient route between your selected points will be calculated and automatically drawn onto the map. Turn off "Auto Follow Roads" or right click at any time to route a straight line between your points instead. This is useful when your route does not follow established roads or paths, for example when it goes through an open field, off trail in the wilderness, or hops a curb from a road to a path.</p>
 
         <div class="image-container">
@@ -179,7 +231,7 @@
 
         <p>And don't forget you can undo any actions at any time, as well as clear your route or turn it into an out and back.</p>
 
-        <h2>Add Waypoints in Line Segments</h2>
+        <h2 id="add-waypoints">Add Waypoints in Line Segments</h2>
         <p>Enabling the "Edit lines on click" will allow you to edit existing line segments within your route. When disabled (which is the default) clicking on a part of your route will simply add a new waypoint to the end of beginning of the route (depending on the "Add new points to beginning/end" option). But when this setting is enabled, hovering the mouse over a line will reveal a gray "add new" waypoint. Clicking on the line will add a waypoint at that point in the middle of the line, allowing it to be dragged/edited.</p>
 
         <div class="image-container">
@@ -192,7 +244,7 @@
             <div class="image-caption">After the point has been added, it can be moved, editing that section of your route in place</div>
         </div>
 
-        <h2>Edit Route Between Points</h2>
+        <h2 id="edit-route">Edit Route Between Points</h2>
         <p>If you need to edit a section in the middle of your route, rather than adding points in-line and dragging them around, you can use the edit feature to select 2 points and completely redraw the section between them. To begin, click the "Edit" button in the sidebar.</p>
         <div class="image-container">
             <img src="./assets/edit_route_select_points.png" alt="Selecting points to edit route between">
@@ -219,7 +271,7 @@
             <div class="image-caption">To finish, click on the other glowing point. If you are happy with the final new distance and elevation gain/loss, click "Finish". If you are not, you can "Undo" your last point placement and keep editing.</div>
         </div>
         
-        <h2>Map Types</h2>
+        <h2 id="map-types">Map Types</h2>
         <p>HowFar has multiple map types.</p>
 
         <div class="feature-grid">
@@ -252,7 +304,29 @@
             </div>
         </div>
 
-        <h2>Post to Strava</h2>
+        <h2 id="pins">Pins</h2>
+        <p>You can place helper pins on your map to help you visually when routing. These points are separate from your route and will in no way effect route legs, waypoints of distance.</p>
+        <p>Pins can be useful when you are attempting to route between specific locations, or in an area you don't know well. They can be named, and they always show up on the map. If a pin is off screen, you will see it on the edge of the map in the direction that it is located.</p>
+        <div class="note">
+            <strong>Tip:</strong> Click on a pin that is off screen (will bevisible on the edge of the map) to move the map to its location.
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/add_pins_button.png" alt="Add/Remove Pins button in settings menu">
+            <div class="image-caption">Click the "Add/Remove Pins" button in the settings menu to open the pins popup.</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/add_pin_popup.png" alt="Add/Remove Pins popup">
+            <div class="image-caption">Pins can be placed at a specific coordinate, or by clicking on the map. You can also remove all pins at once.</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/pins_on_off_screen.png" alt="Add/Remove Pins popup">
+            <div class="image-caption">Pins on and off screen. Notice the pin which is off screen shows up slightly transparent on the edge of the map. Click on these pins to go to their location. Click on an on-screen pin to delete it.</div>
+        </div>
+
+        <h2 id="post-to-strava">Post to Strava</h2>
         <p>Clicking into the menu at the top left of the sidebar opens more settings. The first two buttons in the sidebar are "Connect with Strava" and "Post Activity". Before an activity can be posted to Strava, you must first connect using the "Connect with Strava" button. This will bring up a Strava controlled login window. Note that HowFar never sees and does not save your login info, but it does save a token safely in the browser which will prevent you from having to re-login to Strava every time you open the app. The token lasts 6 months and can be deleted by clearing your cookies.</p>
 
         <p>Underneath the "Connect with Strava" button you will see your connection status. If you are connected, you will see a green check. This indicates that you have already logged in and are able to post your activity. If you see a red X, you will need to login.</p>
@@ -269,7 +343,7 @@
             <div class="image-caption">Post activity to strava dialog window</div>
         </div>
 
-        <h2>Favored Surface Type Slider</h2>
+        <h2 id="favored-surface">Favored Surface Type Slider</h2>
         <p>This can be a confusing feature, but can also be helpful for mapping different types of activities, or for mapping in certain geographic areas. Basically, the closer the slider is to favoring "Roads", the more weight the mapping service will put on keeping your route <strong>ON</strong> roads. The closer the slider is to favoring "Walkways", the more weight the mapping service will put on keeping you <strong>OFF</strong> of roads and on sidewalks, trails, path and walkways.</p>
 
         <div class="image-container">
@@ -287,7 +361,7 @@
             <div class="image-caption">Routing with the slider all the way toward "Roads". The route avoids paths and stays on roads</div>
         </div>
 
-        <h2>Export Activity</h2>
+        <h2 id="export-activity">Export Activity</h2>
         <p>Activities (routes) can be exported to GPX files for portability with other applications. To do this, click on the menu icon in the top left of the sidebar and find and click the "Export Activity" button. Then just enter a file name and click "Export".</p>
 
         <p>File names can only contain letters, numbers, dashes (-), underscores (_), and periods (.)</p>
@@ -306,7 +380,7 @@
             <div class="image-caption">Choose a custom filename before exporting an activity so you can easily find it later</div>
         </div>
 
-        <h2>Import Activity</h2>
+        <h2 id="import-activity">Import Activity</h2>
         <p>Routes can be imported into HowFar from a GPX file. These GPX files can be ones that were exported from HowFar, from a watch, or any other place. As long as it is a valid GPX file it can be imported to HowFar. Once imported, routes can be edited as normal.</p>
 
         <p>To import a route, click on the menu icon in the top left of the sidebar and find and click the "Import Activity" button. Then just choose a file and click "Import".</p>
@@ -316,7 +390,7 @@
             <div class="image-caption">Import activities by clicking the Import button</div>
         </div>
 
-        <h2>3D Visualization</h2>
+        <h2 id="3d-visualization">3D Visualization</h2>
         <p>Visualize your route from above with HowFar's 3D visualization feature. Once you've created a route, you can view it in a 3D aerial view that shows elevation profiles, terrain details, and provides a cinematic fly-through that you can either animate, or control yourself.</p>
 
         <p>The 3D visualization gives you a unique perspective on your planned activities, helping you understand the elevation changes and terrain you'll encounter. This is particularly useful for trail runs, hikes, and bike rides on terrain with elevation change, but can also be used to visualize race courses or other complex routes.</p>

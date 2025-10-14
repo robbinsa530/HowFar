@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  setAddPinOnNextClick
+  setAddPinOnNextClick,
+  setPendingPinName,
+  setPendingPinColor
 } from '../../store/slices/mapSlice';
 import {
   setMenuOpen,
@@ -22,6 +24,22 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import InputLabel from '@mui/material/InputLabel';
+import FormControl from '@mui/material/FormControl';
+
+const PIN_COLORS = [
+  { value: 'red', label: 'Red' },
+  { value: 'blue', label: 'Blue' },
+  { value: 'green', label: 'Green' },
+  { value: 'yellow', label: 'Yellow' },
+  { value: 'orange', label: 'Orange' },
+  { value: 'purple', label: 'Purple' },
+  { value: 'pink', label: 'Pink' },
+  { value: 'black', label: 'Black' },
+  { value: 'white', label: 'White' }
+];
 
 function AddPinsToMapDialog() {
   const dispatch = useDispatch();
@@ -29,6 +47,8 @@ function AddPinsToMapDialog() {
     addPinsToMapOpen
   } = useSelector((state) => state.display);
 
+  const [pinName, setPinName] = useState('');
+  const [pinColor, setPinColor] = useState('red');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [useCommaSeparated, setUseCommaSeparated] = useState(false);
@@ -37,12 +57,16 @@ function AddPinsToMapDialog() {
   const handleCancel = () => {
     dispatch(setAddPinsToMapOpen(false));
     dispatch(setMenuOpen(false));
+    setPinName('');
+    setPinColor('red');
     setLatitude('');
     setLongitude('');
     setCommaSeparatedValue('');
   };
 
   const handleAddPinOnNextClick = () => {
+    dispatch(setPendingPinName(pinName));
+    dispatch(setPendingPinColor(pinColor));
     dispatch(setAddPinOnNextClick(true));
     handleCancel()
   };
@@ -60,9 +84,9 @@ function AddPinsToMapDialog() {
       lat = latitude;
       lon = longitude;
     }
-    
+
     if (lat && lon) {
-      addPinAtCoordinates(parseFloat(lat), parseFloat(lon));
+      addPinAtCoordinates(parseFloat(lat), parseFloat(lon), pinName, pinColor);
       handleCancel();
     }
   };
@@ -110,6 +134,34 @@ function AddPinsToMapDialog() {
         <Typography variant="body2" sx={{ mb: 3 }}>
           Helper pins are separate from your route and will not be used for routing or distance calculations. They just serve as visual guides while routing. They can be deleted by clicking them, or by opening this popup and clicking "Remove All Pins"
         </Typography>
+
+        {/* Pin Name and Color inputs */}
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            label="Pin Name (Optional)"
+            value={pinName}
+            onChange={(e) => setPinName(e.target.value)}
+            size="small"
+            fullWidth
+            sx={{ mb: 1.5 }}
+            placeholder="e.g. Start Point"
+          />
+          <FormControl fullWidth size="small">
+            <InputLabel id="pin-color-label">Pin Color</InputLabel>
+            <Select
+              labelId="pin-color-label"
+              value={pinColor}
+              label="Pin Color"
+              onChange={(e) => setPinColor(e.target.value)}
+            >
+              {PIN_COLORS.map((color) => (
+                <MenuItem key={color.value} value={color.value}>
+                  {color.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
 
         {/* Row 1: Add pin on next map click */}
         <Box sx={{ mb: 2 }}>

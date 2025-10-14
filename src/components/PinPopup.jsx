@@ -17,6 +17,17 @@ const PinPopup = () => {
 
   return (
     <div>
+      {pinPopupData.name && (
+        <div style={{
+          color: 'black',
+          marginBottom: '8px', 
+          fontWeight: 'bold',
+          fontSize: '14px',
+          textAlign: 'center'
+        }}>
+          {pinPopupData.name}
+        </div>
+      )}
       <button
         className="marker-popup-btn"
         onClick={handleRemovePin}

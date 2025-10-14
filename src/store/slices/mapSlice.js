@@ -30,6 +30,8 @@ const initialState = {
   // Pins could use their own slice, but they're very tied to the map, so I like them here
   pins: [],
   addPinOnNextClick: false,
+  pendingPinName: '',
+  pendingPinColor: 'red',
 };
 
 const mapSlice = createSlice({
@@ -75,6 +77,12 @@ const mapSlice = createSlice({
     },
     setAddPinOnNextClick: (state, action) => {
       state.addPinOnNextClick = action.payload;
+    },
+    setPendingPinName: (state, action) => {
+      state.pendingPinName = action.payload;
+    },
+    setPendingPinColor: (state, action) => {
+      state.pendingPinColor = action.payload;
     }
   }
 });
@@ -93,5 +101,7 @@ export const {
   setMapType,
   setPins,
   setAddPinOnNextClick,
+  setPendingPinName,
+  setPendingPinColor,
 } = mapSlice.actions;
 export default mapSlice.reducer;
