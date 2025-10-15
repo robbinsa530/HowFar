@@ -144,7 +144,7 @@ function AddPinsToMapDialog() {
             size="small"
             fullWidth
             sx={{ mb: 1.5 }}
-            placeholder="e.g. Start Point"
+            placeholder="e.g. MyDestination"
           />
           <FormControl fullWidth size="small">
             <InputLabel id="pin-color-label">Pin Color</InputLabel>

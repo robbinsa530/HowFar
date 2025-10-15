@@ -16,14 +16,16 @@ const PinPopup = () => {
   };
 
   return (
-    <div>
+    <div style={{ textAlign: 'center' }}>
       {pinPopupData.name && (
         <div style={{
           color: 'black',
           marginBottom: '8px', 
           fontWeight: 'bold',
           fontSize: '14px',
-          textAlign: 'center'
+          textAlign: 'center',
+          wordWrap: 'break-word',
+          maxWidth: '200px'
         }}>
           {pinPopupData.name}
         </div>
