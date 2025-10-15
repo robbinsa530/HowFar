@@ -22,8 +22,18 @@ export function getPinDisplayPosition(map, pin) {
 
   // Get viewport dimensions in CSS pixels (not device pixels)
   const container = map.getContainer();
-  const viewportWidth = container.clientWidth;
-  const viewportHeight = container.clientHeight;
+  let viewportWidth = container.clientWidth;
+  let viewportHeight = container.clientHeight;
+  // Weird bug on some mobile devices (at least my Pixel) where the container is taller than the body.
+  // This makes it so the pin will go off screen at the bottom.
+  // To fix this, we use the visualViewport if it exists and is valid, but fallback to the container otherwise.
+  // -> map.getContainer() gives a too-tall height on mobile sometimes
+  // -> document.body.clientHeight gives right height on mobile and does not change unless page render changes (added components shrinking map)
+  // -> window.visualViewport.height gives right height on mobile and will shrink/grow depending on pinch zoom (on screen, not map, tbh unlikely but nice to have that edge case covered)
+  if (window.visualViewport && typeof window.visualViewport.width === 'number' && typeof window.visualViewport.height === 'number') {
+    viewportWidth = window.visualViewport.width;
+    viewportHeight = window.visualViewport.height;
+  }
 
   // Pin is centered, so it extends half its size in each direction
   // Leave a small amount visible (e.g., 5px) when clamping to edge
