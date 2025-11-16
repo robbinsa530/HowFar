@@ -17,7 +17,6 @@ function onUndoMarkerDrag(undoInfo) {
   let draggedMarker = markers.find(m => m.id === undoInfo.markerId);
   draggedMarker.lngLat = undoInfo.oldPosition;
   draggedMarker.snappedToRoad = undoInfo.oldSnappedToRoad;
-  draggedMarker.elevation = undoInfo.oldElevation;
   // The 3 cases are:
   // 1. The only existing marker was moved. Nothing else needs to be done
   // 2. An end point was moved. Move it back and adjust one line (if info.lines.length === 1)
@@ -25,8 +24,6 @@ function onUndoMarkerDrag(undoInfo) {
   undoInfo.lines.forEach(l => {
     let lineRef = geojson.features.find(f => f.properties.id === l.properties.id);
     lineRef.properties.distance = l.properties.distance;
-    lineRef.properties.eleUp = l.properties.eleUp;
-    lineRef.properties.eleDown = l.properties.eleDown;
     lineRef.geometry.coordinates = l.geometry.coordinates;
   });
 

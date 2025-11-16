@@ -1,7 +1,13 @@
 /*
 Functions used for resetting app states (stopping an edit, clearing the map, etc.)
 */
-import { setNewDistance, setNewElevationChange } from '../store/slices/mapSlice';
+import {
+  setNewDistance,
+  setJustEditingDistance,
+  setNewElevationChange,
+  setNewElevationProfile,
+  setNewElevationProfileExtraData
+} from '../store/slices/mapSlice';
 import { setMarkers, setGeojsonFeatures, setUndoActionList } from '../store/slices/routeSlice';
 import { setEditInfoOpen } from '../store/slices/displaySlice';
 import { resetEditRouteState } from '../store/slices/editRouteSlice';
@@ -12,9 +18,25 @@ export function resetEditStateBasics() {
   store.dispatch(setEditInfoOpen(false));
   store.dispatch(resetEditRouteState());
   store.dispatch(setNewDistance(0.0));
+  store.dispatch(setJustEditingDistance(0.0));
   store.dispatch(setNewElevationChange({
     eleUp: 0.0,
     eleDown: 0.0
+  }));
+  store.dispatch(setNewElevationProfile([]));
+  store.dispatch(setNewElevationProfileExtraData({
+    splitIndexStart: -1,
+    splitIndexEnd: -1,
+    interpolatedPointBefore: [],
+    interpolatedPointAfter: [],
+    elevationChangeBefore: {
+      eleUp: 0.0,
+      eleDown: 0.0
+    },
+    elevationChangeAfter: {
+      eleUp: 0.0,
+      eleDown: 0.0
+    }
   }));
 }
 

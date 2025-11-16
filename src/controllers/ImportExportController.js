@@ -1,7 +1,6 @@
 import store from '../store/store';
 
 import { geojsonToPointsForGpx } from './StravaController'
-import { getElevationChange } from './GeoController'
 import { Marker } from './MarkerController'
 import { setLoading } from '../store/slices/displaySlice'
 import { setMarkers, setGeojsonFeatures } from '../store/slices/routeSlice'
@@ -81,7 +80,7 @@ export async function loadRouteFromPoints(points, map) {
     padding: {top: 20, bottom: 20, left: sidebarWidth + 20, right: 20}
   });
 
-  // Wait for map to idle so we can get elevation info
+  // Wait for map to idle so we know it's all there
   store.dispatch(setLoading(true));
   await map.once("idle");
   store.dispatch(setLoading(false));
@@ -118,8 +117,6 @@ export async function loadRouteFromPoints(points, map) {
       properties: {
         id: uuidv4(),
         // distance: (Needs to be added)
-        // eleUp: (Needs to be added)
-        // eleDown: (Needs to be added)
       },
       geometry: {
         type: 'LineString',
@@ -127,13 +124,6 @@ export async function loadRouteFromPoints(points, map) {
       }
     };
     line.properties.distance = length(line, {units: 'miles'});
-    const startPtEl = map.queryTerrainElevation(
-      line.geometry.coordinates[0], { exaggerated: false }
-    )
-    const [up, down] = getElevationChange(map, line, startPtEl);
-    line.properties.eleUp = up;
-    line.properties.eleDown = down;
-
     geojson.features.push(line);
   });
 
@@ -164,10 +154,7 @@ export async function loadRouteFromPoints(points, map) {
       lngLat: obj.coords,
       associatedLines: obj.associatedLines,
       isDragging: false,
-      snappedToRoad: false,
-      elevation: map.queryTerrainElevation(
-        obj.coords, { exaggerated: false }
-      )
+      snappedToRoad: false
     }));
   }
 

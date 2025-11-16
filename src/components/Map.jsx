@@ -14,7 +14,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import cloneDeep from 'lodash.clonedeep';
 
 // Custom components/controls/actions/layers
-import SearchBoxControl from "./SearchBoxControl";
+import SearchBoxControl from "./mapbox-controls/SearchBoxControl";
+import ElevationControl from "./mapbox-controls/ElevationControl";
 import MarkerPopup from "./MarkerPopup";
 import PinPopup from "./PinPopup";
 import MarkerIcon from "./MarkerIcon";
@@ -23,7 +24,11 @@ import AddPointInLineMarkerIcon from "./AddPointInLineMarkerIcon";
 import { getErrorMsgFromPositionError } from '../utils/location';
 import { getMouseToMarkerSqDistance } from '../utils/mouseMath';
 import { getPinDisplayPosition } from '../utils/pinEdgePosition';
-import { markersAreCloseEnough } from '../controllers/GeoController';
+import {
+  markersAreCloseEnough,
+  getElevationDataForRoute,
+  getElevationChange,
+} from '../controllers/GeoController';
 import { addPinAtCoordinates } from '../controllers/PinController';
 import { measureLinesLayer, editingMeasureLinesLayer } from '../layers/measureLines';
 import { chevronsLayer1, chevronsLayer2 } from '../layers/chevrons';
@@ -41,9 +46,13 @@ import onInlineMarkerClick from '../actions/inlineMarkerClick';
 import {
   setLocation,
   setDistance,
+  setElevationProfile,
   setElevationChange,
   setNewDistance,
+  setJustEditingDistance,
   setNewElevationChange,
+  setNewElevationProfile,
+  setNewElevationProfileExtraData,
   setAddPinOnNextClick
 } from '../store/slices/mapSlice';
 import {
@@ -55,7 +64,10 @@ import {
   setMarkerPopupOpen,
   setMarkerPopupData,
   setPinPopupOpen,
-  setPinPopupData
+  setPinPopupData,
+  setElevationProfileOpen,
+  setElevationLoading,
+  setNewElevationLoading
 } from '../store/slices/displaySlice';
 import {
   setMouseDownCoords
@@ -71,7 +83,7 @@ import {
 } from '../store/slices/editRouteSlice';
 
 // We have a "custom" search box control we inject into the map
-function SearchBox(args) {
+function SearchBoxControlWrapper(args) {
   const controlRef = useRef(null);
   const control = useControl(() => {
     controlRef.current = new SearchBoxControl(args);
@@ -84,6 +96,32 @@ function SearchBox(args) {
       controlRef.current.updateLocation(args.currentLocation);
     }
   }, [args.currentLocation]);
+
+  return null; // nothing to render in React tree
+}
+
+// Elevation control wrapper
+function ElevationControlWrapper() {
+  const controlRef = useRef(null);
+  const dispatch = useDispatch();
+  const { elevationProfileOpen } = useSelector((state) => state.display);
+
+  const control = useControl(() => {
+    controlRef.current = new ElevationControl();
+    return controlRef.current;
+  }, { position: "top-right" });
+
+  // Listen for elevation control clicks
+  useEffect(() => {
+    const handleElevationControlClick = () => {
+      dispatch(setElevationProfileOpen(!elevationProfileOpen));
+    };
+
+    window.addEventListener('elevationControlClick', handleElevationControlClick);
+    return () => {
+      window.removeEventListener('elevationControlClick', handleElevationControlClick);
+    };
+  }, [dispatch, elevationProfileOpen]);
 
   return null; // nothing to render in React tree
 }
@@ -102,7 +140,9 @@ const MapComponent = (props) => {
     pins,
     addPinOnNextClick,
     pendingPinName,
-    pendingPinColor
+    pendingPinColor,
+    elevationProfile,
+    newElevationProfileExtraData,
   } = useSelector((state) => state.map);
   const {
     rightClickEnabled,
@@ -309,72 +349,190 @@ const MapComponent = (props) => {
 
   // Handle marker drag end
   const handleMarkerDragEnd = (event, index) => {
-    onMarkerDragEnd(event, mapRef.current, index);
+    onMarkerDragEnd(event, index);
   };
 
   // Handle add point in line marker click (for splitting a line with a new point)
   const handleAddPointInLineMarkerClick = (event) => {
-    onInlineMarkerClick(mapRef.current);
+    onInlineMarkerClick();
     dispatch(resetAddPointInLineState());
   };
 
-  // Update distance and elevation state when geojson or markers change
+  // Update distance and elevation state when geojson changes
   useEffect(() => {
+    // Add up distance first...
     let distTotal = 0.0;
-    let eleUpTotal = 0.0;
-    let eleDownTotal = 0.0;
     geojson.features.forEach(line => {
       distTotal += line.properties.distance;
-      eleUpTotal += line.properties.eleUp;
-      eleDownTotal += line.properties.eleDown;
     });
     dispatch(setDistance(distTotal));
-    dispatch(setElevationChange({
-      eleUp: eleUpTotal * 3.28084,
-      eleDown: eleDownTotal * 3.28084
-    }));
+
+    // Then set the elevation profile and change
+    if (geojson.features.length === 0) {
+      dispatch(setElevationProfile([]));
+      dispatch(setElevationChange({
+        eleUp: 0.0,
+        eleDown: 0.0
+      }));
+      dispatch(setElevationLoading(false));
+      return;
+    }
+
+    dispatch(setElevationLoading(true));
+    getElevationDataForRoute(geojson, distTotal).then(elevationData => {
+      // Set the profile
+      dispatch(setElevationProfile(elevationData));
+
+      // Calculate and set the change
+      const [eleUpTotal, eleDownTotal] = getElevationChange(elevationData);
+      dispatch(setElevationChange({
+        eleUp: eleUpTotal,
+        eleDown: eleDownTotal
+      }));
+    }).catch(error => {
+      console.error('Error fetching elevation data:', error);
+    }).finally(() => {
+      dispatch(setElevationLoading(false));
+    });
   }, [dispatch, geojson]);
 
-  // Update distance and elevation state OF NEW MEASUREMENTS (when editing) when geojson or markers change
+  // Update distance and elevation state OF NEW MEASUREMENTS (when editing) when geojson changes
   useEffect(() => {
     if (!editRedrawingRoute) {
       return;
     }
 
-    let distTotal = 0.0;
-    let eleUpTotal = 0.0;
-    let eleDownTotal = 0.0;
-
     // (segs)     0       1       2       3       4       5       6       7       8       9
     // (mrkrs) 0------1-------2-------3-------4-------5-------6-------7-------8-------9-------10
     //                        X                       X
     // In this case we want segs [0, 1], [5, 6, 7, 8, 9]
-    // Add up distance and elevation before and after the editing section
-    // Could technically also filter "where properties.editing is false"...
-    geojson.features.filter((_, index) => index < startEndMarkerIndices.start || index >= startEndMarkerIndices.end).forEach(line => {
-      distTotal += line.properties.distance;
-      eleUpTotal += line.properties.eleUp;
-      eleDownTotal += line.properties.eleDown;
+    // Add up distance before and after the editing section
+    let distBefore = 0.0;
+    let distAfter = 0.0;
+    let newDistTotal = 0.0;
+    geojson.features.filter((_, index) => index < startEndMarkerIndices.start).forEach(line => {
+      distBefore += line.properties.distance;
     });
-
-    // Add up distance and elevation for the editing section
+    geojson.features.filter((_, index) => index >= startEndMarkerIndices.end).forEach(line => {
+      distAfter += line.properties.distance;
+    });
+    // Add up distance for the editing section
     editingGeojson.features.forEach(line => {
-      distTotal += line.properties.distance;
-      eleUpTotal += line.properties.eleUp;
-      eleDownTotal += line.properties.eleDown;
+      newDistTotal += line.properties.distance;
     });
+    dispatch(setNewDistance(distBefore + distAfter + newDistTotal));
+    dispatch(setJustEditingDistance(newDistTotal));
 
-    dispatch(setNewDistance(distTotal));
-    dispatch(setNewElevationChange({
-      eleUp: eleUpTotal * 3.28084,
-      eleDown: eleDownTotal * 3.28084
-    }));
+    // Calculate elevation change and new profile
+    dispatch(setNewElevationLoading(true));
+    getElevationDataForRoute(editingGeojson, newDistTotal).then(elevationData => {
+      // Set the new profile (make sure to adjust for distance before edit section)
+      dispatch(setNewElevationProfile(elevationData.map(elArr => [elArr[0] + distBefore, elArr[1]])));
+
+      // Calculate the new change
+      const [eleUpTotal, eleDownTotal] = getElevationChange(elevationData);
+
+      // Set the new change
+      // Make sure to factor in the change in elevation from the old geojson before and after the editing section
+      dispatch(setNewElevationChange({
+        eleUp: eleUpTotal + newElevationProfileExtraData.elevationChangeBefore.eleUp + newElevationProfileExtraData.elevationChangeAfter.eleUp,
+        eleDown: eleDownTotal + newElevationProfileExtraData.elevationChangeBefore.eleDown + newElevationProfileExtraData.elevationChangeAfter.eleDown
+      }));
+    }).catch(error => {
+      console.error('Error fetching elevation data:', error);
+    }).finally(() => {
+      dispatch(setNewElevationLoading(false));
+    });
   }, [
     dispatch,
     geojson,
     editingGeojson,
     startEndMarkerIndices,
-    editRedrawingRoute
+    editRedrawingRoute,
+    newElevationProfileExtraData
+  ]);
+
+  // Once points are selected for editing, calcualte a few helpful things for displaying a fun, split elevation profile chart
+  useEffect(() => {
+    if (startEndMarkerIndices.start === -1 || startEndMarkerIndices.end === -1) {
+      return;
+    }
+
+    // Calculate split indices (where the selected markers line up with the elevationProfile)
+    // Step 1: Calculate distance to start and end edit markers
+    const distanceToEditStartMarker = geojson.features.filter((_, index) => index < startEndMarkerIndices.start).reduce((acc, line) => acc + line.properties.distance, 0);
+    const distanceToEditEndMarker = geojson.features.filter((_, index) => index < startEndMarkerIndices.end).reduce((acc, line) => acc + line.properties.distance, 0);
+
+    // Step 2: Find locations of points in elevationProfile that are closest to the start and end edit markers
+    // findIndex will find the points just AFTER the point we want
+    const closestPointStartIndex = elevationProfile.findIndex((point) => point[0] >= distanceToEditStartMarker);
+    const closestPointEndIndex = elevationProfile.findIndex((point) => point[0] >= distanceToEditEndMarker);
+
+    // Step 3: Calculate the interpolated point before and after the edit section
+    // Because we found first point AFTER the points we want, we'll interpolate between the previous point and the found point
+    if (closestPointStartIndex === -1 || closestPointEndIndex === -1) {
+      console.error('Error finding closest points in elevation profile. Could not calculate new elevation profile.');
+      return;
+    }
+
+    let interpolatedStartPtEle;
+    let interpolatedEndPtEle;
+    if (closestPointStartIndex === 0) { // Technically impossible because we don't allow selecting start marker for edit
+      interpolatedStartPtEle = elevationProfile[closestPointStartIndex][1];
+    } else {
+      const nextStartPt = elevationProfile[closestPointStartIndex];
+      const prevStartPt = elevationProfile[closestPointStartIndex - 1];
+      const ratioStart = (distanceToEditStartMarker - prevStartPt[0]) / (nextStartPt[0] - prevStartPt[0]);
+      interpolatedStartPtEle = prevStartPt[1] + (nextStartPt[1] - prevStartPt[1]) * ratioStart;
+    }
+
+    if (closestPointEndIndex === 0) { // Technically impossible because we don't allow selecting start marker for edit (and end edit marker can't be before start edit marker...)
+      interpolatedEndPtEle = elevationProfile[closestPointEndIndex][1];
+    } else {
+      const nextEndPt = elevationProfile[closestPointEndIndex];
+      const prevEndPt = elevationProfile[closestPointEndIndex - 1];
+      const ratioEnd = (distanceToEditEndMarker - prevEndPt[0]) / (nextEndPt[0] - prevEndPt[0]);
+      interpolatedEndPtEle = prevEndPt[1] + (nextEndPt[1] - prevEndPt[1]) * ratioEnd;
+    }
+
+    // Step 4: Add up the elevation change before and after the edit section (this only needs to be done once so we do it here instead of the other useEffect)
+    let [eleUpTotalBefore, eleDownTotalBefore] = getElevationChange(elevationProfile.slice(0, closestPointStartIndex)); // Need to factor in interpolated point AFTER
+    let [eleUpTotalAfter, eleDownTotalAfter] = getElevationChange(elevationProfile.slice(closestPointEndIndex)); // Need to factor in interpolated point BEFORE
+    if (closestPointStartIndex > 0) { // Should always be true
+      const diff1 = interpolatedStartPtEle - elevationProfile[closestPointStartIndex - 1][1];
+      if (diff1 > 0) {
+        eleUpTotalBefore += diff1;
+      } else {
+        eleDownTotalBefore += diff1;
+      }
+    }
+    const diff2 = elevationProfile[closestPointEndIndex][1] - interpolatedEndPtEle;
+    if (diff2 > 0) {
+      eleUpTotalAfter += diff2;
+    } else {
+      eleDownTotalAfter += diff2;
+    }
+
+    // Step 5: Set new elevation profile data to help the elevation profile chart display correctly
+    dispatch(setNewElevationProfileExtraData({
+      splitIndexStart: closestPointStartIndex,
+      splitIndexEnd: closestPointEndIndex,
+      interpolatedPointBefore: [distanceToEditStartMarker, interpolatedStartPtEle],
+      interpolatedPointAfter: [distanceToEditEndMarker, interpolatedEndPtEle],
+      elevationChangeBefore: {
+        eleUp: eleUpTotalBefore,
+        eleDown: eleDownTotalBefore
+      },
+      elevationChangeAfter: {
+        eleUp: eleUpTotalAfter,
+        eleDown: eleDownTotalAfter
+      }
+    }));
+  }, [
+    dispatch,
+    geojson,
+    elevationProfile,
+    startEndMarkerIndices
   ]);
 
   // Handle gap closed check: Seeing if we're ready to finish the edit
@@ -418,26 +576,19 @@ const MapComponent = (props) => {
         style={{ width: '100%', height: '100%' }}
         mapStyle={mapTypes[mapType]}
         interactiveLayerIds={[editRedrawingRoute ? 'editing-measure-lines' : 'measure-lines']} // Lets us detect when the mouse is over the route line(s)
-        /* Note: exaggeration 0 means that for the purposes of displaying elevation, the 3D terrain
-        will be converted to a flat 2D plane. react-map-gl has a weird bug (?) where if exaggeration
-        is set and you zoom in too far, panning/zooming the map will cause markers to move around
-        unnaturally and the map to jerk. Luckily, we don't want to ever even display 3D elevation.
-        We just need the terrain loaded so we can use the queryTerrainElevation function to get the
-        elevation at specific points. And that function lets us ignore exaggeration. So this is safe.
-        But if we ever want to display 3D elevation, we'll have to find a better way around this...
-        */
-        terrain={{source: 'mapbox-dem', exaggeration: 0}}
+        // terrain={{source: 'mapbox-dem', exaggeration: 0}} // Removed terrain for now because I think I don't need it? TODO: Fully remove
         cursor="crosshair"
         maxZoom={20}
+        projection="mercator" // Force the flat view, not the globe view
       >
-        {/* Map sources/layers (elevation data, route source) */}
-        <Source
+        {/* Map sources/layers (elevation data, route source) - TODO remove this source */}
+        {/* <Source
           id="mapbox-dem"
           type="raster-dem"
           url="mapbox://mapbox.mapbox-terrain-dem-v1"
           tileSize={512}
           maxzoom={14}
-        />
+        /> */}
 
         <Source type="geojson" data={geojson} lineMetrics={true}>
           <Layer {...measureLinesLayer}/>
@@ -551,7 +702,7 @@ const MapComponent = (props) => {
             onClose={() => dispatch(setMarkerPopupOpen(false))}
             focusAfterOpen={false}
           >
-            <MarkerPopup mapRef={mapRef} />
+            <MarkerPopup/>
           </Popup>
         )}
 
@@ -564,12 +715,12 @@ const MapComponent = (props) => {
             onClose={() => dispatch(setPinPopupOpen(false))}
             focusAfterOpen={false}
           >
-            <PinPopup mapRef={mapRef} />
+            <PinPopup/>
           </Popup>
         )}
 
         {/* Map controls */}
-        <SearchBox mapboxToken={mapboxToken} currentLocation={location} />
+        <SearchBoxControlWrapper mapboxToken={mapboxToken} currentLocation={location} />
         <NavigationControl position="top-right" />
         <GeolocateControl
           key={showUserLocationEnabled ? 'show' : 'hide'} // Hack to re-render the control when showUserLocationEnabled changes. Only way to allow changing showUserLocation prop
@@ -589,6 +740,7 @@ const MapComponent = (props) => {
           }}
           position="top-right"
         />
+        <ElevationControlWrapper />
       </Map>
     </div>
   );

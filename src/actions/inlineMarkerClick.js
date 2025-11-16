@@ -7,9 +7,7 @@ import {
   addUndoActionToList
 } from '../store/slices/routeSlice';
 import {
-  updateMarkerElevation,
   splitLineWithPoint,
-  getElevationChange
 } from '../controllers/GeoController';
 import {
   getMarkersAgnostic,
@@ -21,7 +19,7 @@ import { Marker } from '../controllers/MarkerController';
 import { v4 as uuidv4 } from 'uuid';
 import length from '@turf/length';
 
-function onInlineMarkerClick(map) {
+function onInlineMarkerClick() {
   const state = store.getState();
   let markers = getMarkersAgnostic();
   let geojson = getGeojsonAgnostic();
@@ -55,7 +53,6 @@ function onInlineMarkerClick(map) {
     associatedLines: [],
     isDragging: false
     // snappedToRoad: (updated later)
-    // elevation: (updated later)
   });
 
   // Split line around point
@@ -71,19 +68,14 @@ function onInlineMarkerClick(map) {
       coordinates: lCoords
     }
   };
-  const [up1, down1] = getElevationChange(map, newLine1, markersToEdit[0].elevation);
   const dist1 = length(newLine1, {units: 'miles'});
   newLine1.properties = {
     id: uuidv4(),
-    distance: dist1,
-    eleUp: up1,
-    eleDown: down1
+    distance: dist1
   };
   markerToAdd.snappedToRoad = markersToEdit[1].snappedToRoad;
   markersToEdit[0].associatedLines.push(newLine1.properties.id);
   markerToAdd.associatedLines.push(newLine1.properties.id);
-
-  updateMarkerElevation(map, markerToAdd);
 
   let newLine2 = {
     type: 'Feature',
@@ -92,13 +84,10 @@ function onInlineMarkerClick(map) {
       coordinates: rCoords
     }
   };
-  const [up2, down2] = getElevationChange(map, newLine2, markerToAdd.elevation);
   const dist2 = length(newLine2, {units: 'miles'});
   newLine2.properties = {
     id: uuidv4(),
-    distance: dist2,
-    eleUp: up2,
-    eleDown: down2
+    distance: dist2
   };
   markerToAdd.associatedLines.push(newLine2.properties.id);
   markersToEdit[1].associatedLines.push(newLine2.properties.id);

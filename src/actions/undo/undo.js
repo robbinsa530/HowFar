@@ -14,7 +14,7 @@ import onUndoOutAndBack from './undoOutAndBack';
 import onUndoAddMarkerInline from './undoAddMarkerInline';
 import onUndoEdit from './undoEdit';
 
-async function onUndo(map) {
+async function onUndo() {
   const state = store.getState();
   const undoActionList = state.route.undoActionList;
 
@@ -26,7 +26,7 @@ async function onUndo(map) {
   store.dispatch(popFromUndoActionList());
 
   if (lastAction.type === 'add') {
-    await onMarkerDelete(map, lastAction.marker.id);
+    await onMarkerDelete(lastAction.marker.id);
   }
   else if (lastAction.type === 'move') {
     onUndoMarkerDrag(lastAction.info);

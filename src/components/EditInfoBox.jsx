@@ -24,7 +24,10 @@ const EditInfoBox = () => {
   const {
     markers
   } = useSelector((state) => state.route);
-  const { editInfoOpen } = useSelector((state) => state.display);
+  const {
+    editInfoOpen,
+    newElevationLoading
+  } = useSelector((state) => state.display);
   const {
     editSelectingPoints,
     editRedrawingRoute,
@@ -108,13 +111,15 @@ const EditInfoBox = () => {
           <Typography variant="body2" className="edit-stat-text">
             New: {imperialOrMetric === 'imperial'
               ? `${newDistance.toFixed(2)} mi`
-              : `${(newDistance * 1.60934).toFixed(2)} km`
+              : `${(newDistance * 1.609344).toFixed(2)} km`
             }
           </Typography>
           <Typography variant="body2" className="edit-stat-text">
-            Elev: {imperialOrMetric === 'imperial'
-              ? `↑${newElevationChange.eleUp.toFixed(0)} / ↓${newElevationChange.eleDown.toFixed(0)} ft`
-              : `↑${(newElevationChange.eleUp / 3.28084).toFixed(0)} / ↓${(newElevationChange.eleDown / 3.28084).toFixed(0)} m`
+            Elev: { newElevationLoading ? '↑.../↓...' :
+              (imperialOrMetric === 'imperial'
+                ? `↑${newElevationChange.eleUp.toFixed(0)} / ↓${newElevationChange.eleDown.toFixed(0)} ft`
+                : `↑${(newElevationChange.eleUp / 3.28084).toFixed(0)} / ↓${(newElevationChange.eleDown / 3.28084).toFixed(0)} m`
+              )
             }
           </Typography>
         </div>

@@ -50,8 +50,7 @@ import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
 import './Sidebar.css';
 
-const Sidebar = (props) => {
-  const mapRef = props.mapRef;
+const Sidebar = () => {
   const dispatch = useDispatch();
   const {
     geojson
@@ -71,11 +70,16 @@ const Sidebar = (props) => {
     walkwayBias,
     imperialOrMetric
   } = useSelector((state) => state.settings);
-  const { editInfoOpen } = useSelector((state) => state.display);
+  const {
+    editInfoOpen,
+    elevationProfileOpen,
+    elevationLoading,
+    newElevationLoading
+  } = useSelector((state) => state.display);
   const { editRedrawingRoute } = useSelector((state) => state.editRoute);
 
   const handleUndo = async () => {
-    await onUndo(mapRef.current);
+    await onUndo();
   };
 
   const handleOutAndBack = () => {
@@ -120,7 +124,7 @@ const Sidebar = (props) => {
   }, [editRedrawingRoute]);
 
   return (
-    <div id="sidebar-content" className="sidebar-content desktop-controls">
+    <div id="sidebar-content" className={`sidebar-content desktop-controls ${elevationProfileOpen ? 'elevation-profile-open' : ''}`}>
       <div id="sidebar" className="sidebar">
         {/* Menu Button */}
         <div className="menu-btn-div">
@@ -145,14 +149,14 @@ const Sidebar = (props) => {
         <div className="sidebar-distance">
           Distance: {imperialOrMetric === 'imperial'
             ? `${distance.toFixed(2)} Miles`
-            : `${(distance * 1.60934).toFixed(2)} km`
+            : `${(distance * 1.609344).toFixed(2)} km`
           }
         </div>
         {editInfoOpen && editRedrawingRoute && (
           <div className="new-sidebar-distance">
             New Distance: {imperialOrMetric === 'imperial'
               ? `${newDistance.toFixed(2)} Miles`
-              : `${(newDistance * 1.60934).toFixed(2)} km`
+              : `${(newDistance * 1.609344).toFixed(2)} km`
             }
           </div>
         )}
@@ -161,18 +165,22 @@ const Sidebar = (props) => {
         <div className="elevation-container">
           <div className="sidebar-elevation">Elevation Gain/Loss:</div>
           <div className="sidebar-elevation">
-            {imperialOrMetric === 'imperial'
-              ? `${elevationChange.eleUp.toFixed(2)}/${elevationChange.eleDown.toFixed(2)} Ft`
-              : `${(elevationChange.eleUp / 3.28084).toFixed(2)}/${(elevationChange.eleDown / 3.28084).toFixed(2)} m`
+            {elevationLoading ? '.../...' :
+              (imperialOrMetric === 'imperial'
+                ? `${elevationChange.eleUp.toFixed(2)}/${elevationChange.eleDown.toFixed(2)} Ft`
+                : `${(elevationChange.eleUp / 3.28084).toFixed(2)}/${(elevationChange.eleDown / 3.28084).toFixed(2)} m`
+              )
             }
           </div>
           {editInfoOpen && editRedrawingRoute && (
             <>
             <div className="new-sidebar-elevation">New Elevation Gain/Loss:</div>
             <div className="new-sidebar-elevation">
-              {imperialOrMetric === 'imperial'
-                ? `${newElevationChange.eleUp.toFixed(2)}/${newElevationChange.eleDown.toFixed(2)} Ft`
-                : `${(newElevationChange.eleUp / 3.28084).toFixed(2)}/${(newElevationChange.eleDown / 3.28084).toFixed(2)} m`
+              {newElevationLoading ? '.../...' :
+                (imperialOrMetric === 'imperial'
+                  ? `${newElevationChange.eleUp.toFixed(2)}/${newElevationChange.eleDown.toFixed(2)} Ft`
+                  : `${(newElevationChange.eleUp / 3.28084).toFixed(2)}/${(newElevationChange.eleDown / 3.28084).toFixed(2)} m`
+                )
               }
             </div>
             </>

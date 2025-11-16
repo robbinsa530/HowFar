@@ -37,8 +37,6 @@ function onOutAndBack() {
       properties: {
         id: uuidv4(),
         distance: oldLine.properties.distance,
-        eleUp: -oldLine.properties.eleDown, // Up will be down in reverse
-        eleDown: -oldLine.properties.eleUp // Down will be up in reverse
       },
       geometry: {
         type: 'LineString',
@@ -70,7 +68,6 @@ function onOutAndBack() {
       associatedLines: newAssocLines,
       isDragging: false,
       snappedToRoad: oldMarker.snappedToRoad,
-      elevation: oldMarker.elevation
     });
 
     // Add marker to running list

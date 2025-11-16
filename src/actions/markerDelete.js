@@ -1,7 +1,6 @@
 /*
   For handling when a marker is deleted via the popup button
 */
-import store from '../store/store';
 import { getDirections } from '../controllers/DirectionsController';
 import {
   getMarkersAgnostic,
@@ -10,8 +9,7 @@ import {
   setGeojsonFeaturesAgnostic
 } from '../controllers/RouteController';
 
-async function onMarkerDelete(map, markerIdToRemove) {
-  const state = store.getState();
+async function onMarkerDelete(markerIdToRemove) {
   let markers = getMarkersAgnostic();
   let geojson = getGeojsonAgnostic();
 
@@ -91,7 +89,7 @@ async function onMarkerDelete(map, markerIdToRemove) {
       rMarker.associatedLines = rMarker.associatedLines.filter(l => !linesToRemove.includes(l));
 
       // Calculate new route and insert where the old lines were
-      const [_, newLine] = await getDirections(map, lMarker, rMarker, [!lMarker.snappedToRoad, !rMarker.snappedToRoad]);
+      const [_, newLine] = await getDirections(lMarker, rMarker, [!lMarker.snappedToRoad, !rMarker.snappedToRoad]);
       undoActionInfoToReturn.lineAddedOnDeleteId = newLine.properties.id;
       geojson.features.splice(Math.min(...lineIndices), 0, newLine);
 

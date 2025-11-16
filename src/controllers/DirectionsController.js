@@ -1,7 +1,7 @@
 import store from '../store/store';
-import { getElevationChange } from './GeoController';
 
 import length from '@turf/length'
+import greatCircle from '@turf/great-circle'
 import { v4 as uuidv4 } from 'uuid';
 
 const BASEDIR = 'https://api.mapbox.com/directions/v5/mapbox';
@@ -56,7 +56,7 @@ async function getRouteBetweenPoints(lngLatStart, lngLatEnd, walkwayBias, direct
 //   return { routes: [] };
 // }
 
-async function getDirections(map, startMarker, endMarker, connectDisjoint, calculateDirectionsOverride=undefined) {
+async function getDirections(startMarker, endMarker, connectDisjoint, calculateDirectionsOverride=undefined) {
   const state = store.getState();
   // Pull state that we care about for this function
   const walkwayBias = state.settings.walkwayBias;
@@ -69,7 +69,6 @@ async function getDirections(map, startMarker, endMarker, connectDisjoint, calcu
                                 : autoFollowRoadsEnabled;
   let lngLatStart = startMarker.lngLat;
   let lngLatEnd = endMarker.lngLat;
-  let elevStart = startMarker.elevation
   let jsonData;
   if (calculateDirections) {
     jsonData = await getRouteBetweenPoints(
@@ -85,8 +84,6 @@ async function getDirections(map, startMarker, endMarker, connectDisjoint, calcu
     properties: {
       id: uuidv4(),
       // distance: (Needs to be added)
-      // eleUp: (Needs to be added)
-      // eleDown: (Needs to be added)
     },
     geometry: {
       type: 'LineString',
@@ -98,6 +95,18 @@ async function getDirections(map, startMarker, endMarker, connectDisjoint, calcu
     // Default to direct distance/lines
     newLine.geometry.coordinates = [lngLatStart, lngLatEnd];
     newLine.properties.distance = length(newLine, {units: 'miles'});
+
+    // If line is longer than 1 mile, split it up into a great circle line.
+    // If line <= 250mi, break into ~1mi segments.
+    // If line > 250mi, break into 250 segments of whatever length that comes out to be.
+    if (newLine.properties.distance > 1) {
+      let npoints = 250;
+      if (newLine.properties.distance <= 250) {
+        npoints = Math.trunc(newLine.properties.distance);
+      }
+      const greatCircleLine = greatCircle(lngLatStart, lngLatEnd, {npoints});
+      newLine.geometry.coordinates = greatCircleLine.geometry.coordinates;
+    }
   }
   else {
     const route = jsonData.routes[0]; // Will always be a single route
@@ -142,10 +151,6 @@ async function getDirections(map, startMarker, endMarker, connectDisjoint, calcu
       }
     }
   }
-  //Calculate elevation gain/loss
-  const [up, down] = getElevationChange(map, newLine, elevStart);
-  newLine.properties.eleUp = up;
-  newLine.properties.eleDown = down;
 
   return [calculateDirections, newLine];
 }

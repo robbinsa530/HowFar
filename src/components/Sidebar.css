@@ -1,10 +1,17 @@
 .sidebar-content {
-  z-index: 1;
-  position: fixed;
+  z-index: 5; /* Lower than elevation profile */
+  position: absolute;
   top: 8px;
   left: 8px;
   height: calc(100vh - 16px);
   overflow-y: auto;
+}
+
+/* When elevation profile is open, clip sidebar height (only on small screens) */
+@media (max-width: 999px) {
+  .sidebar-content.elevation-profile-open {
+    height: calc(100vh - 16px - 204px); /* Subtract elevation profile height */
+  }
 }
 
 .sidebar-content::-webkit-scrollbar {

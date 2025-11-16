@@ -5,7 +5,7 @@ import store from '../store/store';
 import { addUndoActionToList } from '../store/slices/routeSlice';
 import { setEditingMarkers, setEditingGeojsonFeatures } from '../store/slices/editRouteSlice';
 import { getDirections } from '../controllers/DirectionsController';
-import { updateMarkerElevation, markersAreCloseEnough } from '../controllers/GeoController';
+import { markersAreCloseEnough } from '../controllers/GeoController';
 import { getMouseToMarkerSqDistance } from '../utils/mouseMath';
 import { Marker } from '../controllers/MarkerController';
 import {
@@ -74,7 +74,6 @@ async function handleLeftRightClick(
     isDragging: false,
     snappedToRoad: true // default to true, seems to work?
   });
-  updateMarkerElevation(map, markerToAdd);
 
   // Save new marker ID
   returnVal.newMarkerId = markerToAdd.id;
@@ -85,7 +84,6 @@ async function handleLeftRightClick(
     if (markers.length > 0) {
       prevPt = markers[markers.length-1];
       const [calculatedDirections, newLine] = await getDirections(
-        map,
         prevPt,
         markerToAdd,
         [!prevPt.snappedToRoad, false],
@@ -119,7 +117,6 @@ async function handleLeftRightClick(
     if (markers.length > 0) {
       prevPt = markers[0];
       const [calculatedDirections, newLine] = await getDirections(
-        map,
         markerToAdd,
         prevPt,
         [false, !prevPt.snappedToRoad],
@@ -147,11 +144,6 @@ async function handleLeftRightClick(
       geojson.features.unshift(newLine);
     }
     markers.unshift(markerToAdd);
-  }
-  // Update marker elevations in case the markers were moved
-  updateMarkerElevation(map, markerToAdd);
-  if (prevPt) {
-    updateMarkerElevation(map, prevPt);
   }
 
   // Allows for undo of 'add' action

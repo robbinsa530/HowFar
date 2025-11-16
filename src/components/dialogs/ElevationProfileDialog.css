@@ -1,0 +1,87 @@
+.elevation-profile-dialog .MuiDialog-paper {
+  background: rgb(35 55 75 / 95%);
+  color: rgba(255, 255, 255, 1.0);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: calc(100vw - 16px);
+  max-width: none;
+  height: 60vh;
+  max-height: 300px;
+  margin: 0;
+}
+
+/* Override Material-UI Dialog container margins */
+.elevation-profile-dialog .MuiDialog-container {
+  padding: 0 8px;
+}
+
+.elevation-profile-dialog .MuiDialogTitle-root {
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 1.0);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px;
+}
+
+.elevation-profile-dialog .MuiDialogContent-root {
+  background: rgb(35 55 75 / 95%);
+  padding: 0;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.elevation-profile-dialog .MuiDialogActions-root {
+  background: rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 12px;
+}
+
+.elevation-profile-dialog .MuiButton-root {
+  color: rgba(255, 255, 255, 1.0);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.elevation-profile-dialog .MuiButton-root:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.elevation-profile-dialog .MuiButton-root:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Chart container styling to match floater */
+.elevation-profile-dialog .elevation-profile-chart {
+  height: 150px;
+  padding: 8px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure the chart itself fits within the container */
+.elevation-profile-dialog .elevation-profile-chart > div {
+  height: 100%;
+  min-height: 0;
+}
+
+/* Double safety check to make sure it's hidden on desktop */
+@media only screen and (min-device-width: 481px) {
+  .elevation-profile-dialog {
+    display: none;
+  }
+}

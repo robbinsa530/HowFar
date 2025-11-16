@@ -9,6 +9,9 @@ const initialState = {
   importActivityOpen: false,
   addPinsToMapOpen: false,
   editInfoOpen: false,
+  elevationProfileOpen: false,
+  elevationLoading: false,
+  newElevationLoading: false,
   loading: true,
   locating: false,
   uploading: false,
@@ -61,6 +64,15 @@ const displaySlice = createSlice({
     setEditInfoOpen: (state, action) => {
       state.editInfoOpen = action.payload;
     },
+    setElevationProfileOpen: (state, action) => {
+      state.elevationProfileOpen = action.payload;
+    },
+    setElevationLoading: (state, action) => {
+      state.elevationLoading = action.payload;
+    },
+    setNewElevationLoading: (state, action) => {
+      state.newElevationLoading = action.payload;
+    },
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -100,6 +112,9 @@ export const {
   setImportActivityOpen,
   setAddPinsToMapOpen,
   setEditInfoOpen,
+  setElevationProfileOpen,
+  setElevationLoading,
+  setNewElevationLoading,
   setLoading,
   setLocating,
   setUploading,

@@ -49,8 +49,7 @@ import onUndo from '../actions/undo/undo';
 import { resetEditState } from '../controllers/ResetController';
 import './MobileSidebar.css';
 
-const MobileSidebar = (props) => {
-  const mapRef = props.mapRef;
+const MobileSidebar = () => {
   const dispatch = useDispatch();
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
 
@@ -70,11 +69,14 @@ const MobileSidebar = (props) => {
     walkwayBias,
     imperialOrMetric
   } = useSelector((state) => state.settings);
-  const { editInfoOpen } = useSelector((state) => state.display);
+  const {
+    editInfoOpen,
+    elevationLoading
+  } = useSelector((state) => state.display);
   const { editRedrawingRoute } = useSelector((state) => state.editRoute);
 
   const handleUndo = async () => {
-    await onUndo(mapRef.current);
+    await onUndo();
   };
 
   const handleOutAndBack = () => {
@@ -173,17 +175,18 @@ const MobileSidebar = (props) => {
           <div className="mobile-stats-distance">
             {imperialOrMetric === 'imperial'
               ? `${distance.toFixed(2)} mi`
-              : `${(distance * 1.60934).toFixed(2)} km`
+              : `${(distance * 1.609344).toFixed(2)} km`
             }
           </div>
           <div className="mobile-stats-logo">
             <img src="/how_far_logo_complete.png" alt="HowFar Logo" />
           </div>
           <div className="mobile-stats-elevation">
-            {imperialOrMetric === 'imperial'
+            {elevationLoading ? '↑.../↓...' :
+              (imperialOrMetric === 'imperial'
               ? `↑${elevationChange.eleUp.toFixed(0)}/↓${elevationChange.eleDown.toFixed(0)} Ft`
               : `↑${(elevationChange.eleUp / 3.28084).toFixed(0)}/↓${(elevationChange.eleDown / 3.28084).toFixed(0)} m`
-            }
+            )}
           </div>
         </div>
       </div>

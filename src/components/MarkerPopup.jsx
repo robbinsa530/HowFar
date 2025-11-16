@@ -5,15 +5,14 @@ import { setMarkerPopupOpen } from '../store/slices/displaySlice';
 import onMarkerDelete from '../actions/markerDelete';
 import './MarkerPopup.css';
 
-const MarkerPopup = (props) => {
-  const mapRef = props.mapRef;
+const MarkerPopup = () => {
   const dispatch = useDispatch();
   const {
     markerPopupData
   } = useSelector((state) => state.display);
 
   const handleRemoveMarker = async () => {
-    const undoActionInfo = await onMarkerDelete(mapRef.current, markerPopupData.id);
+    const undoActionInfo = await onMarkerDelete(markerPopupData.id);
 
     // Allows for undo of 'delete' action
     dispatch(addUndoActionToList({

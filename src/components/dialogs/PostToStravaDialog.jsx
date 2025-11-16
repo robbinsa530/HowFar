@@ -166,7 +166,7 @@ function PostToStravaDialog() {
     if (imperialOrMetric === "imperial") {
       distStrInUnits = distance.toFixed(2).toString() + " mi";
     } else { // metric
-      distStrInUnits = (distance * 1.60934).toFixed(2).toString() + " km";
+      distStrInUnits = (distance * 1.609344).toFixed(2).toString() + " km";
     }
     setDistanceStr(distStrInUnits);
   }, [distance, imperialOrMetric]);
@@ -185,7 +185,7 @@ function PostToStravaDialog() {
       divisor = distance;
       unitStr = "mi";
     } else { // metric
-      divisor = distance * 1.60934;
+      divisor = distance * 1.609344;
       unitStr = "km";
     }
 

@@ -9,7 +9,6 @@ export function Marker ({
     associatedLines=[],
     isDragging=false,
     snappedToRoad=false,
-    elevation=0.0,
     selectedForEdit=false,
     originalLngLat=null,
     hidden=false
@@ -20,7 +19,6 @@ export function Marker ({
     associatedLines: associatedLines,
     isDragging: isDragging,
     snappedToRoad: snappedToRoad,
-    elevation: elevation,
     selectedForEdit: selectedForEdit,
     originalLngLat: originalLngLat,
     hidden: hidden

@@ -6,7 +6,6 @@ import {
   addUndoActionToList
 } from '../store/slices/routeSlice';
 import { getDirections } from '../controllers/DirectionsController';
-import { updateMarkerElevation } from '../controllers/GeoController';
 import {
   getMarkersAgnostic,
   getGeojsonAgnostic,
@@ -28,7 +27,7 @@ async function onMarkerDrag(event, draggedMarkerIndex) {
   setMarkersAgnostic(markers);
 }
 
-async function onMarkerDragEnd(event, map, draggedMarkerIndex) {
+async function onMarkerDragEnd(event, draggedMarkerIndex) {
   let markers = getMarkersAgnostic();
   let geojson = getGeojsonAgnostic();
 
@@ -39,7 +38,6 @@ async function onMarkerDragEnd(event, map, draggedMarkerIndex) {
   let dragActionInfo = {
     markerId: draggedMarker.id,
     oldSnappedToRoad: draggedMarker.snappedToRoad,
-    oldElevation: draggedMarker.elevation,
     oldPosition: [...draggedMarker.originalLngLat], // Want copy since we're about to change this
     lines: [ // Can hold 0-2 lines.
       // LineString Feature (Deep copy)
@@ -71,20 +69,16 @@ async function onMarkerDragEnd(event, map, draggedMarkerIndex) {
         let calculatedDirections, newLine;
         if (draggedMarkerIndex < otherMarkerIndex) {
           [calculatedDirections, newLine] = await getDirections(
-            map,
             markers[draggedMarkerIndex],
             markers[otherMarkerIndex],
             [false, !markers[otherMarkerIndex].snappedToRoad]);
         } else {
           [calculatedDirections, newLine] = await getDirections(
-            map,
             markers[otherMarkerIndex],
             markers[draggedMarkerIndex],
             [!markers[otherMarkerIndex].snappedToRoad, false]);
         }
         geojson.features[i].properties.distance = newLine.properties.distance;
-        geojson.features[i].properties.eleUp = newLine.properties.eleUp;
-        geojson.features[i].properties.eleDown = newLine.properties.eleDown;
         geojson.features[i].geometry.coordinates = newLine.geometry.coordinates;
 
         // Update position of marker. This is in case it wasn't dragged onto a road or path,
@@ -103,7 +97,6 @@ async function onMarkerDragEnd(event, map, draggedMarkerIndex) {
     }
   }
 
-  updateMarkerElevation(map, draggedMarker);
   // Allows for undo of 'move' action
   store.dispatch(addUndoActionToList({
     type: 'move',

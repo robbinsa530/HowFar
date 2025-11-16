@@ -26,6 +26,8 @@ import PostToStravaDialog from './components/dialogs/PostToStravaDialog'
 import ExportActivityDialog from './components/dialogs/ExportActivityDialog'
 import ImportActivityDialog from './components/dialogs/ImportActivityDialog'
 import AddPinHelperPopup from './components/AddPinHelperPopup'
+import ElevationProfileFloater from './components/ElevationProfileFloater'
+import ElevationProfileDialog from './components/dialogs/ElevationProfileDialog'
 import './App.css'
 
 function AppContent() {
@@ -40,14 +42,15 @@ function AppContent() {
     uploading,
     uploadedMessage,
     isMobile,
-    editInfoOpen
+    editInfoOpen,
+    elevationProfileOpen
   } = useSelector((state) => state.display);
   const { displayDistancePopupEnabled } = useSelector((state) => state.settings);
   const { distancesToDisplay } = useSelector((state) => state.distancePopup);
   const { stravaLoginWindowWasOpened } = useSelector((state) => state.external);
 
   // Random refs/local state
-  const mapRef = useRef(null); // Needed to access some mapboxgl methods (like queryTerrainElevation) from map/sidebar functions
+  const mapRef = useRef(null); // Needed to access some mapboxgl methods
   let stravaLoginWindowWasOpenedRef = useRef(stravaLoginWindowWasOpened); // Ugly. needed b/c addEventListener won't listen to state changes
   let appSetupStarted = false;
   let onFocusEventListenerAdded = false;
@@ -132,10 +135,12 @@ function AppContent() {
       { /* Map will wait for mapboxToken to be fetched/set before loading */ }
       { mapboxToken && <MapComponent mapRef={mapRef} /> }
       {/* Only one of the sidebars will be shown, but the display is controlled in their css files */}
-      <Sidebar mapRef={mapRef} />
-      <MobileSidebar mapRef={mapRef} />
-      <SettingsDrawer />
+      <Sidebar />
+      <MobileSidebar />
       <BottomFloater />
+      { !isMobile && elevationProfileOpen && <ElevationProfileFloater /> }
+      {/* Dialogs and overlays that should be on top of everything */}
+      <SettingsDrawer />
       { editInfoOpen && <EditInfoBox /> }
       <ClearMapAreYouSureDialog />
       <ClearEditAreYouSureDialog />
@@ -143,6 +148,7 @@ function AppContent() {
       <PostToStravaDialog />
       <ExportActivityDialog />
       <ImportActivityDialog mapRef={mapRef} />
+      { isMobile && elevationProfileOpen && <ElevationProfileDialog /> }
       { !isMobile && !editInfoOpen && displayDistancePopupEnabled && distancesToDisplay.length > 0 && <PopupDistances /> }
       { loading && <SimpleDialog open={loading} text="Loading..." /> }
       { locating && <SimpleDialog open={locating} text="Locating..." /> }

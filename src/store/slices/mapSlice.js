@@ -9,11 +9,28 @@ const initialState = {
     zoom: import.meta.env.PROD ? 3 : 14
   },
   distance: 0.0,
+  elevationProfile: [], // Will contain a single profile for the route
   elevationChange: {
     eleUp: 0.0,
     eleDown: 0.0
   },
   newDistance: 0.0,
+  justEditingDistance: 0.0, // Distance of just the new section being added during an edit
+  newElevationProfile: [], // Profile in the same format as elevationProfile above
+  newElevationProfileExtraData: {
+    splitIndexStart: -1, // Closest index (after real breakpoint) in the elevationProfile where the edit section starts
+    splitIndexEnd: -1, // Closest index (after real breakpoint) in the elevationProfile where the edit section ends
+    interpolatedPointBefore: [], // [x, y] - Interpolated dist/ele of the actual point where edit section starts
+    interpolatedPointAfter: [], // [x, y] - Interpolated dist/ele of the actual point where edit section ends
+    elevationChangeBefore: { // Elevation change before the edit section
+      eleUp: 0.0,
+      eleDown: 0.0
+    },
+    elevationChangeAfter: { // Elevation change after the edit section
+      eleUp: 0.0,
+      eleDown: 0.0
+    }
+  },
   newElevationChange: {
     eleUp: 0.0,
     eleDown: 0.0
@@ -54,11 +71,23 @@ const mapSlice = createSlice({
     setDistance: (state, action) => {
       state.distance = action.payload;
     },
+    setElevationProfile: (state, action) => {
+      state.elevationProfile = [ ...action.payload ];
+    },
     setElevationChange: (state, action) => {
       state.elevationChange = { ...action.payload };
     },
     setNewDistance: (state, action) => {
       state.newDistance = action.payload;
+    },
+    setJustEditingDistance: (state, action) => {
+      state.justEditingDistance = action.payload;
+    },
+    setNewElevationProfile: (state, action) => {
+      state.newElevationProfile = [ ...action.payload ];
+    },
+    setNewElevationProfileExtraData: (state, action) => {
+      state.newElevationProfileExtraData = { ...action.payload };
     },
     setNewElevationChange: (state, action) => {
       state.newElevationChange = { ...action.payload };
@@ -93,8 +122,12 @@ export const {
   setTokens,
   setLocation,
   setDistance,
+  setElevationProfile,
   setElevationChange,
   setNewDistance,
+  setJustEditingDistance,
+  setNewElevationProfile,
+  setNewElevationProfileExtraData,
   setNewElevationChange,
   setMouseOnMarker,
   setHasDefaultLocation,

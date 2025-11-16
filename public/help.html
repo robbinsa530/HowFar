@@ -193,6 +193,7 @@
             <h3>Table of Contents</h3>
             <ul>
                 <li><a href="#mapping-functionality">Mapping Functionality</a></li>
+                <li><a href="#elevation-profile">Elevation Profile</a></li>
                 <li><a href="#add-waypoints">Add Waypoints in Line Segments</a></li>
                 <li><a href="#edit-route">Edit Route Between Points</a></li>
                 <li><a href="#map-types">Map Types</a></li>
@@ -221,7 +222,7 @@
         <p>As you map, your routes distance and estimated elevation gain and loss are updated and displayed at the top of the side bar. Adding, moving or deleting points will update these values, and clearing your route will reset all values to 0.</p>
 
         <div class="note">
-            <strong>Note:</strong> Distances are very accurate, but elevation gain and loss are rough estimates and should not be trusted for official use
+            <strong>Note:</strong> Distances are very accurate, but elevation gain/loss can sometimes be off by tens/hundreds of feet for very long routes (fun fact, this is an issue that most online mapping services have). Tl;dr when sampling route points to map the elevation profile, too few points results in gross undercounting of elevation change, but too many points results in overcounting (see the <a href="https://en.wikipedia.org/wiki/Coastline_paradox">Coastline Paradox</a> for more). However, in the end, the elevation numbers in HowFar are generally PLENTY good enough for most purposes.
         </div>
 
         <div class="image-container">
@@ -230,6 +231,13 @@
         </div>
 
         <p>And don't forget you can undo any actions at any time, as well as clear your route or turn it into an out and back.</p>
+
+        <h2 id="elevation-profile">Elevation Profile</h2>
+        <p>The elevation profile is a graph that shows the elevation change of your route. To view it, click the terrain icon in the top right of the map (under the zoom/locate buttons). Pan over the graph with your mouse to see elevation at specific points along your route.</p>
+        <div class="image-container">
+            <img src="./assets/elevation_profile.png" alt="Elevation profile">
+            <div class="image-caption">Elevation profile</div>
+        </div>
 
         <h2 id="add-waypoints">Add Waypoints in Line Segments</h2>
         <p>Enabling the "Edit lines on click" will allow you to edit existing line segments within your route. When disabled (which is the default) clicking on a part of your route will simply add a new waypoint to the end of beginning of the route (depending on the "Add new points to beginning/end" option). But when this setting is enabled, hovering the mouse over a line will reveal a gray "add new" waypoint. Clicking on the line will add a waypoint at that point in the middle of the line, allowing it to be dragged/edited.</p>
@@ -269,6 +277,11 @@
         <div class="image-container">
             <img src="./assets/edit_route_finish.png" alt="Finishing route edit">
             <div class="image-caption">To finish, click on the other glowing point. If you are happy with the final new distance and elevation gain/loss, click "Finish". If you are not, you can "Undo" your last point placement and keep editing.</div>
+        </div>
+
+        <div class="image-container">
+            <img src="./assets/editing_elevation_profile.png" alt="Elevation profile while editing">
+            <div class="image-caption">As you edit, the elevation profile will update to show you the elevation of the new (green) and old (red) sections of your route. Like normal, you can hover over the graph to see the elevation at specific points along your new and old route sections.</div>
         </div>
         
         <h2 id="map-types">Map Types</h2>
