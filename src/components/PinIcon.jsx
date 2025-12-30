@@ -24,10 +24,15 @@ const COLOR_MAP = {
 function Pin({pinId, isOnEdge, size = 33, color = 'red'}) {
   const fillColor = COLOR_MAP[color] || COLOR_MAP.red;
 
+  const handlePinRightClick = (event) => {
+    event.stopPropagation(); // Eat right clicks so the map doesn't get them
+  };
+
   // Tighter viewBox to match the actual path bounds
   // Original path is centered at x=600, extends ±275 in x, from y=200 to y=1000
   return (
-    <svg height={size} viewBox="325 200 550 800" style={{...pinStyle, ...(isOnEdge ? {opacity: 0.55} : null)}}>
+    <svg height={size} viewBox="325 200 550 800" style={{...pinStyle, ...(isOnEdge ? {opacity: 0.55} : null)}}
+      onContextMenu={handlePinRightClick}>
       <path cursor="pointer" id={`pin-${pinId}`} d={ICON} fill={fillColor} fillRule="evenodd"
         strokeWidth={color === 'white' ? '12px' : '0'} stroke={color === 'white' ? 'black' : 'none'}/>
       <circle cursor="pointer" cx="600" cy="475" r="125" fill="white"
