@@ -2,6 +2,7 @@ import store from '../store/store';
 
 import { geojsonToPointsForGpx } from './StravaController'
 import { Marker } from './MarkerController'
+import { addPinAtCoordinates } from './PinController'
 import { setLoading } from '../store/slices/displaySlice'
 import { setMarkers, setGeojsonFeatures } from '../store/slices/routeSlice'
 
@@ -163,6 +164,32 @@ export async function loadRouteFromPoints(points, map) {
   store.dispatch(setGeojsonFeatures(geojson.features));
 }
 
+function parseGpxLayer(layers, gpxRawData) {
+  // Go through layers and get 1-N pieces from each
+  let data = [];
+  let lastData = [gpxRawData];
+  layers.forEach(key => {
+    lastData.forEach(value => {
+      // Make sure key exists
+      if (!Object.hasOwn(value, key)) {
+        return; // continue
+      }
+
+      // Grab data
+      if (value[key].constructor.name === "Array") {
+        data.push(...value[key]);
+      } else {
+        data.push(value[key]);
+      }
+    });
+
+    // Prepare to iterate again
+    lastData = data;
+    data = [];
+  });
+  return lastData;
+}
+
 export async function importRouteFromGpx(file, map) {
   const reader = new FileReader();
   reader.onabort = () => {
@@ -184,6 +211,7 @@ export async function importRouteFromGpx(file, map) {
       let result = parser.parse(fileContents);
 
       if (Object.hasOwn(result, "gpx")) {
+        let buildingRouteFromWpts = false;
         let layers = []
         if (Object.hasOwn(result.gpx, "trk")) { // Use trk if available
           layers = ["trk", "trkseg", "trkpt"];
@@ -191,38 +219,17 @@ export async function importRouteFromGpx(file, map) {
           layers = ["rte", "rtept"];
         } else if (Object.hasOwn(result.gpx, "wpt")) { // If no trk or rte, use wpt
           layers = ["wpt"];
+          buildingRouteFromWpts = true;
         } else {
           console.error("Malformed GPX file. No trk, rte or wpt.");
           alert("Import failed. Malformed GPX.");
           return;
         }
 
-        // Go through layers and get 1-N pieces from each
-        let data = [];
-        let lastData = [result.gpx];
-        layers.forEach(key => {
-          lastData.forEach(value => {
-            // Make sure key exists
-            if (!Object.hasOwn(value, key)) {
-              return; // continue
-            }
-
-            // Grab data
-            if (value[key].constructor.name === "Array") {
-              data.push(...value[key]);
-            } else {
-              data.push(value[key]);
-            }
-          });
-
-          // Prepare to iterate again
-          lastData = data;
-          data = [];
-        });
-
-        // `lastData` should now be a list of items that contain lat/lon info
+        const parsedData = parseGpxLayer(layers, result.gpx);
+        // `parsedData` should now be a list of items that contain lat/lon info
         // Convert data to a more usable format
-        let points = lastData.map(pt => {
+        let points = parsedData.map(pt => {
           return [parseFloat(pt["@_lon"]), parseFloat(pt["@_lat"])]; // Lng, Lat
         });
 
@@ -231,6 +238,16 @@ export async function importRouteFromGpx(file, map) {
           console.error(`Not enough points in GPX file. Only ${points.length} points.`);
           alert("Import failed. Not enough points in GPX file.");
           return;
+        }
+
+        // If we didn't build the route from waypoints, add them as pins
+        if (!buildingRouteFromWpts) {
+          const parsedWpts = parseGpxLayer(["wpt"], result.gpx);
+          for (const wpt of parsedWpts) {
+            if (Object.hasOwn(wpt, "@_lat") && Object.hasOwn(wpt, "@_lon")) {
+              addPinAtCoordinates(wpt["@_lat"], wpt["@_lon"], wpt["name"] || '');
+            }
+          }
         }
 
         await loadRouteFromPoints(points, map);

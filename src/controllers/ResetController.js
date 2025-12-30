@@ -4,6 +4,7 @@ Functions used for resetting app states (stopping an edit, clearing the map, etc
 import {
   setNewDistance,
   setJustEditingDistance,
+  setPins,
 } from '../store/slices/mapSlice';
 import {
   setNewElevationChange,
@@ -73,6 +74,7 @@ export function resetEditState() {
 
 // Handle clearing the map on "Clear" button click or before import for example
 export function resetRouteState() {
+  store.dispatch(setPins([]));
   store.dispatch(setMarkers([]));
   store.dispatch(setGeojsonFeatures([]));
   store.dispatch(setUndoActionList([]));
