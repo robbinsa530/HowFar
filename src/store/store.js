@@ -8,6 +8,7 @@ import addPointInLineSlice from './slices/addPointInLineSlice';
 import distancePopupSlice from './slices/distancePopupSlice';
 import externalSlice from './slices/externalSlice';
 import editRouteSlice from './slices/editRouteSlice';
+import elevationSlice from './slices/elevationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     distancePopup: distancePopupSlice,
     external: externalSlice,
     editRoute: editRouteSlice,
+    elevation: elevationSlice,
   },
 });
 

@@ -57,10 +57,12 @@ const Sidebar = () => {
   } = useSelector((state) => state.route);
   const {
     distance,
-    elevationChange,
     newDistance,
-    newElevationChange
   } = useSelector((state) => state.map);
+  const {
+    elevationChange,
+    newElevationChange,
+  } = useSelector((state) => state.elevation);
   const {
     directionsMode,
     autoFollowRoadsEnabled,

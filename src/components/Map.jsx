@@ -21,6 +21,7 @@ import PinPopup from "./PinPopup";
 import MarkerIcon from "./MarkerIcon";
 import PinIcon from "./PinIcon";
 import AddPointInLineMarkerIcon from "./AddPointInLineMarkerIcon";
+import ElevationProfileHoverMarkerIcon from "./ElevationProfileHoverMarkerIcon";
 import { getErrorMsgFromPositionError } from '../utils/location';
 import { getMouseToMarkerSqDistance } from '../utils/mouseMath';
 import { getPinDisplayPosition } from '../utils/pinEdgePosition';
@@ -46,15 +47,17 @@ import onInlineMarkerClick from '../actions/inlineMarkerClick';
 import {
   setLocation,
   setDistance,
-  setElevationProfile,
-  setElevationChange,
   setNewDistance,
   setJustEditingDistance,
+  setAddPinOnNextClick
+} from '../store/slices/mapSlice';
+import {
+  setElevationProfile,
+  setElevationChange,
   setNewElevationChange,
   setNewElevationProfile,
   setNewElevationProfileExtraData,
-  setAddPinOnNextClick
-} from '../store/slices/mapSlice';
+} from '../store/slices/elevationSlice';
 import {
   editMarkerInPlace
 } from '../store/slices/routeSlice';
@@ -141,9 +144,13 @@ const MapComponent = (props) => {
     addPinOnNextClick,
     pendingPinName,
     pendingPinColor,
+  } = useSelector((state) => state.map);
+  const {
     elevationProfile,
     newElevationProfileExtraData,
-  } = useSelector((state) => state.map);
+    elevationProfileHoverMarker,
+    removedElevationProfileHoverMarker
+  } = useSelector((state) => state.elevation);
   const {
     rightClickEnabled,
     addMarkerInLineEnabled,
@@ -672,6 +679,32 @@ const MapComponent = (props) => {
             onClick={handleAddPointInLineMarkerClick}
           >
             <AddPointInLineMarkerIcon />
+          </Marker>
+        )}
+
+        {/* Removed Elevation profile hover marker */}
+        {removedElevationProfileHoverMarker.display && (
+          <Marker
+            key="removed-elevation-profile-hover-marker"
+            anchor="center"
+            draggable={false}
+            longitude={removedElevationProfileHoverMarker.longitude}
+            latitude={removedElevationProfileHoverMarker.latitude}
+          >
+            <ElevationProfileHoverMarkerIcon transparent={true} />
+          </Marker>
+        )}
+
+        {/* Elevation profile hover marker */}
+        {elevationProfileHoverMarker.display && (
+          <Marker
+            key="elevation-profile-hover-marker"
+            anchor="center"
+            draggable={false}
+            longitude={elevationProfileHoverMarker.longitude}
+            latitude={elevationProfileHoverMarker.latitude}
+          >
+            <ElevationProfileHoverMarkerIcon />
           </Marker>
         )}
 

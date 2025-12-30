@@ -35,8 +35,10 @@ const EditInfoBox = () => {
   } = useSelector((state) => state.editRoute);
   const {
     newDistance,
-    newElevationChange
   } = useSelector((state) => state.map);
+  const {
+    newElevationChange
+  } = useSelector((state) => state.elevation);
   const {
     imperialOrMetric
   } = useSelector((state) => state.settings);

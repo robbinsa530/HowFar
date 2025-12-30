@@ -58,8 +58,10 @@ const MobileSidebar = () => {
   } = useSelector((state) => state.route);
   const {
     distance,
-    elevationChange
   } = useSelector((state) => state.map);
+  const {
+    elevationChange,
+  } = useSelector((state) => state.elevation);
   const {
     directionsMode,
     autoFollowRoadsEnabled,

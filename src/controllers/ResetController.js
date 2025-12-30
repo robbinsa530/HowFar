@@ -4,10 +4,12 @@ Functions used for resetting app states (stopping an edit, clearing the map, etc
 import {
   setNewDistance,
   setJustEditingDistance,
+} from '../store/slices/mapSlice';
+import {
   setNewElevationChange,
   setNewElevationProfile,
   setNewElevationProfileExtraData
-} from '../store/slices/mapSlice';
+} from '../store/slices/elevationSlice';
 import { setMarkers, setGeojsonFeatures, setUndoActionList } from '../store/slices/routeSlice';
 import { setEditInfoOpen } from '../store/slices/displaySlice';
 import { resetEditRouteState } from '../store/slices/editRouteSlice';

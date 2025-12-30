@@ -52,8 +52,10 @@ const SettingsDrawer = () => {
     mapType,
     mapboxToken,
     distance,
-    elevationChange
   } = useSelector((state) => state.map);
+  const {
+    elevationChange,
+  } = useSelector((state) => state.elevation);
   const {
     markers,
     geojson

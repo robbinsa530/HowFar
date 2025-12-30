@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Line } from 'react-chartjs-2';
 import CircularProgress from '@mui/material/CircularProgress';
 import {
@@ -15,6 +15,11 @@ import {
 } from 'chart.js';
 import { mergeFill } from '../utils/mergeFill';
 import { interpolateSpottyElevationData } from '../utils/interpolate';
+import { getPositionFromDistanceAlongRoute } from '../utils/positionAlong';
+import {
+  setElevationProfileHoverMarker,
+  setRemovedElevationProfileHoverMarker
+} from '../store/slices/elevationSlice';
 
 // Register Chart.js components
 ChartJS.register(
@@ -27,29 +32,6 @@ ChartJS.register(
   Legend,
   Filler
 );
-
-// For tooltip
-const verticalLinePlugin = {
-  id: "verticalLine",
-  afterDatasetsDraw(chart) {
-    const active = chart.tooltip?.getActiveElements?.();
-    if (!active || active.length === 0) return;
-
-    const { ctx } = chart;
-    const x = active[0].element.x;
-    const topY = chart.chartArea.top;
-    const bottomY = chart.chartArea.bottom;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x, topY);
-    ctx.lineTo(x, bottomY);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.stroke();
-    ctx.restore();
-  },
-};
 
 // For the removed/new elevation sections (when route is being edited)
 function createDiagonalPattern(color = 'black', shift = 0) {
@@ -92,6 +74,10 @@ const ElevationProfileChart = () => {
   const [ chartDataPointsAfter, setChartDataPointsAfter ] = useState([]);
   const [ chartDataPointsNew, setChartDataPointsNew ] = useState([]);
 
+  const [ hoverIndices, setHoverIndices ] = useState([]);
+  const [ hoverDataIndices, setHoverDataIndices ] = useState([]);
+
+  const dispatch = useDispatch();
   const { imperialOrMetric } = useSelector((state) => state.settings);
   const {
     distance: routeDistance,
@@ -102,12 +88,45 @@ const ElevationProfileChart = () => {
     elevationProfile,
     newElevationProfile,
     newElevationProfileExtraData
-  } = useSelector((state) => state.map);
+  } = useSelector((state) => state.elevation);
   const {
     elevationLoading,
     newElevationLoading
   } = useSelector((state) => state.display);
-  const { editRedrawingRoute, editGapClosed } = useSelector((state) => state.editRoute);
+  const { geojson } = useSelector((state) => state.route);
+  const {
+    editRedrawingRoute,
+    editGapClosed,
+    editingGeojson
+  } = useSelector((state) => state.editRoute);
+
+  // For tooltip
+  const verticalLinePlugin = {
+    id: "verticalLine",
+    afterDatasetsDraw(chart) {
+      const active = chart.tooltip?.getActiveElements?.();
+      if (!active || active.length === 0) return;
+
+      if (active.length > 0) {
+        setHoverIndices(active.map(a => a.index));
+        setHoverDataIndices(active.map(a => a.datasetIndex));
+      }
+
+      const { ctx } = chart;
+      const x = active[0].element.x;
+      const topY = chart.chartArea.top;
+      const bottomY = chart.chartArea.bottom;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, topY);
+      ctx.lineTo(x, bottomY);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
 
   // Build data and chart options based on geojson
   useEffect(() => {
@@ -263,6 +282,118 @@ const ElevationProfileChart = () => {
     ];
   }, [chartDataPoints, chartDataPointsBefore, chartDataPointsRemoved, chartDataPointsAfter, chartDataPointsNew, editRedrawingRoute]);
 
+  // Make sure elevation profile hover marker is moved when the mouse moves over the elevation profile
+  useEffect(() => {
+    if (hoverIndices.length > 0) {
+      if (editRedrawingRoute) {
+        // See const datasets above for where these indices come from^
+        const BEFORE_DATA_INDEX = 0;
+        const REMOVED_DATA_INDEX = 1;
+        const AFTER_DATA_INDEX = 2;
+        const NEW_DATA_INDEX = 3;
+
+        // Will hold 1 or 2 objects representing marker data to render along route
+        const toRender = [];
+        const haveNormal = (list) => list.some(t => t.type === 'normal');
+        const haveRemoved = (list) => list.some(t => t.type === 'removed');
+
+        hoverDataIndices.forEach((dataIndex, metaIndex) => {
+          if (dataIndex === BEFORE_DATA_INDEX) {
+            if (haveNormal(toRender)) return;
+            toRender.push({
+              type: 'normal',
+              distAlongRoute: chartDataPointsBefore[hoverIndices[metaIndex]]?.x,
+              geojsonToUse: geojson,
+              setterToUse: setElevationProfileHoverMarker
+            });
+          }
+          else if (dataIndex === REMOVED_DATA_INDEX) {
+            if (haveRemoved(toRender)) return;
+            toRender.push({
+              type: 'removed',
+              distAlongRoute: chartDataPointsRemoved[hoverIndices[metaIndex]]?.x,
+              geojsonToUse: geojson,
+              setterToUse: setRemovedElevationProfileHoverMarker
+            });
+          }
+          else if (dataIndex === AFTER_DATA_INDEX) {
+            if (haveNormal(toRender)) return;
+            let distAlongRoute = chartDataPointsAfter[hoverIndices[metaIndex]]?.x;
+
+            // geojson doesn't know about the route section being edited, so remove that context from the distance
+            //  but only do this if the new section is larger than the removed section
+            const removedMax = chartDataPointsRemoved[chartDataPointsRemoved.length - 1]?.x || 0;
+            const beforeMax = chartDataPointsBefore[chartDataPointsBefore.length - 1]?.x || 0;
+            const removedDistance = removedMax - beforeMax;
+            if (justEditingDistance > removedDistance) {
+              distAlongRoute = (distAlongRoute - justEditingDistance) + removedDistance;
+            }
+
+            toRender.push({
+              type: 'normal',
+              distAlongRoute: distAlongRoute,
+              geojsonToUse: geojson,
+              setterToUse: setElevationProfileHoverMarker
+            });
+          }
+          else if (dataIndex === NEW_DATA_INDEX) {
+            if (haveNormal(toRender)) return;
+            const distAlongRoute = chartDataPointsNew[hoverIndices[metaIndex]]?.x;
+            const beforeMax = chartDataPointsBefore[chartDataPointsBefore.length - 1]?.x || 0;
+
+            toRender.push({
+              type: 'normal',
+              distAlongRoute: distAlongRoute - beforeMax,
+              geojsonToUse: editingGeojson,
+              setterToUse: setElevationProfileHoverMarker
+            });
+          }
+
+          for (const item of toRender) {
+            const [lon, lat] = getPositionFromDistanceAlongRoute(item.distAlongRoute, item.geojsonToUse);
+            dispatch(item.setterToUse({ display: true, longitude: lon, latitude: lat }));
+          }
+          // Clean up old hover markers if we're not rendering them anymore
+          if (!haveNormal(toRender)) {
+            dispatch(setElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+          }
+          if (!haveRemoved(toRender)) {
+            dispatch(setRemovedElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+          }
+        });
+      } else {
+        const hoverIndex = hoverIndices[0]; // Should only ever be one in this case
+        const distAlongRoute = chartDataPoints[hoverIndex]?.x;
+        if (distAlongRoute !== undefined) {
+          const [lon, lat] = getPositionFromDistanceAlongRoute(distAlongRoute, geojson);
+          dispatch(setElevationProfileHoverMarker({ display: true, longitude: lon, latitude: lat }));
+        }
+      }
+    } else {
+      dispatch(setElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+      dispatch(setRemovedElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+    }
+  }, [
+    dispatch,
+    hoverIndices,
+    hoverDataIndices,
+    chartDataPoints,
+    chartDataPointsBefore,
+    chartDataPointsRemoved,
+    chartDataPointsAfter,
+    chartDataPointsNew,
+    editingGeojson,
+    geojson,
+    justEditingDistance]);
+
+  // Handle mouse leave from chart container
+  const handleChartMouseLeave = useCallback(() => {
+    setHoverIndices([]);
+    setHoverDataIndices([]);
+    dispatch(setElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+    dispatch(setRemovedElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+  }, [dispatch]);
+
   const chartOptions = useMemo(() => {
     return {
       responsive: true,
@@ -355,7 +486,11 @@ const ElevationProfileChart = () => {
   }, [imperialOrMetric, editRedrawingRoute, routeDistance, newDistance]);
 
   return (
-    <div className="elevation-profile-chart" style={{ position: 'relative' }}>
+    <div
+      className="elevation-profile-chart"
+      style={{ position: 'relative' }}
+      onMouseLeave={handleChartMouseLeave}
+    >
       {(elevationLoading || (editRedrawingRoute && newElevationLoading)) && (
         <div className="loading-elevation-data"
           style={{
