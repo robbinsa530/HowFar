@@ -1,6 +1,10 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setElevationProfileOpen } from '../../store/slices/displaySlice';
+import {
+  setElevationProfileHoverMarker,
+  setRemovedElevationProfileHoverMarker
+} from '../../store/slices/elevationSlice';
 import ElevationProfileChart from '../ElevationProfileChart';
 
 import Button from '@mui/material/Button';
@@ -16,6 +20,8 @@ function ElevationProfileDialog() {
 
   const handleClose = () => {
     dispatch(setElevationProfileOpen(false));
+    dispatch(setElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+    dispatch(setRemovedElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
   };
 
   return (

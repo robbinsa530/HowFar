@@ -1,6 +1,10 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { setElevationProfileOpen } from '../store/slices/displaySlice';
+import {
+  setElevationProfileHoverMarker,
+  setRemovedElevationProfileHoverMarker
+} from '../store/slices/elevationSlice';
 import ElevationProfileChart from './ElevationProfileChart';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton from '@mui/material/IconButton';
@@ -11,6 +15,8 @@ const ElevationProfileFloater = () => {
 
   const handleClose = () => {
     dispatch(setElevationProfileOpen(false));
+    dispatch(setElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+    dispatch(setRemovedElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
   };
 
   return (

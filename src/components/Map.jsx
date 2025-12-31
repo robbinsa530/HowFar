@@ -16,6 +16,7 @@ import cloneDeep from 'lodash.clonedeep';
 // Custom components/controls/actions/layers
 import SearchBoxControl from "./mapbox-controls/SearchBoxControl";
 import ElevationControl from "./mapbox-controls/ElevationControl";
+import LayersControl from "./mapbox-controls/LayersControl";
 import MarkerPopup from "./MarkerPopup";
 import PinPopup from "./PinPopup";
 import MarkerIcon from "./MarkerIcon";
@@ -49,7 +50,8 @@ import {
   setDistance,
   setNewDistance,
   setJustEditingDistance,
-  setAddPinOnNextClick
+  setAddPinOnNextClick,
+  setMapType
 } from '../store/slices/mapSlice';
 import {
   setElevationProfile,
@@ -99,6 +101,39 @@ function SearchBoxControlWrapper(args) {
       controlRef.current.updateLocation(args.currentLocation);
     }
   }, [args.currentLocation]);
+
+  return null; // nothing to render in React tree
+}
+
+// Layers control wrapper
+function LayersControlWrapper() {
+  const controlRef = useRef(null);
+  const dispatch = useDispatch();
+  const { mapType } = useSelector((state) => state.map);
+
+  const control = useControl(() => {
+    controlRef.current = new LayersControl(mapType);
+    return controlRef.current;
+  }, { position: "top-right" });
+
+  // Update control when map type changes
+  useEffect(() => {
+    if (controlRef.current) {
+      controlRef.current.updateSelectedMapType(mapType);
+    }
+  }, [mapType]);
+
+  // Listen for map type changes from layers control
+  useEffect(() => {
+    const handleMapTypeChange = (event) => {
+      dispatch(setMapType(event.detail.mapType));
+    };
+
+    window.addEventListener('layersControlMapTypeChange', handleMapTypeChange);
+    return () => {
+      window.removeEventListener('layersControlMapTypeChange', handleMapTypeChange);
+    };
+  }, [dispatch]);
 
   return null; // nothing to render in React tree
 }
@@ -774,6 +809,7 @@ const MapComponent = (props) => {
           position="top-right"
         />
         <ElevationControlWrapper />
+        <LayersControlWrapper />
       </Map>
     </div>
   );
