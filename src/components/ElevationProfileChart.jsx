@@ -157,7 +157,7 @@ const ElevationProfileChart = () => {
     // If the gap is closed, then we have a more accurate elevation than the interpolated one. Use that so the graph looks nice
     // For this one, just take the elevation
     let interpAfter;
-    if (editGapClosed) {
+    if (editGapClosed && newElevationProfile.length > 0) {
       interpAfter = [newElevationProfileExtraData.interpolatedPointAfter[0], newElevationProfile[newElevationProfile.length - 1][1]];
     } else {
       interpAfter = newElevationProfileExtraData.interpolatedPointAfter;
