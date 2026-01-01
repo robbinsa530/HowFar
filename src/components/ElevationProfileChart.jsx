@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Line } from 'react-chartjs-2';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -76,6 +76,8 @@ const ElevationProfileChart = () => {
 
   const [ hoverIndices, setHoverIndices ] = useState([]);
   const [ hoverDataIndices, setHoverDataIndices ] = useState([]);
+
+  const chartRef = useRef(null);
 
   const dispatch = useDispatch();
   const { imperialOrMetric } = useSelector((state) => state.settings);
@@ -392,6 +394,16 @@ const ElevationProfileChart = () => {
     setHoverDataIndices([]);
     dispatch(setElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
     dispatch(setRemovedElevationProfileHoverMarker({ display: false, longitude: -1, latitude: -1 }));
+
+    // Clear Chart.js tooltip active elements (important for mobile touch events)
+    if (chartRef.current) {
+      // In react-chartjs-2 v5, ref.current might be the chart instance directly or a wrapper
+      const chart = chartRef.current.getChartInstance ? chartRef.current.getChartInstance() : chartRef.current;
+      if (chart && chart.tooltip && chart.tooltip.setActiveElements) {
+        chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+        chart.update('none'); // Update without animation to immediately clear the visual
+      }
+    }
   }, [dispatch]);
 
   const chartOptions = useMemo(() => {
@@ -490,6 +502,7 @@ const ElevationProfileChart = () => {
       className="elevation-profile-chart"
       style={{ position: 'relative' }}
       onMouseLeave={handleChartMouseLeave}
+      onTouchEnd={handleChartMouseLeave}
     >
       {(elevationLoading || (editRedrawingRoute && newElevationLoading)) && (
         <div className="loading-elevation-data"
@@ -515,6 +528,7 @@ const ElevationProfileChart = () => {
         </div>
       )}
       <Line
+        ref={chartRef}
         data={{ datasets }}
         options={chartOptions}
         plugins={[verticalLinePlugin]}

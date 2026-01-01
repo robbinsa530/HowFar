@@ -1,3 +1,8 @@
+/*
+ DEPRECATED. MOBILE NOW USES THE ELEVATION PROFILE FLOATER. (12/21/2025)
+ TODO: Remove this file once we're sure the other method is working well.
+*/
+
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setElevationProfileOpen } from '../../store/slices/displaySlice';

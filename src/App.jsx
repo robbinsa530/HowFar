@@ -27,7 +27,6 @@ import ExportActivityDialog from './components/dialogs/ExportActivityDialog'
 import ImportActivityDialog from './components/dialogs/ImportActivityDialog'
 import AddPinHelperPopup from './components/AddPinHelperPopup'
 import ElevationProfileFloater from './components/ElevationProfileFloater'
-import ElevationProfileDialog from './components/dialogs/ElevationProfileDialog'
 import './App.css'
 
 function AppContent() {
@@ -138,7 +137,7 @@ function AppContent() {
       <Sidebar />
       <MobileSidebar />
       <BottomFloater />
-      { !isMobile && elevationProfileOpen && <ElevationProfileFloater /> }
+      { elevationProfileOpen && <ElevationProfileFloater /> }
       {/* Dialogs and overlays that should be on top of everything */}
       <SettingsDrawer />
       { editInfoOpen && <EditInfoBox /> }
@@ -148,7 +147,6 @@ function AppContent() {
       <PostToStravaDialog />
       <ExportActivityDialog />
       <ImportActivityDialog mapRef={mapRef} />
-      { isMobile && elevationProfileOpen && <ElevationProfileDialog /> }
       { !isMobile && !editInfoOpen && displayDistancePopupEnabled && distancesToDisplay.length > 0 && <PopupDistances /> }
       { loading && <SimpleDialog open={loading} text="Loading..." /> }
       { locating && <SimpleDialog open={locating} text="Locating..." /> }

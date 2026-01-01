@@ -60,9 +60,10 @@
   }
 }
 
-/* Double safety check to make sure it's hidden on mobile */
+/* For mobile we just stick it at the bottom and hope it looks nice */
 @media only screen and (max-device-width: 480px) {
   .elevation-profile-container {
-    display: none;
+    bottom: 45px; /* Above the mobile stats bar (which is 40px tall) */
+    z-index: 1; /* Ensures the mobile controls popup is in front */
   }
 }

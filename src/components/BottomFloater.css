@@ -50,4 +50,8 @@
   .bottom-floater-container.floater-hidden {
     display: none;
   }
+
+  .bottom-floater-container.elevation-profile-open {
+    display: none;
+  }
 }
