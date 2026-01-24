@@ -64,6 +64,6 @@
 @media only screen and (max-device-width: 480px) {
   .elevation-profile-container {
     bottom: 45px; /* Above the mobile stats bar (which is 40px tall) */
-    z-index: 1; /* Ensures the mobile controls popup is in front */
+    z-index: 2; /* Ensures the mobile controls popup is in front */
   }
 }
