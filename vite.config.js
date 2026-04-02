@@ -20,7 +20,8 @@ export default defineConfig({
       '/stravaUser': 'http://localhost:3001',
       '/postManualActivityToStrava': 'http://localhost:3001',
       '/uploadToStrava': 'http://localhost:3001',
-      '/exportGpx': 'http://localhost:3001'
+      '/exportGpx': 'http://localhost:3001',
+      '/api': 'http://localhost:3001'
     }
   }
 })

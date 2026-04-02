@@ -48,9 +48,11 @@ import DirectionModeButton from './material/DirectionModeButton';
 // Custom other stuff (actions, etc.)
 import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
+import { useEditableRoute } from '../context/EditableRouteContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
+  const editableRoute = useEditableRoute();
   const dispatch = useDispatch();
   const {
     geojson
@@ -189,6 +191,8 @@ const Sidebar = () => {
           )}
         </div>
 
+        {editableRoute && (
+        <>
         {/* Action Buttons (uniform grid) */}
         <div className="sidebar-action-grid">
           <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
@@ -352,6 +356,8 @@ const Sidebar = () => {
                     favor both equally</>}
           />
         </FormControl>
+        </>
+        )}
       </div>
     </div>
   );

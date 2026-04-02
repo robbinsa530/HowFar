@@ -13,6 +13,8 @@ import {
   fetchAuthenticatedAthlete,
   getGpxFromActivityData
 } from './utils.js';
+import { getPool } from './db/pool.js';
+import { getRouteByUuid, isValidRouteUuid } from './db/routesRepo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +45,30 @@ app.get("/getApiTokens", async (req, res) => {
     STRAVA_CLIENT_ID: strava.client_id,
     MAPBOX_PUB_KEY: process.env.MAPBOX_PUB_KEY,
    });
+});
+
+app.get("/api/routes/:uuid", async (req, res) => {
+  const pool = getPool();
+  if (!pool) {
+    res.status(503).json({ error: 'Database configuration error' });
+    return;
+  }
+  const { uuid } = req.params;
+  if (!isValidRouteUuid(uuid)) {
+    res.status(400).json({ error: 'Invalid route UUID' });
+    return;
+  }
+  try {
+    const routeData = await getRouteByUuid(pool, uuid);
+    if (!routeData) {
+      res.status(404).json({ error: 'Route not found' });
+      return;
+    }
+    res.json(routeData);
+  } catch (err) {
+    console.error('GET /api/routes/:uuid failed', err);
+    res.status(500).json({ error: 'Failed to load route' });
+  }
 });
 
 app.get("/saveToken", async (req, res) => {
@@ -326,6 +352,13 @@ app.post("/exportGpx", async (req, res) => {
   const gpxString = getGpxFromActivityData(req.body, false);
   res.status(200).send({gpx: gpxString});
 });
+
+// SPA fallback: serve index.html for client routes (e.g. /route/:uuid) in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);

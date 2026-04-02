@@ -86,6 +86,7 @@ import {
 import {
   setEditGapClosed
 } from '../store/slices/editRouteSlice';
+import { useEditableRoute } from '../context/EditableRouteContext';
 
 // We have a "custom" search box control we inject into the map
 function SearchBoxControlWrapper(args) {
@@ -168,6 +169,8 @@ function ElevationControlWrapper() {
 const MapComponent = (props) => {
   const dispatch = useDispatch();
   const mapRef = props.mapRef;
+  const onMapReady = props.onMapReady;
+  const editableRoute = useEditableRoute();
 
   // Get all the redux state we need for the map
   const {
@@ -234,6 +237,7 @@ const MapComponent = (props) => {
 
   // Place a marker on click
   const handleMapClick = (event, rightClick=false) => {
+    if (!editableRoute) return;
     if (!rightClick || rightClickEnabled) {
       onMapClick(event, mapRef.current, rightClick);
     }
@@ -241,6 +245,7 @@ const MapComponent = (props) => {
 
   // Handle touch start event (for long tap ("right click" on mobile))
   const handleMapTouchStart = (event) => {
+    if (!editableRoute) return;
     // Only trigger for single-finger touch (prevent triggering on pinch-to-zoom)
     if (event.originalEvent.touches.length === 1) {
       touchTimeoutRef.current = setTimeout(async () => {
@@ -255,6 +260,7 @@ const MapComponent = (props) => {
   const handleLoad = (event) => {
     dispatch(setLoading(false));
     const map = event.target; // This is the raw mapboxgl.Map instance
+    onMapReady?.();
 
     // Set these here because react-map-gl doesn't expose these in the Map component
     // These are all to help prevent accidental marker placement on pinch for mobile
@@ -370,6 +376,7 @@ const MapComponent = (props) => {
   // Allow clicking map to add a pin just once, then go back to normal click behavior
   const handleAddPinOnNextClick = (event) => {
     dispatch(setAddPinOnNextClick(false));
+    if (!editableRoute) return;
     addPinAtCoordinates(event.lngLat.lat, event.lngLat.lng, pendingPinName, pendingPinColor);
   };
 
@@ -600,7 +607,13 @@ const MapComponent = (props) => {
         onMouseMove={handleMapMouseMove}
         onMouseLeave={handleMapMouseLeave}
         onMove={handleMapMove}
-        onClick={addPinOnNextClick ? handleAddPinOnNextClick : handleMapClick}
+        onClick={
+          addPinOnNextClick
+            ? handleAddPinOnNextClick
+            : editableRoute
+              ? handleMapClick
+              : undefined
+        }
         onContextMenu={(event) => handleMapClick(event, true)}
         onRightClick={(event) => handleMapClick(event, true)}
 
@@ -653,14 +666,16 @@ const MapComponent = (props) => {
             clickTolerance={0}
             // Need to allow click when selecting points, but disallow when redrawing route
             onClick={
-              editRedrawingRoute ?
-              (marker.id === editFinishMarker.id ? handleEditFinishMarkerClick : null)
-              : (e) => handleMarkerClick(e, marker, index)} // Always allow click when not redrawing route
+              !editableRoute
+                ? undefined
+                : editRedrawingRoute
+                  ? (marker.id === editFinishMarker.id ? handleEditFinishMarkerClick : null)
+                  : (e) => handleMarkerClick(e, marker, index)}
             // Disable all dragging functionality on old markers while editing
-            draggable={!editInfoOpen}
-            onDragStart={editInfoOpen ? null : (_) => handleMarkerDragStart(index)}
-            onDrag={editInfoOpen ? null : (e) => handleMarkerDrag(e, index)}
-            onDragEnd={editInfoOpen ? null : (e) => handleMarkerDragEnd(e, index)}
+            draggable={editableRoute && !editInfoOpen}
+            onDragStart={editableRoute && !editInfoOpen ? (_) => handleMarkerDragStart(index) : null}
+            onDrag={editableRoute && !editInfoOpen ? (e) => handleMarkerDrag(e, index) : null}
+            onDragEnd={editableRoute && !editInfoOpen ? (e) => handleMarkerDragEnd(e, index) : null}
           >
             <MarkerIcon
               marker={marker}
@@ -684,14 +699,14 @@ const MapComponent = (props) => {
             <Marker
               key={marker.id}
               anchor="center"
-              draggable={index > 0}
+              draggable={editableRoute && index > 0}
               longitude={marker.lngLat[0]}
               latitude={marker.lngLat[1]}
               clickTolerance={0}
-              onClick={index > 0 ? (e) => handleMarkerClick(e, marker, index) : null}
-              onDragStart={index > 0 ? (_) => handleMarkerDragStart(index) : null}
-              onDrag={index > 0 ? (e) => handleMarkerDrag(e, index) : null}
-              onDragEnd={index > 0 ? (e) => handleMarkerDragEnd(e, index) : null}
+              onClick={editableRoute && index > 0 ? (e) => handleMarkerClick(e, marker, index) : null}
+              onDragStart={editableRoute && index > 0 ? (_) => handleMarkerDragStart(index) : null}
+              onDrag={editableRoute && index > 0 ? (e) => handleMarkerDrag(e, index) : null}
+              onDragEnd={editableRoute && index > 0 ? (e) => handleMarkerDragEnd(e, index) : null}
             >
               <MarkerIcon
                 marker={marker}
@@ -704,7 +719,7 @@ const MapComponent = (props) => {
         )))}
 
         {/* Add point in line marker (for splitting a line with a new point) */}
-        {addMarkerInLineEnabled && addPointInLineMarkerVisible && (
+        {editableRoute && addMarkerInLineEnabled && addPointInLineMarkerVisible && (
           <Marker
             key="add-point-in-line-marker"
             anchor="center"

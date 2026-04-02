@@ -44,10 +44,12 @@ import BlueSelect from './material/BlueSelect';
 import ConnectWithStrava from '../assets/ConnectWithStrava';
 import CompatibleWithStrava from '../assets/CompatibleWithStrava';
 import { connectToStrava, checkUserHasToken } from '../controllers/StravaController';
+import { useEditableRoute } from '../context/EditableRouteContext';
 import './SettingsDrawer.css';
 
 const SettingsDrawer = () => {
   const dispatch = useDispatch();
+  const editableRoute = useEditableRoute();
   const {
     mapType,
     mapboxToken,
@@ -334,13 +336,16 @@ const SettingsDrawer = () => {
           <Typography variant="h6" className="section-title">Extras:</Typography>
 
           <Tooltip disableInteractive title={<Typography>Add helper pins to the map. These pins are managed separately from your route</Typography>}>
+            <span>
             <Button
               className="action-button"
               variant="contained"
               onClick={() => dispatch(setAddPinsToMapOpen(true))}
+              disabled={!editableRoute}
             >
               Add/Remove Pins
             </Button>
+            </span>
           </Tooltip>
         </div>
 

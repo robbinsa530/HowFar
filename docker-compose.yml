@@ -1,0 +1,20 @@
+# Local PostGIS for HowFar. DATABASE_URL for the Node server:
+#   postgresql://howfar:howfar@localhost:5432/howfar_dev
+#
+#   docker compose up -d
+#   cd db/liquibase && cp liquibase.properties.example liquibase.properties && liquibase update
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: howfar_dev
+      POSTGRES_USER: howfar
+      POSTGRES_PASSWORD: howfar
+    ports:
+      - "5432:5432"
+    volumes:
+      - howfar_pgdata:/var/lib/postgresql/data
+
+volumes:
+  howfar_pgdata:

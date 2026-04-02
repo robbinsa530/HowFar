@@ -1,5 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Provider, useSelector, useDispatch } from 'react-redux';
+import { Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import { store } from './store/store';
 import { setTokens } from './store/slices/mapSlice';
 import {
@@ -10,6 +11,8 @@ import {
   setUploadedMessage
 } from './store/slices/displaySlice';
 import { updateConnectedStatus } from './controllers/StravaController';
+import { fetchRouteByUuid, loadSavedRoute } from './controllers/ImportExportController';
+import { resetRouteState, resetEditState } from './controllers/ResetController';
 
 import MapComponent from './components/Map'
 import Sidebar from './components/Sidebar'
@@ -27,9 +30,11 @@ import ExportActivityDialog from './components/dialogs/ExportActivityDialog'
 import ImportActivityDialog from './components/dialogs/ImportActivityDialog'
 import AddPinHelperPopup from './components/AddPinHelperPopup'
 import ElevationProfileFloater from './components/ElevationProfileFloater'
+import { EditableRouteContext } from './context/EditableRouteContext'
 import './App.css'
 
-function AppContent() {
+function AppContent({ editableRoute = true }) {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const {
     mapboxToken,
@@ -50,9 +55,13 @@ function AppContent() {
 
   // Random refs/local state
   const mapRef = useRef(null); // Needed to access some mapboxgl methods
+  const routeUuidLoadedRef = useRef(null); // Track which uuid we've already loaded to avoid re-running
+  const [mapReady, setMapReady] = useState(false);
   let stravaLoginWindowWasOpenedRef = useRef(stravaLoginWindowWasOpened); // Ugly. needed b/c addEventListener won't listen to state changes
   let appSetupStarted = false;
   let onFocusEventListenerAdded = false;
+  const { uuid: routeUuid } = useParams();
+  if (!routeUuid) routeUuidLoadedRef.current = null;
 
   useEffect(() => {
     stravaLoginWindowWasOpenedRef.current = stravaLoginWindowWasOpened;
@@ -112,11 +121,9 @@ function AppContent() {
 
   const handleWindowSizeChange = () => {
     if (window.innerWidth > 480) {
-      console.debug('Window size is desktop');
       dispatch(setIsMobile(false));
     }
     else {
-      console.debug('Window size is mobile');
       dispatch(setIsMobile(true));
     }
   };
@@ -129,10 +136,36 @@ function AppContent() {
   }
   }, []);
 
+  // Load route from URL when navigating to /route/:uuid (once map is ready)
+  useEffect(() => {
+    if (!routeUuid || !mapReady || routeUuidLoadedRef.current === routeUuid) return;
+    const map = mapRef?.current;
+    if (!map) return;
+
+    routeUuidLoadedRef.current = routeUuid;
+    (async () => {
+      try {
+        const data = await fetchRouteByUuid(routeUuid);
+        if (!data) {
+          alert('Route not found');
+          navigate('/', { replace: true });
+          return;
+        }
+        resetRouteState();
+        resetEditState();
+        await loadSavedRoute(data, map);
+      } catch (err) {
+        console.error('Failed to load route from URL', err);
+        routeUuidLoadedRef.current = null;
+      }
+    })();
+  }, [routeUuid, mapReady]);
+
   return (
+    <EditableRouteContext.Provider value={editableRoute}>
     <div className="App">
       { /* Map will wait for mapboxToken to be fetched/set before loading */ }
-      { mapboxToken && <MapComponent mapRef={mapRef} /> }
+      { mapboxToken && <MapComponent mapRef={mapRef} onMapReady={() => setMapReady(true)} /> }
       {/* Only one of the sidebars will be shown, but the display is controlled in their css files */}
       <Sidebar />
       <MobileSidebar />
@@ -153,13 +186,17 @@ function AppContent() {
       { uploading && <SimpleDialog open={uploading} text="Uploading..." /> }
       { addPinOnNextClick && <AddPinHelperPopup /> }
     </div>
+    </EditableRouteContext.Provider>
   );
 }
 
 function App() {
   return (
     <Provider store={store}>
-      <AppContent />
+      <Routes>
+        <Route path="/" element={<AppContent editableRoute />} />
+        <Route path="/route/:uuid" element={<AppContent editableRoute={false} />} />
+      </Routes>
     </Provider>
   )
 }

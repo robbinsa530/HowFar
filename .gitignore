@@ -39,3 +39,6 @@ server/secrets
 
 # my stuff
 .todo
+
+# Liquibase local connection (copy from db/liquibase/liquibase.properties.example)
+db/liquibase/liquibase.properties

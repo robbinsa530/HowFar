@@ -47,9 +47,11 @@ import BlueSlider from './material/BlueSlider';
 import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
 import { resetEditState } from '../controllers/ResetController';
+import { useEditableRoute } from '../context/EditableRouteContext';
 import './MobileSidebar.css';
 
 const MobileSidebar = () => {
+  const editableRoute = useEditableRoute();
   const dispatch = useDispatch();
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
 
@@ -126,7 +128,8 @@ const MobileSidebar = () => {
         </Tooltip>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons (hidden in view-only shared route mode; hamburger stays above) */}
+      {editableRoute && (
       <div className="mobile-action-buttons">
         <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
           <IconButton onClick={() => dispatch(setClearMapOpen(true))} sx={{color:'white'}}>
@@ -170,6 +173,7 @@ const MobileSidebar = () => {
           </IconButton>
         </Tooltip>
       </div>
+      )}
 
       {/* Mobile Stats Display */}
       <div className="mobile-stats">

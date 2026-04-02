@@ -12,6 +12,89 @@ import length from '@turf/length'
 import lineChunk from '@turf/line-chunk'
 import cloneDeep from 'lodash.clonedeep';
 
+/**
+ * Fetches saved route by UUID: PostGIS line geometry + pins (see server /api/routes/:uuid).
+ * @param {string} uuid - Route identifier
+ * @returns {Promise<{ routeGeom: GeoJSON.LineString|GeoJSON.MultiLineString, pins: Array }|null>}
+ */
+export async function fetchRouteByUuid(uuid) {
+  if (!uuid) return null;
+  const res = await fetch(`/api/routes/${encodeURIComponent(uuid)}`, {
+    credentials: 'include',
+  });
+  if (res.status === 404) return null;
+  if (res.status === 503) {
+    console.warn('Route API unavailable (database not configured).');
+    return null;
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to load route: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+/**
+ * Flatten LineString / MultiLineString GeoJSON into one [lng, lat][] for GPX-style import.
+ * @param {GeoJSON.LineString | GeoJSON.MultiLineString} geom
+ * @returns {number[][]}
+ */
+export function geometryToLngLatPoints(geom) {
+  if (!geom || !geom.type) return [];
+  if (geom.type === 'LineString') {
+    return (geom.coordinates || []).map(([lng, lat]) => [lng, lat]);
+  }
+  if (geom.type === 'MultiLineString') {
+    const pts = [];
+    for (const line of geom.coordinates || []) {
+      if (line.length === 0) continue;
+      if (pts.length > 0) {
+        const last = pts[pts.length - 1];
+        const first = line[0];
+        // Check if last point of previous line is the same as first point of current line.
+        // If so, skip the first point of the current line.
+        const same =
+          Math.abs(last[0] - first[0]) < 1e-7 && Math.abs(last[1] - first[1]) < 1e-7;
+        if (same) {
+          for (let i = 1; i < line.length; i++) pts.push(line[i]);
+        } else {
+          pts.push(...line);
+        }
+      } else {
+        // Always push all points of first line
+        pts.push(...line);
+      }
+    }
+    return pts;
+  }
+  return [];
+}
+
+/**
+ * Load a route saved as PostGIS geometry + pins: pins first (same as GPX import), then
+ * rebuild segments/markers/distances via loadRouteFromPoints.
+ * @param {{ routeGeom: GeoJSON.LineString|GeoJSON.MultiLineString, pins?: Array }} data
+ * @param {import('mapbox-gl').Map} map
+ */
+export async function loadSavedRoute(data, map) {
+  const { routeGeom, pins = [] } = data;
+  const points = geometryToLngLatPoints(routeGeom);
+  if (points.length < 2) {
+    console.error('Persisted route has too few coordinates.', routeGeom);
+    alert('This saved route could not be loaded (not enough points).');
+    return;
+  }
+
+  for (const pin of pins) {
+    const ll = pin.lngLat;
+    if (Array.isArray(ll) && ll.length >= 2) {
+      addPinAtCoordinates(ll[1], ll[0], pin.name ?? '', pin.color ?? 'red');
+    }
+  }
+
+  await loadRouteFromPoints(points, map, false, false);
+}
+
 export async function downloadActivityGpx(data) {
   const state = store.getState();
   let geojson = cloneDeep(state.route.geojson);
@@ -48,7 +131,11 @@ export async function downloadActivityGpx(data) {
   window.URL.revokeObjectURL(url);
 }
 
-export async function loadRouteFromPoints(points, map) {
+/**
+ * @param {boolean} [addIntermediateMarkers=true] Mile-chunk markers vs start/end only.
+ * @param {boolean} [fitBoundsReserveSidebar=true] Extra left padding for the desktop sidebar; set false when UI is slim (e.g. view-only saved route).
+ */
+export async function loadRouteFromPoints(points, map, addIntermediateMarkers = true, fitBoundsReserveSidebar = true) {
   const state = store.getState();
   let markers = cloneDeep(state.route.markers);
   let geojson = cloneDeep(state.route.geojson);
@@ -70,15 +157,22 @@ export async function loadRouteFromPoints(points, map) {
     maxLng -= 360;
   }
 
-  // Fit screen to route with some bigger padding on the left to account for the sidebar
-  const sidebarContent = document.getElementById('sidebar-content');
-  const sidebarWidth = sidebarContent.offsetWidth;
+  const edgePad = 20;
+  let padding;
+  if (fitBoundsReserveSidebar) {
+    const sidebarContent = document.getElementById('sidebar-content');
+    const sidebarWidth = sidebarContent?.offsetWidth ?? 0;
+    padding = { top: edgePad, bottom: edgePad, left: sidebarWidth + edgePad, right: edgePad };
+  } else {
+    padding = { top: edgePad, bottom: edgePad, left: edgePad, right: edgePad };
+  }
+
   map.fitBounds([
     [minLng, minLat], // sw
     [maxLng, maxLat]  // ne
   ], {
     animate: false,
-    padding: {top: 20, bottom: 20, left: sidebarWidth + 20, right: 20}
+    padding
   });
 
   // Wait for map to idle so we know it's all there
@@ -95,8 +189,13 @@ export async function loadRouteFromPoints(points, map) {
     }
   };
 
-  // Chunk the total line into 1 mile increments to make editing route easier after import
-  const chunks = lineChunk(totalLine, 1, {units: 'miles'}).features;
+  // If requested, chunk the total line into 1 mile increments to make editing route easier after import
+  let chunks = [];
+  if (addIntermediateMarkers) {
+    chunks = lineChunk(totalLine, 1, {units: 'miles'}).features;
+  } else {
+    chunks = [totalLine];
+  }
 
   // Remove nearly duplicate coordinates from each chunk
   // 0.0000001 (1e^-7) is 4-11mm in the real world (unnoticeable for map display)
@@ -128,21 +227,31 @@ export async function loadRouteFromPoints(points, map) {
     geojson.features.push(line);
   });
 
-  // Add markers (start, end, 1miles)
-  let markerCoordsAndLines = geojson.features.map((feat, i) => {
-    let associatedLines;
-    if (i === 0) {
-      associatedLines = [feat.properties.id];
-    } else {
-      associatedLines = [geojson.features[i-1].properties.id, feat.properties.id];
-    }
-    return {
-      coords: feat.geometry.coordinates[0],
-      associatedLines
-    };
-  });
+  // Add markers
+  let markerCoordsAndLines = [];
+  if (addIntermediateMarkers) {
+    // Add markers (start, and 1 mile intervals)
+    markerCoordsAndLines = geojson.features.map((feat, i) => {
+      let associatedLines;
+      if (i === 0) {
+        associatedLines = [feat.properties.id];
+      } else {
+        associatedLines = [geojson.features[i-1].properties.id, feat.properties.id];
+      }
+      return {
+        coords: feat.geometry.coordinates[0],
+        associatedLines
+      };
+    });
+  } else {
+    // Add just the start marker
+    markerCoordsAndLines = [{
+      coords: geojson.features[0].geometry.coordinates[0],
+      associatedLines: [geojson.features[0].properties.id]
+    }];
+  }
 
-  // Make sure we get the last one
+  // Make sure we get the end marker and add it to the list
   const lastFeat = geojson.features[geojson.features.length-1];
   markerCoordsAndLines.push({
     coords: lastFeat.geometry.coordinates[lastFeat.geometry.coordinates.length-1],

@@ -1,0 +1,14 @@
+# Copy to liquibase.properties (gitignored) and adjust for your environment.
+# Run migrations from this directory: cd db/liquibase && liquibase update
+#
+# Install Liquibase: https://docs.liquibase.com/start/install/home.html
+#   (e.g. brew install liquibase)
+# Or use the official Docker image: liquibase/liquibase
+#
+# Production: point url/username/password at your managed Postgres (RDS, etc.).
+# Same changelog files apply everywhere.
+
+changeLogFile=changelog/db.changelog-master.yaml
+url=jdbc:postgresql://localhost:5432/howfar_dev
+username=howfar
+password=howfar
