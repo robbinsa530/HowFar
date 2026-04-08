@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "db:update": "cd db/liquibase && liquibase --defaults-file=liquibase.properties update",
-    "db:status": "cd db/liquibase && liquibase --defaults-file=liquibase.properties status"
+    "db:status": "cd db/liquibase && liquibase --defaults-file=liquibase.properties status",
+    "db:update:prod": "bash scripts/db-migrate-prod.sh",
+    "db:status:prod": "bash scripts/db-migrate-prod.sh status"
   },
   "engines": {
     "node": "20.x"

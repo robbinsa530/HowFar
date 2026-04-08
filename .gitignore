@@ -42,3 +42,6 @@ server/secrets
 
 # Liquibase local connection (copy from db/liquibase/liquibase.properties.example)
 db/liquibase/liquibase.properties
+
+# Production Liquibase credentials (copy from scripts/liquibase-prod.env.example)
+scripts/liquibase-prod.env
