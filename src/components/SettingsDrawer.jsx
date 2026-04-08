@@ -443,14 +443,15 @@ const SettingsDrawer = () => {
             >
               FAQ
             </a>
-            <a
+            {/* Removed since repo is not private */}
+            {/* <a
               href="https://github.com/robbinsa530/HowFar"
               target="_blank"
               rel="noreferrer"
               className="footer-link"
             >
               Source Code
-            </a>
+            </a> */}
             <a
               href="https://www.paypal.me/AlexRobbins662"
               target="_blank"
