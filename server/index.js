@@ -353,10 +353,22 @@ app.post("/exportGpx", async (req, res) => {
   res.status(200).send({gpx: gpxString});
 });
 
-// SPA fallback: serve index.html for client routes (e.g. /route/:uuid) in production
+// SPA fallback: serve index.html for client routes (e.g. /route/:uuid) in production.
+// Express 5 / path-to-regexp no longer accepts app.get('*', ...) — use a terminal GET middleware.
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  const indexHtml = path.join(__dirname, '../dist/index.html');
+  app.use((req, res, next) => {
+    if (req.method !== 'GET') {
+      return next();
+    }
+    res.sendFile(indexHtml, (err) => {
+      if (err) {
+        console.error('SPA fallback: dist/index.html missing or unreadable. Did the build run?', err.message);
+        if (!res.headersSent) {
+          res.sendStatus(500);
+        }
+      }
+    });
   });
 }
 
