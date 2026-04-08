@@ -271,7 +271,8 @@ const MapComponent = (props) => {
     map.on('gestureend', (e) => { clearTimeout(touchTimeoutRef.current); });
 
     // The rest of the on load behavior
-    onMapLoad(map, (bool) => dispatch(setLocating(bool)));
+    const goToLocation = editableRoute; // Skip flying to default/users location if viewing saved route
+    onMapLoad(map, goToLocation, (bool) => dispatch(setLocating(bool)));
   };
 
   // (onIdle) Wait a sec so the control is added to the DOM

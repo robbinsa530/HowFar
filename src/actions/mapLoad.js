@@ -21,7 +21,7 @@ function addChevronImageToMap(map) {
   }
 }
 
-async function onMapLoad(map, setLocating) {
+async function onMapLoad(map, goToLocation, setLocating) {
   // Prevents zooming on double click/tap + drag
   map.touchZoomRotate._tapDragZoom.disable();
   map.doubleClickZoom.disable();
@@ -33,6 +33,11 @@ async function onMapLoad(map, setLocating) {
   map.on("style.load", () => {
     addChevronImageToMap(map);
   });
+
+  if (!goToLocation) {
+    console.info("Map loaded.");
+    return;
+  }
 
   // Check for default location first
   const hasDefault = await checkForDefaultLocationAndFlyTo(map);
