@@ -1,4 +1,8 @@
+import dns from 'dns';
 import pg from 'pg';
+
+// Heroku dynos often cannot reach DB hosts over IPv6; prefer A records when both exist.
+dns.setDefaultResultOrder('ipv4first');
 
 const { Pool } = pg;
 
