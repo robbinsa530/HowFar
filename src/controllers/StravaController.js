@@ -25,7 +25,7 @@ export async function updateConnectedStatus() {
 };
 
 export async function connectToStrava() {
-  const SERVER_ADDR = import.meta.env.VITE_SERVER_ADDR || "http://localhost:3001";
+  const SERVER_ADDR = import.meta.env.VITE_SERVER_ADDR || "http://localhost:3001"; // TODO: Maybe fallback to real domain?
   const state = store.getState();
   const stravaClientId = state.map.stravaClientId;
 
