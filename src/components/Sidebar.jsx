@@ -9,7 +9,6 @@ import {
   setAddMarkerInLineEnabled
 } from '../store/slices/settingsSlice';
 import {
-  setMenuOpen,
   setClearMapOpen,
   setEditInfoOpen,
   setClearEditOpen
@@ -20,7 +19,6 @@ import {
 import { resetEditState } from '../controllers/ResetController';
 
 // Material/MUI
-import MenuIcon from '@mui/icons-material/Menu';
 import ClearIcon from '@mui/icons-material/Clear';
 import UndoIcon from '@mui/icons-material/Undo';
 import LoopIcon from '@mui/icons-material/Loop';
@@ -35,7 +33,6 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import RadioGroup from '@mui/material/RadioGroup';
-import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
@@ -120,25 +117,19 @@ const Sidebar = () => {
     // No else, would rather not hardcode any px values
   };
 
-  // Avoids unnecessary sidebar scroller when editing route between points
+  // Avoids unnecessary sidebar scroller when editing route between points.
+  // Also when editableRoute toggles (e.g. /route/:uuid view-only → /): AppContent is reconciled,
+  // not remounted, so stale inline maxHeight on #sidebar-content must be recalculated.
   useEffect(() => {
-    setTimeout(() => {
+    const id = window.setTimeout(() => {
       setSidebarHeight();
     }, 100); // Give time for sidebar contents to render
-  }, [editRedrawingRoute]);
+    return () => window.clearTimeout(id);
+  }, [editRedrawingRoute, editableRoute]);
 
   return (
     <div id="sidebar-content" className={`sidebar-content desktop-controls ${elevationProfileOpen ? 'elevation-profile-open' : ''}`}>
       <div id="sidebar" className="sidebar">
-        {/* Menu Button */}
-        <div className="menu-btn-div">
-          <Tooltip disableInteractive title={<Typography>More Options (Connect to apps, display, etc.)</Typography>}>
-            <IconButton onClick={() => dispatch(setMenuOpen(true))} sx={{color:'white', margin:0, padding:0}}>
-              <MenuIcon />
-            </IconButton>
-          </Tooltip>
-        </div>
-
         {/* Logo */}
         <div className="sidebar-logo">
           <img

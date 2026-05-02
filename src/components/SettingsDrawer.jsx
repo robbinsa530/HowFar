@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   setMapType
@@ -45,11 +45,17 @@ import ConnectWithStrava from '../assets/ConnectWithStrava';
 import CompatibleWithStrava from '../assets/CompatibleWithStrava';
 import { connectToStrava, checkUserHasToken } from '../controllers/StravaController';
 import { useEditableRoute } from '../context/EditableRouteContext';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
+import { useHowFarLogin } from '../context/HowFarLoginContext';
+import SaveRouteDialog from './dialogs/SaveRouteDialog';
 import './SettingsDrawer.css';
 
 const SettingsDrawer = () => {
   const dispatch = useDispatch();
   const editableRoute = useEditableRoute();
+  const { user } = useSupabaseAuth();
+  const { openLogin } = useHowFarLogin();
+  const [saveRouteDialogOpen, setSaveRouteDialogOpen] = useState(false);
   const {
     mapType,
     mapboxToken,
@@ -136,6 +142,18 @@ const SettingsDrawer = () => {
     dispatch(setExportActivityOpen(true));
   };
 
+  const handleSaveActivityClick = () => {
+    if (!user) {
+      openLogin();
+      return;
+    }
+    if (geojson.features.length === 0) {
+      alert('Cannot save blank route.');
+      return;
+    }
+    setSaveRouteDialogOpen(true);
+  };
+
   useEffect(() => {
     if (isMobile) {
       dispatch(setDisplayDistancePopupEnabled(false));
@@ -143,6 +161,8 @@ const SettingsDrawer = () => {
   }, [dispatch, isMobile]);
 
   return (
+    <>
+    <SaveRouteDialog open={saveRouteDialogOpen} onClose={() => setSaveRouteDialogOpen(false)} />
     <Drawer
       open={menuOpen}
       onClose={() => dispatch(setMenuOpen(false))}
@@ -393,10 +413,10 @@ const SettingsDrawer = () => {
           </div>
         </div> */}
 
-        {/* Import / Export Section */}
+        {/* Import / Export / Save Section */}
         <div className="settings-section">
           <div className="section-divider" />
-          <Typography variant="h6" className="section-title">Import / Export:</Typography>
+          <Typography variant="h6" className="section-title">Import / Export / Save:</Typography>
 
           <div className="button-group">
             <Tooltip disableInteractive title={<Typography>Import a route from a .gpx file</Typography>}>
@@ -418,6 +438,28 @@ const SettingsDrawer = () => {
                   disabled={editInfoOpen}
                 >
                   Export Activity
+                </Button>
+              </span>
+            </Tooltip>
+
+            <Tooltip
+              disableInteractive
+              title={
+                <Typography>
+                  {user
+                    ? 'Save this route publicly and get a shareable link.'
+                    : 'Log in to HowFar to save a route publicly and get a shareable link.'}
+                </Typography>
+              }
+            >
+              <span>
+                <Button
+                  className="action-button"
+                  variant="contained"
+                  onClick={handleSaveActivityClick}
+                  disabled={!user || editInfoOpen}
+                >
+                  Save Activity
                 </Button>
               </span>
             </Tooltip>
@@ -477,6 +519,7 @@ const SettingsDrawer = () => {
         </div>
       </div>
     </Drawer>
+    </>
   );
 };
 

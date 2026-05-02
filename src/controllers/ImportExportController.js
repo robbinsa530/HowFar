@@ -14,15 +14,23 @@ import cloneDeep from 'lodash.clonedeep';
 
 /**
  * Fetches saved route by UUID: PostGIS line geometry + pins (see server /api/routes/:uuid).
+ * Pass accessToken when loading a private route you own.
  * @param {string} uuid - Route identifier
- * @returns {Promise<{ routeGeom: GeoJSON.LineString|GeoJSON.MultiLineString, pins: Array }|null>}
+ * @param {string | null} [accessToken] - Supabase session JWT for private routes
+ * @returns {Promise<{ routeGeom: object, pins: Array, name?: string, isPrivate?: boolean }|null>}
  */
-export async function fetchRouteByUuid(uuid) {
+export async function fetchRouteByUuid(uuid, accessToken = null) {
   if (!uuid) return null;
+  /** @type {Record<string, string>} */
+  const headers = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
   const res = await fetch(`/api/routes/${encodeURIComponent(uuid)}`, {
     credentials: 'include',
+    headers,
   });
-  if (res.status === 404) return null;
+  if (res.status === 404 || res.status === 400) return null;
   if (res.status === 503) {
     console.warn('Route API unavailable (database not configured).');
     return null;
@@ -32,6 +40,44 @@ export async function fetchRouteByUuid(uuid) {
     throw new Error(`Failed to load route: ${res.status} ${text}`);
   }
   return res.json();
+}
+
+/**
+ * Persist route geometry and helper pins (see POST /api/routes).
+ * @param {object} params
+ * @param {string} params.accessToken
+ * @param {string} params.name
+ * @param {boolean} params.isPrivate
+ * @param {object} params.routeGeojson
+ * @param {Array} params.pins
+ * @returns {Promise<{ shareUuid: string }>}
+ */
+export async function saveRouteToServer({ accessToken, name, isPrivate, routeGeojson, pins }) {
+  const res = await fetch('/api/routes', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      name,
+      isPrivate,
+      routeGeojson,
+      pins,
+    }),
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    /* ignore */
+  }
+  if (!res.ok) {
+    const err = data.error ?? res.statusText;
+    throw new Error(err);
+  }
+  return data;
 }
 
 /**

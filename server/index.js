@@ -14,7 +14,13 @@ import {
   getGpxFromActivityData
 } from './utils.js';
 import { getPool } from './db/pool.js';
-import { getRouteByUuid, isValidRouteUuid } from './db/routesRepo.js';
+import {
+  getRouteByUuid,
+  isValidRouteUuid,
+  createRouteWithPins,
+  featureCollectionToLngLatPoints,
+} from './db/routesRepo.js';
+import { getUserIdFromBearer } from './supabaseAuth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,7 +65,8 @@ app.get("/api/routes/:uuid", async (req, res) => {
     return;
   }
   try {
-    const routeData = await getRouteByUuid(pool, uuid);
+    const viewerUserId = await getUserIdFromBearer(req);
+    const routeData = await getRouteByUuid(pool, uuid, viewerUserId);
     if (!routeData) {
       res.status(404).json({ error: 'Route not found' });
       return;
@@ -68,6 +75,52 @@ app.get("/api/routes/:uuid", async (req, res) => {
   } catch (err) {
     console.error('GET /api/routes/:uuid failed', err);
     res.status(500).json({ error: 'Failed to load route' });
+  }
+});
+
+app.post('/api/routes', async (req, res) => {
+  const pool = getPool();
+  if (!pool) {
+    res.status(503).json({ error: 'Database configuration error' });
+    return;
+  }
+  const userId = await getUserIdFromBearer(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const { name, isPrivate, routeGeojson, pins } = req.body ?? {};
+  const trimmedName = typeof name === 'string' ? name.trim() : '';
+  if (!trimmedName) {
+    res.status(400).json({ error: 'Route name is required' });
+    return;
+  }
+  if (!routeGeojson || typeof routeGeojson !== 'object') {
+    res.status(400).json({ error: 'routeGeojson is required' });
+    return;
+  }
+  const points = featureCollectionToLngLatPoints(routeGeojson);
+  if (points.length < 2) {
+    res.status(400).json({ error: 'Route must have at least two points' });
+    return;
+  }
+  const lineStringGeoJson = JSON.stringify({
+    type: 'LineString',
+    coordinates: points,
+  });
+  const pinList = Array.isArray(pins) ? pins : [];
+  try {
+    const { shareUuid } = await createRouteWithPins(pool, {
+      lineStringGeoJson,
+      pins: pinList,
+      creatingUserId: userId,
+      name: trimmedName,
+      isPrivate: Boolean(isPrivate),
+    });
+    res.status(201).json({ shareUuid });
+  } catch (err) {
+    console.error('POST /api/routes failed', err);
+    res.status(500).json({ error: 'Failed to save route' });
   }
 });
 

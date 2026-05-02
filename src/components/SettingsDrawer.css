@@ -89,13 +89,12 @@
 /* Button groups */
 .button-group {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .button-group .action-button {
-  margin-bottom: 16px;
-}
-
-.button-group .action-button:last-child {
   margin-bottom: 0;
 }
 

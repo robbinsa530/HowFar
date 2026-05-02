@@ -1,16 +1,17 @@
 .sidebar-content {
   z-index: 5; /* Lower than elevation profile */
   position: absolute;
+  /* top is relative to .app-main-area (below the top bar), not the viewport */
   top: 8px;
   left: 8px;
-  height: calc(100vh - 16px);
+  height: calc(100% - 16px);
   overflow-y: auto;
 }
 
 /* When elevation profile is open, clip sidebar height (only on small screens) */
 @media (max-width: 999px) {
   .sidebar-content.elevation-profile-open {
-    height: calc(100vh - 16px - 204px); /* Subtract elevation profile height */
+    height: calc(100% - 16px - 204px);
   }
 }
 
@@ -45,26 +46,6 @@
   border-radius: 4px;
   min-width: 225px;
   overflow-y: visible;
-}
-
-.menu-btn-div {
-  text-align: left;
-  padding: 0;
-  margin: 0;
-}
-
-.menu-btn {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 4px;
-  margin: 0;
-  font-size: 18px;
-}
-
-.menu-btn:hover {
-  opacity: 0.8;
 }
 
 .sidebar-logo {

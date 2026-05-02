@@ -4,11 +4,12 @@
     display: none;
   }
 
+  /* Absolute in .app-main-area (below top bar) — same idea as desktop .sidebar-content */
   .mobile-controls {
-    position: fixed;
+    position: absolute;
     top: 10px;
     left: 10px;
-    z-index: 3;
+    z-index: 5;
   }
 
   .mobile-action-buttons {
@@ -71,15 +72,6 @@
   .sidebar-content {
     height: auto;
     margin-top: 0;
-  }
-
-  .menu-btn-div {
-    background: rgb(35 55 75 / 90%);
-    padding: 5px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .bottom-sidebar {

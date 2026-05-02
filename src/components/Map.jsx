@@ -600,7 +600,7 @@ const MapComponent = (props) => {
   ]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <Map
         ref={mapRef}
         onLoad={handleLoad}
@@ -633,7 +633,7 @@ const MapComponent = (props) => {
         mapStyle={mapTypes[mapType]}
         interactiveLayerIds={[editRedrawingRoute ? 'editing-measure-lines' : 'measure-lines']} // Lets us detect when the mouse is over the route line(s)
         // terrain={{source: 'mapbox-dem', exaggeration: 0}} // Removed terrain for now because I think I don't need it? TODO: Fully remove
-        cursor="crosshair"
+        cursor={editableRoute ? "crosshair" : "pointer"}
         maxZoom={20}
         projection="mercator" // Force the flat view, not the globe view
       >

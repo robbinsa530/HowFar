@@ -9,7 +9,6 @@ import {
   setAddMarkerInLineEnabled
 } from '../store/slices/settingsSlice';
 import {
-  setMenuOpen,
   setClearMapOpen,
   setEditInfoOpen,
   setClearEditOpen,
@@ -19,7 +18,6 @@ import {
 } from '../store/slices/editRouteSlice';
 
 // Material/MUI
-import MenuIcon from '@mui/icons-material/Menu';
 import ClearIcon from '@mui/icons-material/Clear';
 import UndoIcon from '@mui/icons-material/Undo';
 import LoopIcon from '@mui/icons-material/Loop';
@@ -119,16 +117,7 @@ const MobileSidebar = () => {
 
   return (
     <div className="mobile-controls">
-      {/* Floating Menu Button */}
-      <div className="menu-btn-div">
-        <Tooltip disableInteractive title={<Typography>More Options (Connect to apps, display, etc.)</Typography>}>
-          <IconButton onClick={() => dispatch(setMenuOpen(true))} sx={{color:'white', margin:0, padding:0}}>
-            <MenuIcon />
-          </IconButton>
-        </Tooltip>
-      </div>
-
-      {/* Action Buttons (hidden in view-only shared route mode; hamburger stays above) */}
+      {/* Action Buttons (hidden in view-only shared route mode; menu is in the top bar) */}
       {editableRoute && (
       <div className="mobile-action-buttons">
         <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>

@@ -13,6 +13,7 @@ import {
 import { updateConnectedStatus } from './controllers/StravaController';
 import { fetchRouteByUuid, loadSavedRoute } from './controllers/ImportExportController';
 import { resetRouteState, resetEditState } from './controllers/ResetController';
+import { setSavedRouteMeta, clearSavedRouteMeta } from './store/slices/savedRouteSlice';
 
 import MapComponent from './components/Map'
 import Sidebar from './components/Sidebar'
@@ -25,17 +26,22 @@ import PopupDistances from './components/PopupDistances'
 import BottomFloater from './components/BottomFloater'
 import EditInfoBox from './components/EditInfoBox'
 import SettingsDrawer from './components/SettingsDrawer'
+import AppTopBar from './components/AppTopBar'
+import { HowFarLoginProvider } from './context/HowFarLoginContext'
 import PostToStravaDialog from './components/dialogs/PostToStravaDialog'
 import ExportActivityDialog from './components/dialogs/ExportActivityDialog'
 import ImportActivityDialog from './components/dialogs/ImportActivityDialog'
 import AddPinHelperPopup from './components/AddPinHelperPopup'
 import ElevationProfileFloater from './components/ElevationProfileFloater'
 import { EditableRouteContext } from './context/EditableRouteContext'
+import { useSupabaseAuth } from './context/SupabaseAuthContext'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import './App.css'
 
 function AppContent({ editableRoute = true }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { session, loading: authLoading } = useSupabaseAuth();
   const {
     mapboxToken,
     addPinOnNextClick
@@ -136,55 +142,77 @@ function AppContent({ editableRoute = true }) {
   }
   }, []);
 
-  // Load route from URL when navigating to /route/:uuid (once map is ready)
   useEffect(() => {
-    if (!routeUuid || !mapReady || routeUuidLoadedRef.current === routeUuid) return;
+    if (!routeUuid) {
+      dispatch(clearSavedRouteMeta());
+    }
+  }, [routeUuid, dispatch]);
+
+  // Load route from URL when navigating to /route/:uuid (once map is ready).
+  // Wait for auth so private routes can be loaded with the user's JWT.
+  useEffect(() => {
+    if (!routeUuid || !mapReady || authLoading) return;
     const map = mapRef?.current;
     if (!map) return;
+    if (routeUuidLoadedRef.current === routeUuid) return;
 
     routeUuidLoadedRef.current = routeUuid;
     (async () => {
       try {
-        const data = await fetchRouteByUuid(routeUuid);
+        dispatch(clearSavedRouteMeta());
+        const token = session?.access_token ?? null;
+        const data = await fetchRouteByUuid(routeUuid, token);
         if (!data) {
-          alert('Route not found');
+          routeUuidLoadedRef.current = null;
+          alert('Could not load this route. It may be invalid or the server is unavailable.');
           navigate('/', { replace: true });
           return;
         }
         resetRouteState();
         resetEditState();
+        dispatch(
+          setSavedRouteMeta({
+            name: data.name ?? '',
+            isPrivate: Boolean(data.isPrivate),
+          })
+        );
         await loadSavedRoute(data, map);
       } catch (err) {
         console.error('Failed to load route from URL', err);
         routeUuidLoadedRef.current = null;
+        alert('Could not load this route. It may be invalid or the server is unavailable.');
+        navigate('/', { replace: true });
       }
     })();
-  }, [routeUuid, mapReady]);
+  }, [routeUuid, mapReady, authLoading, session?.access_token, navigate, dispatch]);
 
   return (
     <EditableRouteContext.Provider value={editableRoute}>
     <div className="App">
-      { /* Map will wait for mapboxToken to be fetched/set before loading */ }
-      { mapboxToken && <MapComponent mapRef={mapRef} onMapReady={() => setMapReady(true)} /> }
-      {/* Only one of the sidebars will be shown, but the display is controlled in their css files */}
-      <Sidebar />
-      <MobileSidebar />
-      <BottomFloater />
-      { elevationProfileOpen && <ElevationProfileFloater /> }
-      {/* Dialogs and overlays that should be on top of everything */}
-      <SettingsDrawer />
-      { editInfoOpen && <EditInfoBox /> }
-      <ClearMapAreYouSureDialog />
-      <ClearEditAreYouSureDialog />
-      <AddPinsToMapDialog />
-      <PostToStravaDialog />
-      <ExportActivityDialog />
-      <ImportActivityDialog mapRef={mapRef} />
-      { !isMobile && !editInfoOpen && displayDistancePopupEnabled && distancesToDisplay.length > 0 && <PopupDistances /> }
-      { loading && <SimpleDialog open={loading} text="Loading..." /> }
-      { locating && <SimpleDialog open={locating} text="Locating..." /> }
-      { uploading && <SimpleDialog open={uploading} text="Uploading..." /> }
-      { addPinOnNextClick && <AddPinHelperPopup /> }
+      <AppTopBar />
+      <div className="app-main-area">
+        { /* Map will wait for mapboxToken to be fetched/set before loading */ }
+        { mapboxToken && <MapComponent mapRef={mapRef} onMapReady={() => setMapReady(true)} /> }
+        {/* Only one of the sidebars will be shown, but the display is controlled in their css files */}
+        <Sidebar />
+        <MobileSidebar />
+        <BottomFloater />
+        { elevationProfileOpen && <ElevationProfileFloater /> }
+        {/* Dialogs and overlays that should be on top of everything */}
+        <SettingsDrawer />
+        { editInfoOpen && <EditInfoBox /> }
+        <ClearMapAreYouSureDialog />
+        <ClearEditAreYouSureDialog />
+        <AddPinsToMapDialog />
+        <PostToStravaDialog />
+        <ExportActivityDialog />
+        <ImportActivityDialog mapRef={mapRef} />
+        { !isMobile && !editInfoOpen && displayDistancePopupEnabled && distancesToDisplay.length > 0 && <PopupDistances /> }
+        { loading && <SimpleDialog open={loading} text="Loading..." /> }
+        { locating && <SimpleDialog open={locating} text="Locating..." /> }
+        { uploading && <SimpleDialog open={uploading} text="Uploading..." /> }
+        { addPinOnNextClick && <AddPinHelperPopup /> }
+      </div>
     </div>
     </EditableRouteContext.Provider>
   );
@@ -193,10 +221,13 @@ function AppContent({ editableRoute = true }) {
 function App() {
   return (
     <Provider store={store}>
-      <Routes>
-        <Route path="/" element={<AppContent editableRoute />} />
-        <Route path="/route/:uuid" element={<AppContent editableRoute={false} />} />
-      </Routes>
+      <HowFarLoginProvider>
+        <Routes>
+          <Route path="/" element={<AppContent editableRoute />} />
+          <Route path="/route/:uuid" element={<AppContent editableRoute={false} />} />
+          <Route path="/resetpassword" element={<ResetPasswordPage />} />
+        </Routes>
+      </HowFarLoginProvider>
     </Provider>
   )
 }

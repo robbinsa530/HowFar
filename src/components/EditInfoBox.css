@@ -1,12 +1,12 @@
 /* Box positioning and theme */
 /* Increase specificity to override MUI Paper default background */
 .MuiPaper-root.edit-info-box {
-  background-color: rgb(35 55 75 / 90%);
+  background-color: rgb(35 55 75);
   color: white;
   padding: 12px;
   border-radius: 4px;
   position: fixed;
-  top: 8px;
+  top: 4px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
