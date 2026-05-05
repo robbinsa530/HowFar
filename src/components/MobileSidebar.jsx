@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   setDirectionsMode,
   setAddToStartOrEnd,
@@ -27,6 +28,8 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import EditOffIcon from '@mui/icons-material/EditOff';
 import CloseIcon from '@mui/icons-material/Close';
+import AltRouteIcon from '@mui/icons-material/AltRoute';
+import AddRoadIcon from '@mui/icons-material/AddRoad';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -45,12 +48,16 @@ import BlueSlider from './material/BlueSlider';
 import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
 import { resetEditState } from '../controllers/ResetController';
+import { editCurrentSavedRoute, forkCurrentRouteToEditor, startNewRouteFromScratch } from '../controllers/ImportExportController';
 import { useEditableRoute } from '../context/EditableRouteContext';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import './MobileSidebar.css';
 
-const MobileSidebar = () => {
+const MobileSidebar = ({ mapRef }) => {
   const editableRoute = useEditableRoute();
+  const { user } = useSupabaseAuth();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
 
   const {
@@ -76,6 +83,13 @@ const MobileSidebar = () => {
     elevationLoading
   } = useSelector((state) => state.display);
   const { editRedrawingRoute } = useSelector((state) => state.editRoute);
+  const savedRouteMeta = useSelector((state) => state.savedRoute);
+
+  const editSavedRouteEnabled = Boolean(user?.id && savedRouteMeta.canEdit);
+  const savedRouteDisplayName =
+    typeof savedRouteMeta.name === 'string' && savedRouteMeta.name.trim() !== ''
+      ? savedRouteMeta.name.trim()
+      : 'this route';
 
   const handleUndo = async () => {
     await onUndo();
@@ -115,11 +129,32 @@ const MobileSidebar = () => {
     dispatch(setWalkwayBias(newValue));
   };
 
+  const handleForkRoute = async () => {
+    const map = mapRef?.current;
+    if (!map) {
+      alert('Map is not ready.');
+      return;
+    }
+    await forkCurrentRouteToEditor(map, navigate);
+  };
+
+  const handleEditSavedRoute = async () => {
+    const map = mapRef?.current;
+    if (!map) {
+      alert('Map is not ready.');
+      return;
+    }
+    await editCurrentSavedRoute(map, navigate);
+  };
+
+  const forkVisible = !editableRoute && geojson.features.length > 0;
+
   return (
     <div className="mobile-controls">
-      {/* Action Buttons (hidden in view-only shared route mode; menu is in the top bar) */}
-      {editableRoute && (
+      {(editableRoute || forkVisible) && (
       <div className="mobile-action-buttons">
+        {editableRoute ? (
+        <>
         <Tooltip disableInteractive title={<Typography>Clear route and all waypoints from map</Typography>}>
           <IconButton onClick={() => dispatch(setClearMapOpen(true))} sx={{color:'white'}}>
             <ClearIcon />
@@ -161,6 +196,50 @@ const MobileSidebar = () => {
             <MoreVertIcon />
           </IconButton>
         </Tooltip>
+        </>
+        ) : (
+        <>
+          <Tooltip disableInteractive title={<Typography>Create your own route from scratch</Typography>}>
+            <IconButton
+              onClick={() => startNewRouteFromScratch(navigate)}
+              sx={{ color: 'white' }}
+              aria-label="Create new route"
+            >
+              <AddRoadIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip disableInteractive title={<Typography>Create a new route based on this one</Typography>}>
+            <IconButton onClick={handleForkRoute} sx={{ color: 'white' }} aria-label="Fork route">
+              <AltRouteIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip
+            disableInteractive
+            title={
+              <Typography>
+                {editSavedRouteEnabled ? (
+                  <>Edit and update &ldquo;{savedRouteDisplayName}&rdquo;</>
+                ) : (
+                  <>
+                    You cannot edit this route because you do not own it. try forking instead
+                  </>
+                )}
+              </Typography>
+            }
+          >
+            <span>
+              <IconButton
+                onClick={handleEditSavedRoute}
+                sx={{ color: 'white' }}
+                disabled={!editSavedRouteEnabled}
+                aria-label="Edit route"
+              >
+                <EditIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </>
+        )}
       </div>
       )}
 

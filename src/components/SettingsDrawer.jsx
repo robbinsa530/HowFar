@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   setMapType
@@ -14,7 +14,8 @@ import {
   setPostToStravaOpen,
   setExportActivityOpen,
   setImportActivityOpen,
-  setAddPinsToMapOpen
+  setAddPinsToMapOpen,
+  setSaveRouteDialogOpen
 } from '../store/slices/displaySlice';
 import {
   setConnectedToStrava
@@ -47,7 +48,6 @@ import { connectToStrava, checkUserHasToken } from '../controllers/StravaControl
 import { useEditableRoute } from '../context/EditableRouteContext';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useHowFarLogin } from '../context/HowFarLoginContext';
-import SaveRouteDialog from './dialogs/SaveRouteDialog';
 import './SettingsDrawer.css';
 
 const SettingsDrawer = () => {
@@ -55,7 +55,6 @@ const SettingsDrawer = () => {
   const editableRoute = useEditableRoute();
   const { user } = useSupabaseAuth();
   const { openLogin } = useHowFarLogin();
-  const [saveRouteDialogOpen, setSaveRouteDialogOpen] = useState(false);
   const {
     mapType,
     mapboxToken,
@@ -151,7 +150,7 @@ const SettingsDrawer = () => {
       alert('Cannot save blank route.');
       return;
     }
-    setSaveRouteDialogOpen(true);
+    dispatch(setSaveRouteDialogOpen(true));
   };
 
   useEffect(() => {
@@ -161,8 +160,6 @@ const SettingsDrawer = () => {
   }, [dispatch, isMobile]);
 
   return (
-    <>
-    <SaveRouteDialog open={saveRouteDialogOpen} onClose={() => setSaveRouteDialogOpen(false)} />
     <Drawer
       open={menuOpen}
       onClose={() => dispatch(setMenuOpen(false))}
@@ -519,7 +516,6 @@ const SettingsDrawer = () => {
         </div>
       </div>
     </Drawer>
-    </>
   );
 };
 

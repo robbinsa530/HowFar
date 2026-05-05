@@ -12,31 +12,35 @@ import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
-import { saveRouteToServer } from '../../controllers/ImportExportController';
-import { setMenuOpen } from '../../store/slices/displaySlice';
+import { saveRouteToServer, updateRouteOnServer } from '../../controllers/ImportExportController';
+import { setMenuOpen, setSaveRouteDialogOpen } from '../../store/slices/displaySlice';
+import { clearEditingSavedRoute } from '../../store/slices/savedRouteSlice';
 
-/**
- * @param {object} props
- * @param {boolean} props.open
- * @param {() => void} props.onClose
- */
-export default function SaveRouteDialog({ open, onClose }) {
+export default function SaveRouteDialog() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { session } = useSupabaseAuth();
   const { geojson } = useSelector((state) => state.route);
   const { pins } = useSelector((state) => state.map);
+  const { saveRouteDialogOpen: open } = useSelector((state) => state.display);
+  const savedRoute = useSelector((state) => state.savedRoute);
+  const editingExistingRoute = Boolean(savedRoute.editingRouteUuid);
   const [routeName, setRouteName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setRouteName('');
-      setIsPrivate(false);
+      setRouteName(editingExistingRoute ? (savedRoute.name ?? '') : '');
+      setIsPrivate(editingExistingRoute ? Boolean(savedRoute.isPrivate) : false);
       setSaving(false);
     }
-  }, [open]);
+  }, [open, editingExistingRoute, savedRoute.name, savedRoute.isPrivate]);
+
+  const handleClose = () => {
+    if (saving) return;
+    dispatch(setSaveRouteDialogOpen(false));
+  };
 
   const handleSave = async () => {
     const trimmed = routeName.trim();
@@ -50,14 +54,27 @@ export default function SaveRouteDialog({ open, onClose }) {
     }
     setSaving(true);
     try {
-      const { shareUuid } = await saveRouteToServer({
-        accessToken: session.access_token,
-        name: trimmed,
-        isPrivate,
-        routeGeojson: geojson,
-        pins,
-      });
-      onClose();
+      let shareUuid;
+      if (editingExistingRoute) {
+        ({ shareUuid } = await updateRouteOnServer({
+          accessToken: session.access_token,
+          shareUuid: savedRoute.editingRouteUuid,
+          name: trimmed,
+          isPrivate,
+          routeGeojson: geojson,
+          pins,
+        }));
+      } else {
+        ({ shareUuid } = await saveRouteToServer({
+          accessToken: session.access_token,
+          name: trimmed,
+          isPrivate,
+          routeGeojson: geojson,
+          pins,
+        }));
+      }
+      dispatch(clearEditingSavedRoute());
+      dispatch(setSaveRouteDialogOpen(false));
       dispatch(setMenuOpen(false));
       navigate(`/route/${encodeURIComponent(shareUuid)}`);
     } catch (e) {
@@ -69,8 +86,8 @@ export default function SaveRouteDialog({ open, onClose }) {
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth aria-labelledby="save-route-dialog-title">
-      <DialogTitle id="save-route-dialog-title">Save route</DialogTitle>
+    <Dialog open={open} onClose={saving ? undefined : handleClose} maxWidth="sm" fullWidth aria-labelledby="save-route-dialog-title">
+      <DialogTitle id="save-route-dialog-title">{editingExistingRoute ? 'Update route' : 'Save route'}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
@@ -98,16 +115,16 @@ export default function SaveRouteDialog({ open, onClose }) {
         {saving && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
             <CircularProgress size={22} />
-            <span>Saving…</span>
+            <span>{editingExistingRoute ? 'Updating…' : 'Saving…'}</span>
           </Box>
         )}
       </DialogContent>
       <DialogActions>
-        <Button variant="text" color="primary" onClick={onClose} disabled={saving}>
+        <Button variant="text" color="primary" onClick={handleClose} disabled={saving}>
           Cancel
         </Button>
         <Button variant="contained" color="primary" onClick={handleSave} disabled={saving}>
-          Save
+          {editingExistingRoute ? 'Update' : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>

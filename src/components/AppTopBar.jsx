@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
@@ -13,7 +14,9 @@ import Chip from '@mui/material/Chip';
 import MenuIcon from '@mui/icons-material/Menu';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockIcon from '@mui/icons-material/Lock';
-import { setMenuOpen } from '../store/slices/displaySlice';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { setMenuOpen, setSaveRouteDialogOpen } from '../store/slices/displaySlice';
+import { clearEditingSavedRoute } from '../store/slices/savedRouteSlice';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useHowFarLogin } from '../context/HowFarLoginContext';
 
@@ -38,13 +41,17 @@ function getInitials(user) {
 
 export default function AppTopBar() {
   const dispatch = useDispatch();
-  const { name: savedRouteName, isPrivate: savedRouteIsPrivate } = useSelector(
+  const navigate = useNavigate();
+  const { name: savedRouteName, isPrivate: savedRouteIsPrivate, editingRouteUuid } = useSelector(
     (state) => state.savedRoute
   );
+  const { geojson } = useSelector((state) => state.route);
+  const { editInfoOpen } = useSelector((state) => state.display);
 
   const { user, loading: authLoading, supabase } = useSupabaseAuth();
   const { openLogin } = useHowFarLogin();
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  const [editingSavedRouteMenuAnchor, setEditingSavedRouteMenuAnchor] = useState(null);
 
   const initials = useMemo(() => getInitials(user), [user]);
 
@@ -59,6 +66,38 @@ export default function AppTopBar() {
   const handleSignOut = async () => {
     handleCloseUserMenu();
     await supabase?.auth.signOut();
+  };
+
+  const handleOpenEditingSavedRouteMenu = (event) => {
+    setEditingSavedRouteMenuAnchor(event.currentTarget);
+  };
+
+  const handleCloseEditingSavedRouteMenu = () => {
+    setEditingSavedRouteMenuAnchor(null);
+  };
+
+  const handleSaveFromEditingSavedRouteMenu = () => {
+    handleCloseEditingSavedRouteMenu();
+    if (!user) {
+      openLogin();
+      return;
+    }
+    if (geojson.features.length === 0) {
+      alert('Cannot save blank route.');
+      return;
+    }
+    if (editInfoOpen) {
+      return;
+    }
+    dispatch(setSaveRouteDialogOpen(true));
+  };
+
+  const handleCancelEditingSavedRoute = () => {
+    handleCloseEditingSavedRouteMenu();
+    dispatch(clearEditingSavedRoute());
+    if (editingRouteUuid) {
+      navigate(`/route/${encodeURIComponent(editingRouteUuid)}`);
+    }
   };
 
   return (
@@ -101,62 +140,105 @@ export default function AppTopBar() {
         }}
       >
         {savedRouteName?.trim() ? (
-          <Chip
-            label={
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, maxWidth: '100%' }}>
+            {editingRouteUuid && (
               <Box
-                component="span"
+                component="button"
+                type="button"
+                onClick={handleOpenEditingSavedRouteMenu}
+                aria-label="Open editing menu"
                 sx={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 0.75,
-                  maxWidth: '100%',
+                  gap: 0.2,
+                  color: 'rgba(255,255,255,0.92)',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  background: 'transparent',
+                  border: 'none',
+                  p: 0,
+                  cursor: 'pointer',
+                  font: 'inherit',
                 }}
               >
+                Editing:
+                <ExpandMoreIcon sx={{ fontSize: '1rem', opacity: 0.95 }} />
+              </Box>
+            )}
+            <Chip
+              label={
                 <Box
                   component="span"
                   sx={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    maxWidth: '100%',
                   }}
                 >
-                  {savedRouteName}
+                  <Box
+                    component="span"
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {savedRouteName}
+                  </Box>
+                  {savedRouteIsPrivate && (
+                    <Tooltip disableInteractive title="Private Route">
+                      <span>
+                        <LockIcon
+                          aria-label="Private route"
+                          sx={{
+                            fontSize: '1.05rem',
+                            flexShrink: 0,
+                            display: 'block',
+                            opacity: 0.95,
+                          }}
+                        />
+                      </span>
+                    </Tooltip>
+                  )}
                 </Box>
-                {savedRouteIsPrivate && (
-                  <Tooltip disableInteractive title="Private Route">
-                    <span>
-                      <LockIcon
-                        aria-label="Private route"
-                        sx={{
-                          fontSize: '1.05rem',
-                          flexShrink: 0,
-                          display: 'block',
-                          opacity: 0.95,
-                        }}
-                      />
-                    </span>
-                  </Tooltip>
-                )}
-              </Box>
-            }
-            size="medium"
-            sx={{
-              maxWidth: 'min(480px, 100%)',
-              height: 'auto',
-              py: 0.5,
-              bgcolor: 'rgba(255,255,255,0.22)',
-              color: 'common.white',
-              border: '1px solid rgba(255,255,255,0.5)',
-              fontWeight: 600,
-              '& .MuiChip-label': {
-                overflow: 'hidden',
-                px: 1.25,
-                py: 0.35,
-              },
-            }}
-          />
+              }
+              size="medium"
+              sx={{
+                maxWidth: 'min(480px, 100%)',
+                height: 'auto',
+                py: 0.5,
+                bgcolor: 'rgba(255,255,255,0.22)',
+                color: 'common.white',
+                border: '1px solid rgba(255,255,255,0.5)',
+                fontWeight: 600,
+                '& .MuiChip-label': {
+                  overflow: 'hidden',
+                  px: 1.25,
+                  py: 0.35,
+                },
+              }}
+            />
+          </Box>
         ) : null}
       </Box>
+      <Menu
+        id="editing-menu"
+        anchorEl={editingSavedRouteMenuAnchor}
+        open={Boolean(editingSavedRouteMenuAnchor)}
+        onClose={handleCloseEditingSavedRouteMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: { minWidth: 160, mt: 0.5 },
+          },
+        }}
+      >
+        <MenuItem disabled={editInfoOpen} onClick={handleSaveFromEditingSavedRouteMenu}>Save</MenuItem>
+        <MenuItem onClick={handleCancelEditingSavedRoute}>Cancel</MenuItem>
+      </Menu>
 
       {!authLoading && user ? (
         <>

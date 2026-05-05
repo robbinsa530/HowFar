@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   setDirectionsMode,
   setAddToStartOrEnd,
@@ -22,6 +23,8 @@ import { resetEditState } from '../controllers/ResetController';
 import ClearIcon from '@mui/icons-material/Clear';
 import UndoIcon from '@mui/icons-material/Undo';
 import LoopIcon from '@mui/icons-material/Loop';
+import AltRouteIcon from '@mui/icons-material/AltRoute';
+import AddRoadIcon from '@mui/icons-material/AddRoad';
 import EditIcon from '@mui/icons-material/Edit';
 import EditOffIcon from '@mui/icons-material/EditOff';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
@@ -45,12 +48,16 @@ import DirectionModeButton from './material/DirectionModeButton';
 // Custom other stuff (actions, etc.)
 import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
+import { editCurrentSavedRoute, forkCurrentRouteToEditor, startNewRouteFromScratch } from '../controllers/ImportExportController';
 import { useEditableRoute } from '../context/EditableRouteContext';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ mapRef }) => {
   const editableRoute = useEditableRoute();
+  const { user } = useSupabaseAuth();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const {
     geojson
   } = useSelector((state) => state.route);
@@ -78,6 +85,16 @@ const Sidebar = () => {
     newElevationLoading
   } = useSelector((state) => state.display);
   const { editRedrawingRoute } = useSelector((state) => state.editRoute);
+  const savedRouteMeta = useSelector((state) => state.savedRoute);
+
+  const forkVisible = !editableRoute && geojson.features.length > 0;
+
+  /** Client + server flags; prevents a stale `canEdit` if session ends without reload. */
+  const editSavedRouteEnabled = Boolean(user?.id && savedRouteMeta.canEdit);
+  const savedRouteDisplayName =
+    typeof savedRouteMeta.name === 'string' && savedRouteMeta.name.trim() !== ''
+      ? savedRouteMeta.name.trim()
+      : 'this route';
 
   const handleUndo = async () => {
     await onUndo();
@@ -85,6 +102,24 @@ const Sidebar = () => {
 
   const handleOutAndBack = () => {
     onOutAndBack();
+  };
+
+  const handleForkRoute = async () => {
+    const map = mapRef?.current;
+    if (!map) {
+      alert('Map is not ready.');
+      return;
+    }
+    await forkCurrentRouteToEditor(map, navigate);
+  };
+
+  const handleEditSavedRoute = async () => {
+    const map = mapRef?.current;
+    if (!map) {
+      alert('Map is not ready.');
+      return;
+    }
+    await editCurrentSavedRoute(map, navigate);
   };
 
   const handleOpenEditInfo = () => {
@@ -105,28 +140,6 @@ const Sidebar = () => {
     dispatch(setEditSelectingPoints(true));
   };
 
-  const setSidebarHeight = () => {
-    // Prevents area below sidebar from blocking map clicks
-    // Has to be tied to this img b/c sidebar height isn't calculated fully until this img loads
-    const sidebar = document.getElementById("sidebar");
-    const sidebarContent = document.getElementById("sidebar-content");
-    let sidebarHeight = sidebar.offsetHeight;
-    if (sidebarHeight) {
-      sidebarContent.style.maxHeight = sidebarHeight.toString() + "px";
-    }
-    // No else, would rather not hardcode any px values
-  };
-
-  // Avoids unnecessary sidebar scroller when editing route between points.
-  // Also when editableRoute toggles (e.g. /route/:uuid view-only → /): AppContent is reconciled,
-  // not remounted, so stale inline maxHeight on #sidebar-content must be recalculated.
-  useEffect(() => {
-    const id = window.setTimeout(() => {
-      setSidebarHeight();
-    }, 100); // Give time for sidebar contents to render
-    return () => window.clearTimeout(id);
-  }, [editRedrawingRoute, editableRoute]);
-
   return (
     <div id="sidebar-content" className={`sidebar-content desktop-controls ${elevationProfileOpen ? 'elevation-profile-open' : ''}`}>
       <div id="sidebar" className="sidebar">
@@ -136,7 +149,6 @@ const Sidebar = () => {
             src="/how_far_logo_complete.png"
             alt="HowFar Logo"
             width="225px"
-            onLoad={() => { setSidebarHeight() }}
           />
         </div>
 
@@ -181,6 +193,60 @@ const Sidebar = () => {
             </>
           )}
         </div>
+
+        {forkVisible && (
+          <div className="sidebar-viewonly-actions">
+            <Tooltip disableInteractive title={<Typography>Create your own route from scratch</Typography>}>
+              <Button
+                className="sidebar-action-button sidebar-viewonly-action"
+                variant="contained"
+                size="small"
+                onClick={() => startNewRouteFromScratch(navigate)}
+                startIcon={<AddRoadIcon fontSize="small" />}
+              >
+                Create New Route
+              </Button>
+            </Tooltip>
+            <Tooltip disableInteractive title={<Typography>Create a new route based on this one</Typography>}>
+              <Button
+                className="sidebar-action-button sidebar-viewonly-action"
+                variant="contained"
+                size="small"
+                onClick={handleForkRoute}
+                startIcon={<AltRouteIcon fontSize="small" />}
+              >
+                Fork Route
+              </Button>
+            </Tooltip>
+            <Tooltip
+              disableInteractive
+              title={
+                <Typography>
+                  {editSavedRouteEnabled ? (
+                    <>Edit and update &ldquo;{savedRouteDisplayName}&rdquo;</>
+                  ) : (
+                    <>
+                      You cannot edit this route because you do not own it. try forking instead
+                    </>
+                  )}
+                </Typography>
+              }
+            >
+              <span>
+                <Button
+                  className="sidebar-action-button sidebar-viewonly-action"
+                  variant="contained"
+                  size="small"
+                  disabled={!editSavedRouteEnabled}
+                  onClick={handleEditSavedRoute}
+                  startIcon={<EditIcon fontSize="small" />}
+                >
+                  Edit route
+                </Button>
+              </span>
+            </Tooltip>
+          </div>
+        )}
 
         {editableRoute && (
         <>

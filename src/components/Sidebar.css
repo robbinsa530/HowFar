@@ -4,14 +4,17 @@
   /* top is relative to .app-main-area (below the top bar), not the viewport */
   top: 8px;
   left: 8px;
-  height: calc(100% - 16px);
+  /* Size to the panel (#sidebar); cap height so long editor UI scrolls inside this box only.
+     A fixed full-area height + JS maxHeight caused a bogus scrollbar when the panel was short (e.g. view-only). */
+  height: auto;
+  max-height: calc(100% - 16px);
   overflow-y: auto;
 }
 
-/* When elevation profile is open, clip sidebar height (only on small screens) */
+/* When elevation profile is open, leave room for the profile strip (small screens) */
 @media (max-width: 999px) {
   .sidebar-content.elevation-profile-open {
-    height: calc(100% - 16px - 204px);
+    max-height: calc(100% - 16px - 204px);
   }
 }
 
@@ -112,11 +115,41 @@
   min-width: 0;
   width: 100%;
   padding: 6px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Tweak font-size to keep labels on one line and consistent */
 .sidebar .sidebar-action-button.MuiButton-root .MuiButton-startIcon {
   margin-right: 6px;
+}
+
+/* View-only Fork / Create New: column as wide as the longer label; both buttons match; block doesn’t span full sidebar */
+.sidebar-viewonly-actions {
+  display: grid;
+  justify-items: stretch;
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sidebar .sidebar-action-button.sidebar-viewonly-action.MuiButton-root {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  justify-content: center;
+  padding-block: 8px;
+  padding-inline: 10px;
+  font-size: 0.8rem;
+}
+
+.sidebar .sidebar-action-button.sidebar-viewonly-action.MuiButton-root .MuiButton-startIcon {
+  margin-right: 6px;
+  margin-left: 0;
 }
 
 /* Two-line label for Out & Back */

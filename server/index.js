@@ -18,6 +18,7 @@ import {
   getRouteByUuid,
   isValidRouteUuid,
   createRouteWithPins,
+  updateRouteWithPins,
   featureCollectionToLngLatPoints,
 } from './db/routesRepo.js';
 import { getUserIdFromBearer } from './supabaseAuth.js';
@@ -121,6 +122,62 @@ app.post('/api/routes', async (req, res) => {
   } catch (err) {
     console.error('POST /api/routes failed', err);
     res.status(500).json({ error: 'Failed to save route' });
+  }
+});
+
+app.put('/api/routes/:uuid', async (req, res) => {
+  const pool = getPool();
+  if (!pool) {
+    res.status(503).json({ error: 'Database configuration error' });
+    return;
+  }
+  const userId = await getUserIdFromBearer(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const { uuid } = req.params;
+  if (!isValidRouteUuid(uuid)) {
+    res.status(400).json({ error: 'Invalid route UUID' });
+    return;
+  }
+  const { name, isPrivate, routeGeojson, pins } = req.body ?? {};
+  const trimmedName = typeof name === 'string' ? name.trim() : '';
+  if (!trimmedName) {
+    res.status(400).json({ error: 'Route name is required' });
+    return;
+  }
+  if (!routeGeojson || typeof routeGeojson !== 'object') {
+    res.status(400).json({ error: 'routeGeojson is required' });
+    return;
+  }
+  const points = featureCollectionToLngLatPoints(routeGeojson);
+  if (points.length < 2) {
+    res.status(400).json({ error: 'Route must have at least two points' });
+    return;
+  }
+  const lineStringGeoJson = JSON.stringify({
+    type: 'LineString',
+    coordinates: points,
+  });
+  const pinList = Array.isArray(pins) ? pins : [];
+  try {
+    const updated = await updateRouteWithPins(pool, {
+      shareUuid: uuid,
+      creatingUserId: userId,
+      lineStringGeoJson,
+      pins: pinList,
+      name: trimmedName,
+      isPrivate: Boolean(isPrivate),
+    });
+    if (!updated) {
+      res.status(404).json({ error: 'Route not found or not editable by this user' });
+      return;
+    }
+    res.status(200).json({ shareUuid: uuid, updated: true });
+  } catch (err) {
+    console.error('PUT /api/routes/:uuid failed', err);
+    res.status(500).json({ error: 'Failed to update route' });
   }
 });
 

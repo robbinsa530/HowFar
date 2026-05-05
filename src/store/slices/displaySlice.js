@@ -8,6 +8,7 @@ const initialState = {
   exportActivityOpen: false,
   importActivityOpen: false,
   addPinsToMapOpen: false,
+  saveRouteDialogOpen: false,
   editInfoOpen: false,
   elevationProfileOpen: false,
   elevationLoading: false,
@@ -61,6 +62,9 @@ const displaySlice = createSlice({
     setAddPinsToMapOpen: (state, action) => {
       state.addPinsToMapOpen = action.payload;
     },
+    setSaveRouteDialogOpen: (state, action) => {
+      state.saveRouteDialogOpen = action.payload;
+    },
     setEditInfoOpen: (state, action) => {
       state.editInfoOpen = action.payload;
     },
@@ -111,6 +115,7 @@ export const {
   setExportActivityOpen,
   setImportActivityOpen,
   setAddPinsToMapOpen,
+  setSaveRouteDialogOpen,
   setEditInfoOpen,
   setElevationProfileOpen,
   setElevationLoading,

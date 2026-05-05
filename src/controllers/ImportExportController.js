@@ -1,6 +1,8 @@
 import store from '../store/store';
 
 import { geojsonToPointsForGpx } from './StravaController'
+import { resetRouteState, resetEditState } from './ResetController';
+import { clearSavedRouteMeta, setEditingSavedRoute } from '../store/slices/savedRouteSlice';
 import { Marker } from './MarkerController'
 import { addPinAtCoordinates } from './PinController'
 import { setLoading } from '../store/slices/displaySlice'
@@ -17,7 +19,7 @@ import cloneDeep from 'lodash.clonedeep';
  * Pass accessToken when loading a private route you own.
  * @param {string} uuid - Route identifier
  * @param {string | null} [accessToken] - Supabase session JWT for private routes
- * @returns {Promise<{ routeGeom: object, pins: Array, name?: string, isPrivate?: boolean }|null>}
+ * @returns {Promise<{ routeGeom: object, pins: Array, name?: string, isPrivate?: boolean, canEdit?: boolean }|null>}
  */
 export async function fetchRouteByUuid(uuid, accessToken = null) {
   if (!uuid) return null;
@@ -43,6 +45,49 @@ export async function fetchRouteByUuid(uuid, accessToken = null) {
 }
 
 /**
+ * Enter "edit existing saved route" mode on `/`:
+ * same route/pins transfer as fork, but preserve saved-route identity so Save updates instead of creates.
+ * @param {import('mapbox-gl').Map} map
+ * @param {(path: string, opts?: { replace?: boolean }) => void} navigate
+ */
+export async function editCurrentSavedRoute(map, navigate) {
+  if (!map) {
+    alert('Map is not ready.');
+    return;
+  }
+  const state = store.getState();
+  const points = geojsonToPointsForGpx(state.route.geojson);
+  if (points.length < 2) {
+    alert('Not enough route data to edit.');
+    return;
+  }
+  const shareUuid = state.savedRoute?.shareUuid;
+  if (!shareUuid) {
+    alert('Missing route ID for edit.');
+    return;
+  }
+
+  const pins = cloneDeep(state.map.pins);
+  const name = state.savedRoute?.name ?? '';
+  const isPrivate = Boolean(state.savedRoute?.isPrivate);
+
+  resetRouteState();
+  resetEditState();
+  // Keep saved-route identity so Save Activity can overwrite this route.
+  store.dispatch(setEditingSavedRoute({ editingRouteUuid: shareUuid, name, isPrivate }));
+
+  for (const pin of pins) {
+    const ll = pin.lngLat;
+    if (Array.isArray(ll) && ll.length >= 2) {
+      addPinAtCoordinates(ll[1], ll[0], pin.name ?? '', pin.color ?? 'red');
+    }
+  }
+
+  navigate('/');
+  await loadRouteFromPoints(points, map, true, true);
+}
+
+/**
  * Persist route geometry and helper pins (see POST /api/routes).
  * @param {object} params
  * @param {string} params.accessToken
@@ -55,6 +100,44 @@ export async function fetchRouteByUuid(uuid, accessToken = null) {
 export async function saveRouteToServer({ accessToken, name, isPrivate, routeGeojson, pins }) {
   const res = await fetch('/api/routes', {
     method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      name,
+      isPrivate,
+      routeGeojson,
+      pins,
+    }),
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    /* ignore */
+  }
+  if (!res.ok) {
+    const err = data.error ?? res.statusText;
+    throw new Error(err);
+  }
+  return data;
+}
+
+/**
+ * Overwrite an existing saved route that belongs to the authenticated user.
+ * @param {object} params
+ * @param {string} params.accessToken
+ * @param {string} params.shareUuid
+ * @param {string} params.name
+ * @param {boolean} params.isPrivate
+ * @param {object} params.routeGeojson
+ * @param {Array} params.pins
+ */
+export async function updateRouteOnServer({ accessToken, shareUuid, name, isPrivate, routeGeojson, pins }) {
+  const res = await fetch(`/api/routes/${encodeURIComponent(shareUuid)}`, {
+    method: 'PUT',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
@@ -141,6 +224,51 @@ export async function loadSavedRoute(data, map) {
   await loadRouteFromPoints(points, map, false, false);
 }
 
+/**
+ * Copy the current route + pins into a new editable session on `/` (w/ 1 mi chunk markers),
+ * matching GPX import behavior (default {@link loadRouteFromPoints} options).
+ * @param {import('mapbox-gl').Map} map
+ * @param {(path: string, opts?: { replace?: boolean }) => void} navigate - `useNavigate()` from react-router
+ */
+export async function forkCurrentRouteToEditor(map, navigate) {
+  if (!map) {
+    alert('Map is not ready.');
+    return;
+  }
+  const state = store.getState();
+  const points = geojsonToPointsForGpx(state.route.geojson);
+  if (points.length < 2) {
+    alert('Not enough route data to fork.');
+    return;
+  }
+  const pins = cloneDeep(state.map.pins);
+
+  resetRouteState();
+  resetEditState();
+  store.dispatch(clearSavedRouteMeta());
+
+  for (const pin of pins) {
+    const ll = pin.lngLat;
+    if (Array.isArray(ll) && ll.length >= 2) {
+      addPinAtCoordinates(ll[1], ll[0], pin.name ?? '', pin.color ?? 'red');
+    }
+  }
+
+  navigate('/');
+  await loadRouteFromPoints(points, map, true, true);
+}
+
+/**
+ * Clear route, pins, edit state, and saved-route title; navigate to the home editor (`/`).
+ * @param {(path: string, opts?: { replace?: boolean }) => void} navigate
+ */
+export function startNewRouteFromScratch(navigate) {
+  resetRouteState();
+  resetEditState();
+  store.dispatch(clearSavedRouteMeta());
+  navigate('/');
+}
+
 export async function downloadActivityGpx(data) {
   const state = store.getState();
   let geojson = cloneDeep(state.route.geojson);
@@ -203,7 +331,7 @@ export async function loadRouteFromPoints(points, map, addIntermediateMarkers = 
     maxLng -= 360;
   }
 
-  const edgePad = 20;
+  const edgePad = 40;
   let padding;
   if (fitBoundsReserveSidebar) {
     const sidebarContent = document.getElementById('sidebar-content');

@@ -6,7 +6,7 @@ import { setTokens } from './store/slices/mapSlice';
 import {
   setStravaLoginWindowWasOpened
 } from './store/slices/externalSlice';
-import { setIsMobile } from './store/slices/displaySlice';
+import { setIsMobile, setLoading } from './store/slices/displaySlice';
 import {
   setUploadedMessage
 } from './store/slices/displaySlice';
@@ -31,6 +31,7 @@ import { HowFarLoginProvider } from './context/HowFarLoginContext'
 import PostToStravaDialog from './components/dialogs/PostToStravaDialog'
 import ExportActivityDialog from './components/dialogs/ExportActivityDialog'
 import ImportActivityDialog from './components/dialogs/ImportActivityDialog'
+import SaveRouteDialog from './components/dialogs/SaveRouteDialog'
 import AddPinHelperPopup from './components/AddPinHelperPopup'
 import ElevationProfileFloater from './components/ElevationProfileFloater'
 import { EditableRouteContext } from './context/EditableRouteContext'
@@ -58,6 +59,7 @@ function AppContent({ editableRoute = true }) {
   const { displayDistancePopupEnabled } = useSelector((state) => state.settings);
   const { distancesToDisplay } = useSelector((state) => state.distancePopup);
   const { stravaLoginWindowWasOpened } = useSelector((state) => state.external);
+  const editingRouteUuid = useSelector((state) => state.savedRoute.editingRouteUuid);
 
   // Random refs/local state
   const mapRef = useRef(null); // Needed to access some mapboxgl methods
@@ -144,9 +146,12 @@ function AppContent({ editableRoute = true }) {
 
   useEffect(() => {
     if (!routeUuid) {
-      dispatch(clearSavedRouteMeta());
+      // Preserve meta while editing an existing saved route on `/`.
+      if (!editingRouteUuid) {
+        dispatch(clearSavedRouteMeta());
+      }
     }
-  }, [routeUuid, dispatch]);
+  }, [routeUuid, editingRouteUuid, dispatch]);
 
   // Load route from URL when navigating to /route/:uuid (once map is ready).
   // Wait for auth so private routes can be loaded with the user's JWT.
@@ -159,10 +164,13 @@ function AppContent({ editableRoute = true }) {
     routeUuidLoadedRef.current = routeUuid;
     (async () => {
       try {
+        // Keep loading dialog visible throughout map-ready -> fetch -> draw flow on /route/:uuid.
+        dispatch(setLoading(true));
         dispatch(clearSavedRouteMeta());
         const token = session?.access_token ?? null;
         const data = await fetchRouteByUuid(routeUuid, token);
         if (!data) {
+          dispatch(setLoading(false));
           routeUuidLoadedRef.current = null;
           alert('Could not load this route. It may be invalid or the server is unavailable.');
           navigate('/', { replace: true });
@@ -174,10 +182,13 @@ function AppContent({ editableRoute = true }) {
           setSavedRouteMeta({
             name: data.name ?? '',
             isPrivate: Boolean(data.isPrivate),
+            shareUuid: routeUuid,
+            canEdit: Boolean(data.canEdit),
           })
         );
         await loadSavedRoute(data, map);
       } catch (err) {
+        dispatch(setLoading(false));
         console.error('Failed to load route from URL', err);
         routeUuidLoadedRef.current = null;
         alert('Could not load this route. It may be invalid or the server is unavailable.');
@@ -194,8 +205,8 @@ function AppContent({ editableRoute = true }) {
         { /* Map will wait for mapboxToken to be fetched/set before loading */ }
         { mapboxToken && <MapComponent mapRef={mapRef} onMapReady={() => setMapReady(true)} /> }
         {/* Only one of the sidebars will be shown, but the display is controlled in their css files */}
-        <Sidebar />
-        <MobileSidebar />
+        <Sidebar mapRef={mapRef} />
+        <MobileSidebar mapRef={mapRef} />
         <BottomFloater />
         { elevationProfileOpen && <ElevationProfileFloater /> }
         {/* Dialogs and overlays that should be on top of everything */}
@@ -207,6 +218,7 @@ function AppContent({ editableRoute = true }) {
         <PostToStravaDialog />
         <ExportActivityDialog />
         <ImportActivityDialog mapRef={mapRef} />
+        <SaveRouteDialog />
         { !isMobile && !editInfoOpen && displayDistancePopupEnabled && distancesToDisplay.length > 0 && <PopupDistances /> }
         { loading && <SimpleDialog open={loading} text="Loading..." /> }
         { locating && <SimpleDialog open={locating} text="Locating..." /> }

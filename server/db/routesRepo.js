@@ -27,7 +27,7 @@ export function featureCollectionToLngLatPoints(geojson) {
  * @param {import('pg').Pool} pool
  * @param {string} shareUuid - routes.share_uuid (from URL /api/routes/:uuid)
  * @param {string | null} viewerUserId - Supabase auth user id, or null if unauthenticated
- * @returns {Promise<{ routeGeom: object, pins: Array<{ lngLat: number[], name: string, color: string }>, name: string, isPrivate: boolean } | null>}
+ * @returns {Promise<{ routeGeom: object, pins: Array<{ lngLat: number[], name: string, color: string }>, name: string, isPrivate: boolean, canEdit: boolean } | null>}
  */
 export async function getRouteByUuid(pool, shareUuid, viewerUserId = null) {
   const routeResult = await pool.query(
@@ -64,11 +64,17 @@ export async function getRouteByUuid(pool, shareUuid, viewerUserId = null) {
     color: row.color,
   }));
 
+  const canEdit =
+    Boolean(viewerUserId) &&
+    Boolean(routeRow.creatingUserId) &&
+    String(routeRow.creatingUserId) === String(viewerUserId);
+
   return {
     routeGeom: routeRow.routeGeom,
     pins,
     name: routeRow.name ?? '',
     isPrivate: Boolean(routeRow.is_private),
+    canEdit,
   };
 }
 
@@ -115,6 +121,76 @@ export async function createRouteWithPins(pool, {
 
     await client.query('COMMIT');
     return { shareUuid: String(shareUuid) };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Overwrite geometry/pins/name/privacy for an existing route owned by `creatingUserId`.
+ * @param {import('pg').Pool} pool
+ * @param {object} params
+ * @param {string} params.shareUuid
+ * @param {string} params.creatingUserId - auth.users id
+ * @param {string} params.lineStringGeoJson - JSON string of a GeoJSON LineString geometry
+ * @param {Array<{ lngLat: number[], name?: string, color?: string }>} params.pins
+ * @param {string} params.name
+ * @param {boolean} params.isPrivate
+ * @returns {Promise<boolean>} true when updated; false when route missing/not owned
+ */
+export async function updateRouteWithPins(pool, {
+  shareUuid,
+  creatingUserId,
+  lineStringGeoJson,
+  pins,
+  name,
+  isPrivate,
+}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const routeMatch = await client.query(
+      `SELECT id
+       FROM routes
+       WHERE share_uuid = $1::uuid
+         AND creating_user_id = $2::uuid
+       FOR UPDATE`,
+      [shareUuid, creatingUserId]
+    );
+    const routeId = routeMatch.rows[0]?.id;
+    if (!routeId) {
+      await client.query('ROLLBACK');
+      return false;
+    }
+
+    await client.query(
+      `UPDATE routes
+       SET route_geom = ST_SetSRID(ST_GeomFromGeoJSON($1), 4326),
+           name = $2,
+           is_private = $3
+       WHERE id = $4`,
+      [lineStringGeoJson, name, isPrivate, routeId]
+    );
+
+    await client.query(`DELETE FROM pins WHERE route_id = $1`, [routeId]);
+    for (const pin of pins) {
+      const lngLat = pin.lngLat;
+      if (!Array.isArray(lngLat) || lngLat.length < 2) continue;
+      const lng = Number(lngLat[0]);
+      const lat = Number(lngLat[1]);
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+      await client.query(
+        `INSERT INTO pins (route_id, pin_geom, name, color)
+         VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4, $5)`,
+        [routeId, lng, lat, pin.name ?? '', pin.color ?? 'red']
+      );
+    }
+
+    await client.query('COMMIT');
+    return true;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
