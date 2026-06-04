@@ -4,6 +4,22 @@ export function isValidRouteUuid(id) {
   return typeof id === 'string' && UUID_REGEX.test(id);
 }
 
+/** Max routes per `creating_user_id` enforced on POST /api/routes (updates do not count toward this). */
+export const MAX_ROUTES_PER_USER = 50;
+
+/**
+ * @param {import('pg').Pool} pool
+ * @param {string} creatingUserId - auth.users id
+ * @returns {Promise<number>}
+ */
+export async function countRoutesByCreatingUser(pool, creatingUserId) {
+  const r = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM routes WHERE creating_user_id = $1::uuid`,
+    [creatingUserId]
+  );
+  return r.rows[0]?.count ?? 0;
+}
+
 /**
  * Same merge as GeoController (first LineString in full, later segments skip the duplicate first vertex).
  * Matches client geojsonToPointsForGpx point order for a FeatureCollection of LineStrings.

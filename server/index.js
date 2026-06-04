@@ -20,6 +20,8 @@ import {
   createRouteWithPins,
   updateRouteWithPins,
   featureCollectionToLngLatPoints,
+  countRoutesByCreatingUser,
+  MAX_ROUTES_PER_USER,
 } from './db/routesRepo.js';
 import { getUserIdFromBearer } from './supabaseAuth.js';
 
@@ -111,6 +113,13 @@ app.post('/api/routes', async (req, res) => {
   });
   const pinList = Array.isArray(pins) ? pins : [];
   try {
+    const existingCount = await countRoutesByCreatingUser(pool, userId);
+    if (existingCount >= MAX_ROUTES_PER_USER) {
+      res.status(403).json({
+        error: `You can save at most ${MAX_ROUTES_PER_USER} routes. Delete an old route or update an existing one.`,
+      });
+      return;
+    }
     const { shareUuid } = await createRouteWithPins(pool, {
       lineStringGeoJson,
       pins: pinList,
