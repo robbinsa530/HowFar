@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Provider, useSelector, useDispatch } from 'react-redux';
-import { Routes, Route, useParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
 import { store } from './store/store';
 import { setTokens } from './store/slices/mapSlice';
 import {
@@ -230,6 +230,12 @@ function AppContent({ editableRoute = true }) {
   );
 }
 
+// Because I can be stupid sometimes :)
+function RedirectRoutesUuidToRoute() {
+  const { uuid } = useParams();
+  return <Navigate to={`/route/${encodeURIComponent(uuid)}`} replace />;
+}
+
 function App() {
   return (
     <Provider store={store}>
@@ -237,7 +243,9 @@ function App() {
         <Routes>
           <Route path="/" element={<AppContent editableRoute />} />
           <Route path="/route/:uuid" element={<AppContent editableRoute={false} />} />
+          <Route path="/routes/:uuid" element={<RedirectRoutesUuidToRoute />} />
           <Route path="/resetpassword" element={<ResetPasswordPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HowFarLoginProvider>
     </Provider>
