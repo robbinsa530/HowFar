@@ -48,7 +48,7 @@ import DirectionModeButton from './material/DirectionModeButton';
 // Custom other stuff (actions, etc.)
 import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
-import { editCurrentSavedRoute, forkCurrentRouteToEditor, startNewRouteFromScratch } from '../controllers/ImportExportController';
+import { forkCurrentRouteToEditor, startNewRouteFromScratch } from '../controllers/ImportExportController';
 import { useEditableRoute } from '../context/EditableRouteContext';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import './Sidebar.css';
@@ -85,15 +85,19 @@ const Sidebar = ({ mapRef }) => {
     newElevationLoading
   } = useSelector((state) => state.display);
   const { editRedrawingRoute } = useSelector((state) => state.editRoute);
-  const savedRouteMeta = useSelector((state) => state.savedRoute);
+  const {
+    name: savedRouteName,
+    shareUuid: savedRouteShareUuid,
+    canEdit: savedRouteCanEdit,
+  } = useSelector((state) => state.savedRoute);
 
   const forkVisible = !editableRoute && geojson.features.length > 0;
 
   /** Client + server flags; prevents a stale `canEdit` if session ends without reload. */
-  const editSavedRouteEnabled = Boolean(user?.id && savedRouteMeta.canEdit);
+  const editSavedRouteEnabled = Boolean(user?.id && savedRouteCanEdit);
   const savedRouteDisplayName =
-    typeof savedRouteMeta.name === 'string' && savedRouteMeta.name.trim() !== ''
-      ? savedRouteMeta.name.trim()
+    typeof savedRouteName === 'string' && savedRouteName.trim() !== ''
+      ? savedRouteName.trim()
       : 'this route';
 
   const handleUndo = async () => {
@@ -113,13 +117,13 @@ const Sidebar = ({ mapRef }) => {
     await forkCurrentRouteToEditor(map, navigate);
   };
 
-  const handleEditSavedRoute = async () => {
-    const map = mapRef?.current;
-    if (!map) {
-      alert('Map is not ready.');
+  const handleEditSavedRoute = () => {
+    const shareUuid = savedRouteShareUuid;
+    if (!shareUuid) {
+      alert('Missing route ID for edit.');
       return;
     }
-    await editCurrentSavedRoute(map, navigate);
+    navigate(`/editing/${encodeURIComponent(shareUuid)}`);
   };
 
   const handleOpenEditInfo = () => {

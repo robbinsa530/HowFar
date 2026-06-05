@@ -21,6 +21,32 @@ export async function countRoutesByCreatingUser(pool, creatingUserId) {
 }
 
 /**
+ * @param {import('pg').Pool} pool
+ * @param {string} creatingUserId - auth.users id
+ * @returns {Promise<Array<{ shareUuid: string, name: string, createdAt: string, lengthM: number, isPrivate: boolean }>>}
+ */
+export async function listRoutesByCreatingUser(pool, creatingUserId) {
+  const r = await pool.query(
+    `SELECT share_uuid::text AS "shareUuid",
+            name,
+            created_at AS "createdAt",
+            route_length_m AS "lengthM",
+            is_private AS "isPrivate"
+     FROM routes
+     WHERE creating_user_id = $1::uuid
+     ORDER BY created_at DESC`,
+    [creatingUserId]
+  );
+  return r.rows.map((row) => ({
+    shareUuid: row.shareUuid,
+    name: row.name ?? '',
+    createdAt: row.createdAt,
+    lengthM: Number(row.lengthM) || 0,
+    isPrivate: Boolean(row.isPrivate),
+  }));
+}
+
+/**
  * Same merge as GeoController (first LineString in full, later segments skip the duplicate first vertex).
  * Matches client geojsonToPointsForGpx point order for a FeatureCollection of LineStrings.
  * @param {object} geojson - GeoJSON FeatureCollection
@@ -213,4 +239,20 @@ export async function updateRouteWithPins(pool, {
   } finally {
     client.release();
   }
+}
+
+/**
+ * @param {import('pg').Pool} pool
+ * @param {string} shareUuid
+ * @param {string} creatingUserId - auth.users id
+ * @returns {Promise<boolean>} true when deleted; false when route missing/not owned
+ */
+export async function deleteRouteByCreatingUser(pool, shareUuid, creatingUserId) {
+  const r = await pool.query(
+    `DELETE FROM routes
+     WHERE share_uuid = $1::uuid
+       AND creating_user_id = $2::uuid`,
+    [shareUuid, creatingUserId]
+  );
+  return (r.rowCount ?? 0) > 0;
 }

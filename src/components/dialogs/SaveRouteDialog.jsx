@@ -14,7 +14,6 @@ import Box from '@mui/material/Box';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { saveRouteToServer, updateRouteOnServer } from '../../controllers/ImportExportController';
 import { setMenuOpen, setSaveRouteDialogOpen } from '../../store/slices/displaySlice';
-import { clearEditingSavedRoute } from '../../store/slices/savedRouteSlice';
 
 export default function SaveRouteDialog() {
   const dispatch = useDispatch();
@@ -24,7 +23,7 @@ export default function SaveRouteDialog() {
   const { pins } = useSelector((state) => state.map);
   const { saveRouteDialogOpen: open } = useSelector((state) => state.display);
   const savedRoute = useSelector((state) => state.savedRoute);
-  const editingExistingRoute = Boolean(savedRoute.editingRouteUuid);
+  const editingExistingRoute = Boolean(savedRoute.isEditing && savedRoute.shareUuid);
   const [routeName, setRouteName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,7 +57,7 @@ export default function SaveRouteDialog() {
       if (editingExistingRoute) {
         ({ shareUuid } = await updateRouteOnServer({
           accessToken: session.access_token,
-          shareUuid: savedRoute.editingRouteUuid,
+          shareUuid: savedRoute.shareUuid,
           name: trimmed,
           isPrivate,
           routeGeojson: geojson,
@@ -73,7 +72,6 @@ export default function SaveRouteDialog() {
           pins,
         }));
       }
-      dispatch(clearEditingSavedRoute());
       dispatch(setSaveRouteDialogOpen(false));
       dispatch(setMenuOpen(false));
       navigate(`/route/${encodeURIComponent(shareUuid)}`);

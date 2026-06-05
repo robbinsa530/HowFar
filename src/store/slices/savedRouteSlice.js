@@ -1,15 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  /** Display name from DB when viewing a shared route; null when not on /route/:uuid or cleared */
+  /** Display name from DB when viewing or editing a saved route */
   name: null,
   isPrivate: false,
-  /** Current route UUID when viewing /route/:uuid */
+  /** Route UUID when viewing (/route/:uuid) or editing (/editing/:uuid, then `/`) */
   shareUuid: null,
   /** True when viewer is logged in and is the route creator (from GET /api/routes/:uuid) */
   canEdit: false,
-  /** Non-null when user chose "Edit route" and is editing an existing saved route on `/` */
-  editingRouteUuid: null,
+  /** True while editing an existing saved route (false on /route/:uuid view-only) */
+  isEditing: false,
 };
 
 const savedRouteSlice = createSlice({
@@ -21,28 +21,11 @@ const savedRouteSlice = createSlice({
       state.isPrivate = Boolean(action.payload.isPrivate);
       state.shareUuid = action.payload.shareUuid ?? null;
       state.canEdit = Boolean(action.payload.canEdit);
-    },
-    setEditingSavedRoute: (state, action) => {
-      state.editingRouteUuid = action.payload?.editingRouteUuid ?? null;
-      if (typeof action.payload?.name === 'string') {
-        state.name = action.payload.name;
-      }
-      if (typeof action.payload?.isPrivate !== 'undefined') {
-        state.isPrivate = Boolean(action.payload.isPrivate);
-      }
-      state.canEdit = true;
-    },
-    clearEditingSavedRoute: (state) => {
-      state.editingRouteUuid = null;
+      state.isEditing = Boolean(action.payload.isEditing);
     },
     clearSavedRouteMeta: () => initialState,
   },
 });
 
-export const {
-  setSavedRouteMeta,
-  setEditingSavedRoute,
-  clearEditingSavedRoute,
-  clearSavedRouteMeta,
-} = savedRouteSlice.actions;
+export const { setSavedRouteMeta, clearSavedRouteMeta } = savedRouteSlice.actions;
 export default savedRouteSlice.reducer;

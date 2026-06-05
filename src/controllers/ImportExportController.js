@@ -2,7 +2,7 @@ import store from '../store/store';
 
 import { geojsonToPointsForGpx } from './StravaController'
 import { resetRouteState, resetEditState } from './ResetController';
-import { clearSavedRouteMeta, setEditingSavedRoute } from '../store/slices/savedRouteSlice';
+import { clearSavedRouteMeta, setSavedRouteMeta } from '../store/slices/savedRouteSlice';
 import { Marker } from './MarkerController'
 import { addPinAtCoordinates } from './PinController'
 import { setLoading } from '../store/slices/displaySlice'
@@ -45,36 +45,82 @@ export async function fetchRouteByUuid(uuid, accessToken = null) {
 }
 
 /**
- * Enter "edit existing saved route" mode on `/`:
- * same route/pins transfer as fork, but preserve saved-route identity so Save updates instead of creates.
- * @param {import('mapbox-gl').Map} map
- * @param {(path: string, opts?: { replace?: boolean }) => void} navigate
+ * @param {string} accessToken
+ * @returns {Promise<Array<{ shareUuid: string, name: string, createdAt: string, lengthM: number, isPrivate: boolean }>>}
  */
-export async function editCurrentSavedRoute(map, navigate) {
-  if (!map) {
-    alert('Map is not ready.');
-    return;
+export async function fetchMyRoutes(accessToken) {
+  const res = await fetch('/api/routes', {
+    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    /* ignore */
   }
-  const state = store.getState();
-  const points = geojsonToPointsForGpx(state.route.geojson);
-  if (points.length < 2) {
-    alert('Not enough route data to edit.');
-    return;
+  if (!res.ok) {
+    const err = data.error ?? res.statusText;
+    throw new Error(err);
   }
-  const shareUuid = state.savedRoute?.shareUuid;
-  if (!shareUuid) {
-    alert('Missing route ID for edit.');
-    return;
-  }
+  return Array.isArray(data.routes) ? data.routes : [];
+}
 
-  const pins = cloneDeep(state.map.pins);
-  const name = state.savedRoute?.name ?? '';
-  const isPrivate = Boolean(state.savedRoute?.isPrivate);
+/**
+ * @param {object} params
+ * @param {string} params.accessToken
+ * @param {string} params.shareUuid
+ */
+export async function deleteRouteOnServer({ accessToken, shareUuid }) {
+  const res = await fetch(`/api/routes/${encodeURIComponent(shareUuid)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    /* ignore */
+  }
+  if (!res.ok) {
+    const err = data.error ?? res.statusText;
+    throw new Error(err);
+  }
+}
 
+/**
+ * @param {object} params
+ * @param {string} params.shareUuid
+ * @param {string} params.name
+ * @param {boolean} params.isPrivate
+ * @param {number[][]} params.points
+ * @param {Array} params.pins
+ * @param {import('mapbox-gl').Map} params.map
+ * @param {(path: string, opts?: { replace?: boolean }) => void} params.navigate
+ */
+async function enterEditModeForSavedRoute({
+  shareUuid,
+  name,
+  isPrivate,
+  points,
+  pins,
+  map,
+  navigate,
+}) {
   resetRouteState();
   resetEditState();
-  // Keep saved-route identity so Save Activity can overwrite this route.
-  store.dispatch(setEditingSavedRoute({ editingRouteUuid: shareUuid, name, isPrivate }));
+  store.dispatch(setSavedRouteMeta({
+    shareUuid,
+    name,
+    isPrivate,
+    canEdit: true,
+    isEditing: true,
+  }));
 
   for (const pin of pins) {
     const ll = pin.lngLat;
@@ -85,6 +131,39 @@ export async function editCurrentSavedRoute(map, navigate) {
 
   navigate('/');
   await loadRouteFromPoints(points, map, true, true);
+}
+
+/**
+ * Fetch a saved route by UUID and open it in edit mode on `/` (from /editing/:uuid).
+ * @param {string} shareUuid
+ * @param {string | null} accessToken
+ * @param {import('mapbox-gl').Map} map
+ * @param {(path: string, opts?: { replace?: boolean }) => void} navigate
+ */
+export async function editSavedRouteByUuid(shareUuid, accessToken, map, navigate) {
+  if (!map) {
+    alert('Map is not ready.');
+    return;
+  }
+  const data = await fetchRouteByUuid(shareUuid, accessToken);
+  if (!data) {
+    alert('Could not load this route for editing.');
+    return;
+  }
+  const points = geometryToLngLatPoints(data.routeGeom);
+  if (points.length < 2) {
+    alert('Not enough route data to edit.');
+    return;
+  }
+  await enterEditModeForSavedRoute({
+    shareUuid,
+    name: data.name ?? '',
+    isPrivate: Boolean(data.isPrivate),
+    points,
+    pins: data.pins ?? [],
+    map,
+    navigate,
+  });
 }
 
 /**

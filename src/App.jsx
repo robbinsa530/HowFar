@@ -11,7 +11,7 @@ import {
   setUploadedMessage
 } from './store/slices/displaySlice';
 import { updateConnectedStatus } from './controllers/StravaController';
-import { fetchRouteByUuid, loadSavedRoute } from './controllers/ImportExportController';
+import { fetchRouteByUuid, loadSavedRoute, editSavedRouteByUuid } from './controllers/ImportExportController';
 import { resetRouteState, resetEditState } from './controllers/ResetController';
 import { setSavedRouteMeta, clearSavedRouteMeta } from './store/slices/savedRouteSlice';
 
@@ -37,9 +37,10 @@ import ElevationProfileFloater from './components/ElevationProfileFloater'
 import { EditableRouteContext } from './context/EditableRouteContext'
 import { useSupabaseAuth } from './context/SupabaseAuthContext'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import MyRoutesPage from './pages/MyRoutesPage'
 import './App.css'
 
-function AppContent({ editableRoute = true }) {
+function AppContent({ editableRoute = true, savedRouteMode = null }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -59,7 +60,7 @@ function AppContent({ editableRoute = true }) {
   const { displayDistancePopupEnabled } = useSelector((state) => state.settings);
   const { distancesToDisplay } = useSelector((state) => state.distancePopup);
   const { stravaLoginWindowWasOpened } = useSelector((state) => state.external);
-  const editingRouteUuid = useSelector((state) => state.savedRoute.editingRouteUuid);
+  const { isEditing: isEditingSavedRoute } = useSelector((state) => state.savedRoute);
 
   // Random refs/local state
   const mapRef = useRef(null); // Needed to access some mapboxgl methods
@@ -147,30 +148,35 @@ function AppContent({ editableRoute = true }) {
   useEffect(() => {
     if (!routeUuid) {
       // Preserve meta while editing an existing saved route on `/`.
-      if (!editingRouteUuid) {
+      if (!isEditingSavedRoute) {
         dispatch(clearSavedRouteMeta());
       }
     }
-  }, [routeUuid, editingRouteUuid, dispatch]);
+  }, [routeUuid, isEditingSavedRoute, dispatch]);
 
-  // Load route from URL when navigating to /route/:uuid (once map is ready).
-  // Wait for auth so private routes can be loaded with the user's JWT.
+  // Load a saved route from /route/:uuid (view) or /editing/:uuid (edit) once the map is ready.
   useEffect(() => {
-    if (!routeUuid || !mapReady || authLoading) return;
+    if (!routeUuid || !savedRouteMode || !mapReady || authLoading) return;
     const map = mapRef?.current;
     if (!map) return;
-    if (routeUuidLoadedRef.current === routeUuid) return;
+    const loadedKey = `${savedRouteMode}:${routeUuid}`;
+    if (routeUuidLoadedRef.current === loadedKey) return;
 
-    routeUuidLoadedRef.current = routeUuid;
+    routeUuidLoadedRef.current = loadedKey;
     (async () => {
       try {
         // Keep loading dialog visible throughout map-ready -> fetch -> draw flow on /route/:uuid.
         dispatch(setLoading(true));
-        dispatch(clearSavedRouteMeta());
         const token = session?.access_token ?? null;
+
+        if (savedRouteMode === 'edit') {
+          await editSavedRouteByUuid(routeUuid, token, map, navigate);
+          return;
+        }
+
+        dispatch(clearSavedRouteMeta());
         const data = await fetchRouteByUuid(routeUuid, token);
         if (!data) {
-          dispatch(setLoading(false));
           routeUuidLoadedRef.current = null;
           alert('Could not load this route. It may be invalid or the server is unavailable.');
           navigate('/', { replace: true });
@@ -184,18 +190,25 @@ function AppContent({ editableRoute = true }) {
             isPrivate: Boolean(data.isPrivate),
             shareUuid: routeUuid,
             canEdit: Boolean(data.canEdit),
+            isEditing: false,
           })
         );
         await loadSavedRoute(data, map);
       } catch (err) {
-        dispatch(setLoading(false));
-        console.error('Failed to load route from URL', err);
         routeUuidLoadedRef.current = null;
-        alert('Could not load this route. It may be invalid or the server is unavailable.');
+        if (savedRouteMode === 'edit') {
+          console.error('Failed to open route for edit', err);
+          alert('Could not open this route for editing.');
+        } else {
+          console.error('Failed to load route from URL', err);
+          alert('Could not load this route. It may be invalid or the server is unavailable.');
+        }
         navigate('/', { replace: true });
+      } finally {
+        dispatch(setLoading(false));
       }
     })();
-  }, [routeUuid, mapReady, authLoading, session?.access_token, navigate, dispatch]);
+  }, [routeUuid, savedRouteMode, mapReady, authLoading, session?.access_token, navigate, dispatch]);
 
   return (
     <EditableRouteContext.Provider value={editableRoute}>
@@ -242,8 +255,10 @@ function App() {
       <HowFarLoginProvider>
         <Routes>
           <Route path="/" element={<AppContent editableRoute />} />
-          <Route path="/route/:uuid" element={<AppContent editableRoute={false} />} />
+          <Route path="/route/:uuid" element={<AppContent editableRoute={false} savedRouteMode="view" />} />
+          <Route path="/editing/:uuid" element={<AppContent editableRoute savedRouteMode="edit" />} />
           <Route path="/routes/:uuid" element={<RedirectRoutesUuidToRoute />} />
+          <Route path="/my-routes" element={<MyRoutesPage />} />
           <Route path="/resetpassword" element={<ResetPasswordPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -48,7 +48,7 @@ import BlueSlider from './material/BlueSlider';
 import onOutAndBack from '../actions/outAndBack';
 import onUndo from '../actions/undo/undo';
 import { resetEditState } from '../controllers/ResetController';
-import { editCurrentSavedRoute, forkCurrentRouteToEditor, startNewRouteFromScratch } from '../controllers/ImportExportController';
+import { forkCurrentRouteToEditor, startNewRouteFromScratch } from '../controllers/ImportExportController';
 import { useEditableRoute } from '../context/EditableRouteContext';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import './MobileSidebar.css';
@@ -83,12 +83,16 @@ const MobileSidebar = ({ mapRef }) => {
     elevationLoading
   } = useSelector((state) => state.display);
   const { editRedrawingRoute } = useSelector((state) => state.editRoute);
-  const savedRouteMeta = useSelector((state) => state.savedRoute);
+  const {
+    name: savedRouteName,
+    shareUuid: savedRouteShareUuid,
+    canEdit: savedRouteCanEdit,
+  } = useSelector((state) => state.savedRoute);
 
-  const editSavedRouteEnabled = Boolean(user?.id && savedRouteMeta.canEdit);
+  const editSavedRouteEnabled = Boolean(user?.id && savedRouteCanEdit);
   const savedRouteDisplayName =
-    typeof savedRouteMeta.name === 'string' && savedRouteMeta.name.trim() !== ''
-      ? savedRouteMeta.name.trim()
+    typeof savedRouteName === 'string' && savedRouteName.trim() !== ''
+      ? savedRouteName.trim()
       : 'this route';
 
   const handleUndo = async () => {
@@ -138,13 +142,13 @@ const MobileSidebar = ({ mapRef }) => {
     await forkCurrentRouteToEditor(map, navigate);
   };
 
-  const handleEditSavedRoute = async () => {
-    const map = mapRef?.current;
-    if (!map) {
-      alert('Map is not ready.');
+  const handleEditSavedRoute = () => {
+    const shareUuid = savedRouteShareUuid;
+    if (!shareUuid) {
+      alert('Missing route ID for edit.');
       return;
     }
-    await editCurrentSavedRoute(map, navigate);
+    navigate(`/editing/${encodeURIComponent(shareUuid)}`);
   };
 
   const forkVisible = !editableRoute && geojson.features.length > 0;

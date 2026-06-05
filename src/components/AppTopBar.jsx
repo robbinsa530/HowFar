@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
@@ -12,11 +12,11 @@ import Divider from '@mui/material/Divider';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import MenuIcon from '@mui/icons-material/Menu';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockIcon from '@mui/icons-material/Lock';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { setMenuOpen, setSaveRouteDialogOpen } from '../store/slices/displaySlice';
-import { clearEditingSavedRoute } from '../store/slices/savedRouteSlice';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useHowFarLogin } from '../context/HowFarLoginContext';
 
@@ -42,9 +42,14 @@ function getInitials(user) {
 export default function AppTopBar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { name: savedRouteName, isPrivate: savedRouteIsPrivate, editingRouteUuid } = useSelector(
-    (state) => state.savedRoute
-  );
+  const location = useLocation();
+  const isMyRoutesPage = location.pathname === '/my-routes';
+  const {
+    name: savedRouteName,
+    isPrivate: savedRouteIsPrivate,
+    shareUuid: savedRouteShareUuid,
+    isEditing: isEditingSavedRoute,
+  } = useSelector((state) => state.savedRoute);
   const { geojson } = useSelector((state) => state.route);
   const { editInfoOpen } = useSelector((state) => state.display);
 
@@ -55,12 +60,23 @@ export default function AppTopBar() {
 
   const initials = useMemo(() => getInitials(user), [user]);
 
+  useEffect(() => {
+    if (isMyRoutesPage) {
+      dispatch(setMenuOpen(false));
+    }
+  }, [isMyRoutesPage, dispatch]);
+
   const handleOpenUserMenu = (event) => {
     setUserMenuAnchor(event.currentTarget);
   };
 
   const handleCloseUserMenu = () => {
     setUserMenuAnchor(null);
+  };
+
+  const handleMyRoutes = () => {
+    handleCloseUserMenu();
+    navigate('/my-routes');
   };
 
   const handleSignOut = async () => {
@@ -94,9 +110,8 @@ export default function AppTopBar() {
 
   const handleCancelEditingSavedRoute = () => {
     handleCloseEditingSavedRouteMenu();
-    dispatch(clearEditingSavedRoute());
-    if (editingRouteUuid) {
-      navigate(`/route/${encodeURIComponent(editingRouteUuid)}`);
+    if (savedRouteShareUuid) {
+      navigate(`/route/${encodeURIComponent(savedRouteShareUuid)}`);
     }
   };
 
@@ -119,15 +134,27 @@ export default function AppTopBar() {
         borderBottom: '1px solid rgba(255,255,255,0.12)',
       }}
     >
-      <Tooltip disableInteractive title={<Typography>More options (apps, display, import/export, etc.)</Typography>}>
-        <IconButton
-          onClick={() => dispatch(setMenuOpen(true))}
-          aria-label="Open settings menu"
-          sx={{ color: 'white', mr: 0.5 }}
-        >
-          <MenuIcon />
-        </IconButton>
-      </Tooltip>
+      {isMyRoutesPage ? (
+        <Tooltip disableInteractive title={<Typography>Back to map</Typography>}>
+          <IconButton
+            onClick={() => navigate('/')}
+            aria-label="Back to map"
+            sx={{ color: 'white', mr: 0.5 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Tooltip disableInteractive title={<Typography>More options (apps, display, import/export, etc.)</Typography>}>
+          <IconButton
+            onClick={() => dispatch(setMenuOpen(true))}
+            aria-label="Open settings menu"
+            sx={{ color: 'white', mr: 0.5 }}
+          >
+            <MenuIcon />
+          </IconButton>
+        </Tooltip>
+      )}
 
       <Box
         sx={{
@@ -141,7 +168,7 @@ export default function AppTopBar() {
       >
         {savedRouteName?.trim() ? (
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, maxWidth: '100%' }}>
-            {editingRouteUuid && (
+            {isEditingSavedRoute && (
               <Box
                 component="button"
                 type="button"
@@ -291,6 +318,7 @@ export default function AppTopBar() {
               </Typography>
             </Box>
             <Divider />
+            <MenuItem onClick={handleMyRoutes}>My Routes</MenuItem>
             <MenuItem onClick={handleSignOut}>Sign out</MenuItem>
           </Menu>
         </>

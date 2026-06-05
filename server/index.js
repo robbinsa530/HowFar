@@ -19,8 +19,10 @@ import {
   isValidRouteUuid,
   createRouteWithPins,
   updateRouteWithPins,
+  deleteRouteByCreatingUser,
   featureCollectionToLngLatPoints,
   countRoutesByCreatingUser,
+  listRoutesByCreatingUser,
   MAX_ROUTES_PER_USER,
 } from './db/routesRepo.js';
 import { getUserIdFromBearer } from './supabaseAuth.js';
@@ -54,6 +56,26 @@ app.get("/getApiTokens", async (req, res) => {
     STRAVA_CLIENT_ID: strava.client_id,
     MAPBOX_PUB_KEY: process.env.MAPBOX_PUB_KEY,
    });
+});
+
+app.get('/api/routes', async (req, res) => {
+  const pool = getPool();
+  if (!pool) {
+    res.status(503).json({ error: 'Database configuration error' });
+    return;
+  }
+  const userId = await getUserIdFromBearer(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  try {
+    const routes = await listRoutesByCreatingUser(pool, userId);
+    res.json({ routes });
+  } catch (err) {
+    console.error('GET /api/routes failed', err);
+    res.status(500).json({ error: 'Failed to list routes' });
+  }
 });
 
 app.get("/api/routes/:uuid", async (req, res) => {
@@ -187,6 +209,35 @@ app.put('/api/routes/:uuid', async (req, res) => {
   } catch (err) {
     console.error('PUT /api/routes/:uuid failed', err);
     res.status(500).json({ error: 'Failed to update route' });
+  }
+});
+
+app.delete('/api/routes/:uuid', async (req, res) => {
+  const pool = getPool();
+  if (!pool) {
+    res.status(503).json({ error: 'Database configuration error' });
+    return;
+  }
+  const userId = await getUserIdFromBearer(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const { uuid } = req.params;
+  if (!isValidRouteUuid(uuid)) {
+    res.status(400).json({ error: 'Invalid route UUID' });
+    return;
+  }
+  try {
+    const deleted = await deleteRouteByCreatingUser(pool, uuid, userId);
+    if (!deleted) {
+      res.status(404).json({ error: 'Route not found or not deletable by this user' });
+      return;
+    }
+    res.status(200).json({ deleted: true });
+  } catch (err) {
+    console.error('DELETE /api/routes/:uuid failed', err);
+    res.status(500).json({ error: 'Failed to delete route' });
   }
 });
 
@@ -472,7 +523,7 @@ app.post("/exportGpx", async (req, res) => {
   res.status(200).send({gpx: gpxString});
 });
 
-// SPA fallback: serve index.html for client routes (e.g. /route/:uuid) in production.
+// SPA fallback: serve index.html for client routes (e.g. /route/:uuid, /editing/:uuid) in production.
 // Express 5 / path-to-regexp no longer accepts app.get('*', ...) — use a terminal GET middleware.
 if (process.env.NODE_ENV === 'production') {
   const indexHtml = path.join(__dirname, '../dist/index.html');
