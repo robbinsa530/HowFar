@@ -63,7 +63,8 @@
 /* For mobile we just stick it at the bottom and hope it looks nice */
 @media only screen and (max-device-width: 480px) {
   .elevation-profile-container {
+    position: fixed;
     bottom: 45px; /* Above the mobile stats bar (which is 40px tall) */
-    z-index: 2; /* Ensures the mobile controls popup is in front */
+    z-index: 4; /* Above mobile stats bar (3), below mobile controls popup (5) */
   }
 }
