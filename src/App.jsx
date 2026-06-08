@@ -176,6 +176,12 @@ function AppContent({ editableRoute = true, savedRouteMode = null }) {
 
         dispatch(clearSavedRouteMeta());
         const data = await fetchRouteByUuid(routeUuid, token);
+        if (data?.deleted) {
+          routeUuidLoadedRef.current = null;
+          alert('This route has been deleted.');
+          navigate('/', { replace: true });
+          return;
+        }
         if (!data) {
           routeUuidLoadedRef.current = null;
           alert('Could not load this route. It may be invalid or the server is unavailable.');

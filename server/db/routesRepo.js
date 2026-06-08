@@ -69,7 +69,7 @@ export function featureCollectionToLngLatPoints(geojson) {
  * @param {import('pg').Pool} pool
  * @param {string} shareUuid - routes.share_uuid (from URL /api/routes/:uuid)
  * @param {string | null} viewerUserId - Supabase auth user id, or null if unauthenticated
- * @returns {Promise<{ routeGeom: object, pins: Array<{ lngLat: number[], name: string, color: string }>, name: string, isPrivate: boolean, canEdit: boolean } | null>}
+ * @returns {Promise<{ routeGeom: object, pins: Array<{ lngLat: number[], name: string, color: string }>, name: string, isPrivate: boolean, canEdit: boolean } | { deleted: true, deletedAt: string } | null>}
  */
 export async function getRouteByUuid(pool, shareUuid, viewerUserId = null) {
   const routeResult = await pool.query(
@@ -82,7 +82,13 @@ export async function getRouteByUuid(pool, shareUuid, viewerUserId = null) {
     [shareUuid]
   );
   const routeRow = routeResult.rows[0];
-  if (!routeRow) return null;
+  if (!routeRow) {
+    const deleted = await getDeletedRoute(pool, shareUuid);
+    if (deleted) {
+      return { deleted: true, deletedAt: deleted.deletedAt };
+    }
+    return null;
+  }
 
   if (routeRow.is_private) {
     const ownerId = routeRow.creatingUserId;
@@ -244,15 +250,59 @@ export async function updateRouteWithPins(pool, {
 /**
  * @param {import('pg').Pool} pool
  * @param {string} shareUuid
+ * @returns {Promise<{ deletedAt: string } | null>}
+ */
+export async function getDeletedRoute(pool, shareUuid) {
+  const r = await pool.query(
+    `SELECT deleted_at AS "deletedAt"
+     FROM deleted_routes
+     WHERE share_uuid = $1::uuid`,
+    [shareUuid]
+  );
+  return r.rows[0] ?? null;
+}
+
+/**
+ * @param {import('pg').Pool} pool
+ * @param {string} shareUuid
  * @param {string} creatingUserId - auth.users id
  * @returns {Promise<boolean>} true when deleted; false when route missing/not owned
  */
 export async function deleteRouteByCreatingUser(pool, shareUuid, creatingUserId) {
-  const r = await pool.query(
-    `DELETE FROM routes
-     WHERE share_uuid = $1::uuid
-       AND creating_user_id = $2::uuid`,
-    [shareUuid, creatingUserId]
-  );
-  return (r.rowCount ?? 0) > 0;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const routeMatch = await client.query(
+      `SELECT id
+       FROM routes
+       WHERE share_uuid = $1::uuid
+         AND creating_user_id = $2::uuid
+       FOR UPDATE`,
+      [shareUuid, creatingUserId]
+    );
+    if (!routeMatch.rows[0]) {
+      await client.query('ROLLBACK');
+      return false;
+    }
+
+    await client.query(
+      `INSERT INTO deleted_routes (share_uuid)
+       VALUES ($1::uuid)
+       ON CONFLICT (share_uuid) DO NOTHING`,
+      [shareUuid]
+    );
+    await client.query(
+      `DELETE FROM routes
+       WHERE share_uuid = $1::uuid
+         AND creating_user_id = $2::uuid`,
+      [shareUuid, creatingUserId]
+    );
+    await client.query('COMMIT');
+    return true;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }

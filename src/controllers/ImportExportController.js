@@ -19,7 +19,7 @@ import cloneDeep from 'lodash.clonedeep';
  * Pass accessToken when loading a private route you own.
  * @param {string} uuid - Route identifier
  * @param {string | null} [accessToken] - Supabase session JWT for private routes
- * @returns {Promise<{ routeGeom: object, pins: Array, name?: string, isPrivate?: boolean, canEdit?: boolean }|null>}
+ * @returns {Promise<{ routeGeom: object, pins: Array, name?: string, isPrivate?: boolean, canEdit?: boolean }|{ deleted: true, deletedAt?: string }|null>}
  */
 export async function fetchRouteByUuid(uuid, accessToken = null) {
   if (!uuid) return null;
@@ -32,6 +32,15 @@ export async function fetchRouteByUuid(uuid, accessToken = null) {
     credentials: 'include',
     headers,
   });
+  if (res.status === 410) {
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      /* ignore */
+    }
+    return { deleted: true, deletedAt: data.deletedAt };
+  }
   if (res.status === 404 || res.status === 400) return null;
   if (res.status === 503) {
     console.warn('Route API unavailable (database not configured).');
@@ -146,6 +155,10 @@ export async function editSavedRouteByUuid(shareUuid, accessToken, map, navigate
     return;
   }
   const data = await fetchRouteByUuid(shareUuid, accessToken);
+  if (data?.deleted) {
+    alert('This route has been deleted.');
+    return;
+  }
   if (!data) {
     alert('Could not load this route for editing.');
     return;

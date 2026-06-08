@@ -96,6 +96,14 @@ app.get("/api/routes/:uuid", async (req, res) => {
       res.status(404).json({ error: 'Route not found' });
       return;
     }
+    if (routeData.deleted) {
+      res.status(410).json({
+        error: 'This route has been deleted',
+        deleted: true,
+        deletedAt: routeData.deletedAt,
+      });
+      return;
+    }
     res.json(routeData);
   } catch (err) {
     console.error('GET /api/routes/:uuid failed', err);

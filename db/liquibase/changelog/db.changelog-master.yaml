@@ -8,3 +8,6 @@ databaseChangeLog:
   - include:
       file: changes/003-creating-user-id.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/004-deleted-routes.sql
+      relativeToChangelogFile: true
