@@ -98,9 +98,10 @@ function AddPinsToMapDialog() {
 
   // Validate if inputs are valid floats
   const isValidFloat = (value) => {
-    if (value === '' || value === '-' || value === '+') return false;
+    if (value === '' || value === '-' || value === '.') return false;
+    if (!/^-?(\d+\.?\d*|\.\d+)$/.test(value)) return false;
     const num = parseFloat(value);
-    return !isNaN(num) && isFinite(num) && value === num.toString();
+    return !isNaN(num) && isFinite(num);
   };
 
   // Parse comma-separated coordinates (e.g., "40.7128, -74.0060" or "40.7128,-74.0060")
@@ -120,7 +121,7 @@ function AddPinsToMapDialog() {
     return null;
   };
 
-  const areCoordinatesValid = useCommaSeparated 
+  const areCoordinatesValid = useCommaSeparated
     ? parseCommaSeparatedCoordinates(commaSeparatedValue) !== null
     : isValidFloat(latitude) && isValidFloat(longitude);
 
