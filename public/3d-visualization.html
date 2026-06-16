@@ -1,3 +1,4 @@
+<!-- This file is totally AI generated and I don't pretend to understand how it works :) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -410,6 +411,7 @@
         // Route markers
         let startMarker = null;
         let endMarker = null;
+        let routeEndCoord = null;
 
         // Mobile controls state
         let isMobile = false;
@@ -872,27 +874,25 @@
             document.getElementById('elevationValue').textContent = meters + 'm';
 
             // If we're in manual mode or not animating, update camera immediately
-            if (manualMode || !isAnimating) {
-                // Get current camera center
+            if ((manualMode || !isAnimating) && map) {
                 const currentCenter = map.getCenter();
-                map.easeTo({
+                map.jumpTo({
                     center: [currentCenter.lng, currentCenter.lat],
                     pitch: CAMERA_PITCH,
-                    zoom: calculateZoomForAltitude(CAMERA_ALTITUDE),
-                    duration: 500
+                    zoom: calculateZoomForAltitude(CAMERA_ALTITUDE)
                 });
             }
         }
 
-        // Calculate appropriate zoom level for altitude
+        // Calculate appropriate zoom level for altitude (continuous across slider range)
         function calculateZoomForAltitude(altitude) {
-            // Approximate zoom calculation - higher altitude = lower zoom
-            // This is a rough approximation for better UX
-            if (altitude <= 1000) return 15;
-            if (altitude <= 2000) return 14;
-            if (altitude <= 3000) return 13;
-            if (altitude <= 4000) return 12;
-            return 11;
+            const minAlt = 500;
+            const maxAlt = 5000;
+            const minZoom = 11;
+            const maxZoom = 15;
+            const clamped = Math.max(minAlt, Math.min(maxAlt, altitude));
+            const t = (clamped - minAlt) / (maxAlt - minAlt);
+            return maxZoom - t * (maxZoom - minZoom);
         }
 
         // Update map type/style from selector
@@ -1029,6 +1029,8 @@
                     element: endElement
                 }).setLngLat(endCoord).addTo(map);
 
+                routeEndCoord = endCoord;
+
             } catch (error) {
                 console.error('Error creating route markers:', error);
             }
@@ -1043,6 +1045,19 @@
             if (endMarker) {
                 endMarker.remove();
                 endMarker = null;
+            }
+            routeEndCoord = null;
+        }
+
+        function updateEndMarkerPosition(coord) {
+            if (endMarker && coord) {
+                endMarker.setLngLat(coord);
+            }
+        }
+
+        function resetEndMarkerToFinish() {
+            if (routeEndCoord) {
+                updateEndMarkerPosition(routeEndCoord);
             }
         }
 
@@ -1102,6 +1117,12 @@
 
                 if (!leadingEdgeCoords || isNaN(leadingEdgeCoords[0]) || isNaN(leadingEdgeCoords[1])) {
                     return;
+                }
+
+                if (progress === 0) {
+                    resetEndMarkerToFinish();
+                } else {
+                    updateEndMarkerPosition(leadingEdgeCoords);
                 }
 
                 // Calculate optimal bearing for current position
@@ -1253,6 +1274,10 @@
 
             const combinedRoute = combineRoute(routeData.geojson);
             const routeLength = turf.length(combinedRoute, { units: 'kilometers' });
+            const startCoord = combinedRoute.geometry.coordinates[0];
+
+            // Move finish marker to start before route drawing begins
+            updateEndMarkerPosition(startCoord);
 
             const startTime = performance.now();
             let lastCameraCenter = null;
@@ -1290,6 +1315,8 @@
                         animationId = requestAnimationFrame(animate);
                         return;
                     }
+
+                    updateEndMarkerPosition(leadingEdgeCoords);
 
                     // Smooth camera center first
                     let smoothedCenter = leadingEdgeCoords;
