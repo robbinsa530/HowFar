@@ -66,6 +66,10 @@ function createDiagonalPattern(color = 'black', shift = 0) {
   return pattern;
 }
 
+function formatElevation(value) {
+  return Math.round(value).toLocaleString('en-US');
+}
+
 const ElevationProfileChart = () => {
   // Local state
   const [ chartDataPoints, setChartDataPoints ] = useState([]);
@@ -442,7 +446,7 @@ const ElevationProfileChart = () => {
             label: function(context) {
               const valueToUse = (imperialOrMetric === 'imperial') ? context.parsed.y : (context.parsed.y / 3.28084);
               const unitToUse = (imperialOrMetric === 'imperial') ? 'ft' : 'm';
-              return `${context.dataset.label}: ${valueToUse.toFixed(0)} ${unitToUse}`;
+              return `${context.dataset.label}: ${formatElevation(valueToUse)} ${unitToUse}`;
             }
           }
         },
@@ -489,7 +493,7 @@ const ElevationProfileChart = () => {
             color: 'rgba(255, 255, 255, 1.0)',
             callback: function(value) {
               const valueToUse = (imperialOrMetric === 'imperial') ? value : (value / 3.28084);
-              return valueToUse.toFixed(0); // Limit to 0 decimal place
+              return formatElevation(valueToUse);
             }
           },
         },
